@@ -59,7 +59,7 @@ Save device information and a list of user-installed apps to a textfile.
 
 **Logical (iTunes-Style) Backup**
 
-Perform a backup as iTunes would do (with an option to bruteforce an unknuwn backup-password)
+Perform a backup as iTunes would do (with an option to bruteforce an unknown backup-password)
 
 **Logical+ Backup**
 
