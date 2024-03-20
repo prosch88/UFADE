@@ -37,7 +37,7 @@ try:
     lockdown = create_using_usbmux()
 
 except:
-    d.infobox("No Apple device found!")
+    print("No Apple device found!")
     raise SystemExit
 
 # Get device information #
@@ -58,7 +58,7 @@ build = lockdown.get_value("","BuildVersion")
 snr = lockdown.get_value("","SerialNumber")
 mlbsnr = lockdown.get_value("","MLBSerialNumber")
 b_mac = lockdown.get_value("","BluetoothAddress")
-w_mac = lockdown.wifi_mac_address
+w_mac = lockdown.wifi_mac_address# Licensed under GPLv3 License
 disk1 = lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity")/1000000000
 disk = str(round(disk1,2))
 free1 = lockdown.get_value("com.apple.disk_usage","AmountDataAvailable")/1000000000
