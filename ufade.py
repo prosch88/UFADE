@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# UFADE - Universal Forensic Apple Device Extractor (c) C.Peter 2024
+# Licensed under GPLv3 License
 from pymobiledevice3 import usbmux, exceptions, lockdown
 from pymobiledevice3.lockdown import create_using_usbmux
 from pymobiledevice3.lockdown import LockdownClient
