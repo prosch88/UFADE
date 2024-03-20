@@ -32,56 +32,25 @@ d.set_background_title("Universal Forensic Apple Device Extractor (UFADE) by Pro
 pw = '12345'
 
 # Check for Apple device #
-try:
-    device = usbmux.select_device()
-    lockdown = create_using_usbmux()
-
-except:
-    print("No Apple device found!")
-    raise SystemExit
-
-# Get device information #
-dev_name = lockdown.display_name
-hardware = lockdown.hardware_model               
-product = lockdown.product_type            
-language = lockdown.language
-udid = lockdown.udid
-ecid = str(lockdown.ecid)
-name =  lockdown.get_value("","DeviceName")
-mnr = lockdown.get_value("", "ModelNumber")
-try: imei = lockdown.get_value("","InternationalMobileEquipmentIdentity")
-except: imei = " "
-try: imei2 = lockdown.get_value("","InternationalMobileEquipmentIdentity2") 
-except: imei2 = " "
-version = lockdown.product_version
-build = lockdown.get_value("","BuildVersion")
-snr = lockdown.get_value("","SerialNumber")
-mlbsnr = lockdown.get_value("","MLBSerialNumber")
-b_mac = lockdown.get_value("","BluetoothAddress")
-w_mac = lockdown.wifi_mac_address# Licensed under GPLv3 License
-disk1 = lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity")/1000000000
-disk = str(round(disk1,2))
-free1 = lockdown.get_value("com.apple.disk_usage","AmountDataAvailable")/1000000000
-free = str(round(free1,2))
-used1 = disk1 - free1
-used = str(round(used1,2))
-graph_progress = "" + "▓" * int(30/100*(100/disk1*used1)) + "░" * int(30/100*(100/disk1*free1)) + ""
-d_class = lockdown.get_value("","DeviceClass")
-
-#Get installed Apps
-apps = installation_proxy.InstallationProxyService(lockdown).get_apps("User")
-app_id_list = []
-for app in apps.keys():
-    app_id_list.append(app)
-
-#Document Sharing enabled?
-doc_list = []
-for app in apps:
-    try: 
-        apps.get(app)['UIFileSharingEnabled']
-        doc_list.append("yes")
+def check_device():
+    try:
+        device = usbmux.select_device()
+        lockdown = create_using_usbmux()
+        
     except:
-        doc_list.append("no")
+        code = d.yesno("No Apple device found! Check again?")
+        if code == d.OK:
+            check_device()
+        else:
+            raise SystemExit
+
+    finally:
+        try: 
+            lockdown = create_using_usbmux()
+            return(lockdown)
+        except: 
+            pass
+        
     
 #Menu options
 def select_menu():
@@ -161,7 +130,7 @@ def save_info():
         "\nSoftware:   " + version + "\nBuild-Nr:   " + build + "\nLanguage:   " + language + "\nSerialnr:   " + snr + "\nMLB-snr:    " + mlbsnr +
         "\nWifi MAC:   " + w_mac + "\nBT-MAC:     " + b_mac + "\nCapacity:   " + disk + "0 GB" + "\nFree Space: " + free + " GB" +
         "\nUDID :      " + udid + "\nECID :      " + ecid + "\nIMEI :      " + imei + "\nIMEI2:      " + imei2 + "\n\n" + "## Installed Apps (by user) [App, shared documents] ## \n")
-#Save user-installed Apps to txt
+    #Save user-installed Apps to txt
     try: l = str(len(max(app_id_list, key=len)))  
     except: l = 40 
     #for app in app_doc_list:
@@ -185,7 +154,7 @@ def iTunes_bu(mode):
     m = mode
     pw_found = 0
 
-#Check for active Encryption and activate
+    #Check for active Encryption and activate
     try:
         d.infobox("Checking Backup Encryption.\n\nUnlock device with PIN/PW if prompted")            
         Mobilebackup2Service(lockdown).change_password(new="12345")
@@ -483,8 +452,11 @@ def perf_logical_plus(t):
         tar.close()
     else:
         zip.close()
-        with open(zipname, 'rb', buffering=0) as z:
-            z_hash = hashlib.file_digest(z, 'sha256').hexdigest()
+        try:
+            with open(zipname, 'rb', buffering=0) as z:
+                z_hash = hashlib.file_digest(z, 'sha256').hexdigest()
+        except:
+            z_hash = " Error - Python >= 3.11 required"
 
         with open("Apple_" + hardware.upper() + " " + dev_name + ".ufd", "w") as ufdf:
             ufdf.write("[DeviceInfo]\nIMEI1=" + imei + "\nIMEI2=" + imei2 + "\nModel=" + product + "\nOS=" + version + "\nVendor=Apple\n\n[Dumps]\nFileDump=Apple_" + hardware.upper() + " " +
@@ -495,6 +467,51 @@ def perf_logical_plus(t):
     select_menu()
 
 #Start:
+
+lockdown = check_device()
+
+# Get device information #
+dev_name = lockdown.display_name
+hardware = lockdown.hardware_model               
+product = lockdown.product_type            
+language = lockdown.language
+udid = lockdown.udid
+ecid = str(lockdown.ecid)
+name =  lockdown.get_value("","DeviceName")
+mnr = lockdown.get_value("", "ModelNumber")
+try: imei = lockdown.get_value("","InternationalMobileEquipmentIdentity")
+except: imei = " "
+try: imei2 = lockdown.get_value("","InternationalMobileEquipmentIdentity2") 
+except: imei2 = " "
+version = lockdown.product_version
+build = lockdown.get_value("","BuildVersion")
+snr = lockdown.get_value("","SerialNumber")
+mlbsnr = lockdown.get_value("","MLBSerialNumber")
+b_mac = lockdown.get_value("","BluetoothAddress")
+w_mac = lockdown.wifi_mac_address# Licensed under GPLv3 License
+disk1 = lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity")/1000000000
+disk = str(round(disk1,2))
+free1 = lockdown.get_value("com.apple.disk_usage","AmountDataAvailable")/1000000000
+free = str(round(free1,2))
+used1 = disk1 - free1
+used = str(round(used1,2))
+graph_progress = "" + "▓" * int(30/100*(100/disk1*used1)) + "░" * int(30/100*(100/disk1*free1)) + ""
+d_class = lockdown.get_value("","DeviceClass")
+
+#Get installed Apps
+apps = installation_proxy.InstallationProxyService(lockdown).get_apps("User")
+app_id_list = []
+for app in apps.keys():
+    app_id_list.append(app)
+
+#Document Sharing enabled?
+doc_list = []
+for app in apps:
+    try: 
+        apps.get(app)['UIFileSharingEnabled']
+        doc_list.append("yes")
+    except:
+        doc_list.append("no")
 
 show_device()
 dir = chdir()
