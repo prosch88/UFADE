@@ -8,7 +8,7 @@ It utitilizes the awesome projects: [pymobiledevice3](https://github.com/doronz8
 The use of [pythondialog](https://github.com/frougon/pythondialog) is preventig the Windows compatibility atm. Linux and MacOS should work.
 More features may follow.
 
-
+<br />
 
 ## Installation
 
@@ -38,7 +38,7 @@ MacOS:
 ```
 brew install dialog
 ```
-
+<br />
 
 ## Usage
 
@@ -69,8 +69,11 @@ Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders
 
 Creates an "advanced Logical Backup" as ZIP-Archive with an UFD file to load in the [Cellebrite Physical Analyzer©](https://cellebrite.com/de/cellebrite-physical-analyzer-de/)
 
+<br />
 
-Like this tool? [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/I3I3H646F)
+Like this tool? 
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/I3I3H646F)
 
 
 
