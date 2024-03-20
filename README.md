@@ -7,6 +7,7 @@ It utitilizes the awesome projects: [pymobiledevice3](https://github.com/doronz8
 
 The use of [pythondialog](https://github.com/frougon/pythondialog) is preventig the Windows compatibility atm. Linux and MacOS should work.
 
+
 # Installation
 
 **Clone the repo:**
@@ -18,15 +19,15 @@ git clone https://github.com/prosch88/UFADE
 pip install -r requirements.txt 
 ```
 **Install dialog:**
-Arch / Manjaro ...:
+Arch / Manjaro:
 ```
 sudo pacman -S dialog
 ```
-Debian / Ubuntu ...:
+Debian / Ubuntu:
 ```
 sudo apt-get install dialog
 ```
-CentOS / Red Hat ...:
+CentOS / Red Hat:
 ```
 sudo yum install dialog
 ```
@@ -34,6 +35,7 @@ MacOS:
 ```
 brew install dialog
 ```
+
 
 # Usage
 
@@ -48,16 +50,20 @@ By default, the script is setting this to the directory from which it has been c
 
 In the main menu you have the options:
 
-**Save device information to text** 
+**Save device information to text**
+
 Save device information and a list of user-installed apps to a textfile.
 
-**Logical (iTunes-Style) Backup** 
+**Logical (iTunes-Style) Backup**
+
 Perform a backup as iTunes would do (with an option to bruteforce an unknuwn backup-password)
 
 **Logical+ Backup**
+
 Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders and crash reports. Creates a TAR-archive.
 
 **Logical+ Backup (UFED-Style)**
+
 Creates an "advanced Logical Backup" as ZIP-Archive with an UFD file to load in the [Cellebrite Physical Analyzer©](https://cellebrite.com/de/cellebrite-physical-analyzer-de/)
 
 
