@@ -67,7 +67,7 @@ Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders
 
 **Logical+ Backup (UFED-Style)**
 
-Creates an "advanced Logical Backup" as ZIP-Archive with an UFD file to load in the [Cellebrite Physical Analyzer©](https://cellebrite.com/de/cellebrite-physical-analyzer-de/)
+Creates an "advanced Logical Backup" as ZIP-archive with an UFD file to load in the [Cellebrite Physical Analyzer©](https://cellebrite.com/de/cellebrite-physical-analyzer-de/)
 
 <br />
 
