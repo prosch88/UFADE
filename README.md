@@ -8,7 +8,8 @@ It utitilizes the awesome projects: [pymobiledevice3](https://github.com/doronz8
 The use of [pythondialog](https://github.com/frougon/pythondialog) is preventig the Windows compatibility atm. Linux and MacOS should work.
 
 
-# Installation
+
+## Installation
 
 **Clone the repo:**
 ```
@@ -37,7 +38,7 @@ brew install dialog
 ```
 
 
-# Usage
+## Usage
 
 Connect an Apple device (iPhone, iPad) to your workstation, unlock and pair the device.
 Start the script:
