@@ -5,7 +5,8 @@ This is a python script written for my masters thesis in IT-Security and Forensi
 
 It utitilizes the awesome projects: [pymobiledevice3](https://github.com/doronz88/pymobiledevice3) and [iOSbackup](https://github.com/avibrazil/iOSbackup) to automate the acquisition of Apple mobile devices. Options can be selected via a dialog.
 
-The use of [pythondialog](https://github.com/frougon/pythondialog) is preventig the Windows compatibility atm. Linux and MacOS should work.
+The use of [pythondialog](https://github.com/frougon/pythondialog) is preventig the Windows compatibility atm. Linux and MacOS should work. Requires Python >= 3.11.
+
 More features may follow.
 
 <br />
