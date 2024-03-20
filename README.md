@@ -20,6 +20,7 @@ git clone https://github.com/prosch88/UFADE
 pip install -r requirements.txt 
 ```
 **Install dialog:**
+
 Arch / Manjaro:
 ```
 sudo pacman -S dialog
