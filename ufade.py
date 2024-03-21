@@ -13,6 +13,8 @@ from pymobiledevice3.services.crash_reports import CrashReportsManager
 from dialog import Dialog
 from iOSbackup import iOSbackup
 from datetime import datetime, timedelta, timezone
+from curses import wrapper
+import contextlib
 import pandas as pd
 import tarfile
 import zipfile
@@ -26,6 +28,7 @@ import plistlib
 import hashlib
 import beepy
 import threading
+import curses
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -55,7 +58,7 @@ def check_device():
         
     
 #Menu options
-def select_menu():
+def select_menu(main_screen):
     code, tag = d.menu("Choose:",
     choices=[("(1)", "Save device information to text", "Save device information and a list of user-installed apps to a textfile"),
              ("(2)", "Logical (iTunes-Style) Backup", "Perform a backup as iTunes would do it."),
@@ -152,11 +155,12 @@ def save_info():
 def save_info_menu():
     save_info()
     d.msgbox("Info written to device_" + udid + ".txt")
-    select_menu()
+    wrapper(select_menu)
 
 #Perform iTunes Backup
 
 def iTunes_bu(mode):
+    #screen = curses.initscr()
     m = mode
     pw_found = 0
 
@@ -164,7 +168,9 @@ def iTunes_bu(mode):
     try:
         beep_timer = threading.Timer(8.0,notify)
         beep_timer.start()
-        d.infobox("Checking Backup Encryption.\n\nUnlock device with PIN/PW if prompted")            
+        curses.noecho()
+        d.infobox("Checking Backup Encryption.\n\nUnlock device with PIN/PW if prompted")
+        curses.echo()            
         c1 = str(Mobilebackup2Service(lockdown).change_password(new="12345"))
         if c1 == "None":
             beep_timer.cancel()
@@ -202,7 +208,7 @@ def iTunes_bu(mode):
                             d.msgbox("Error loading file!")
                             pass
                     else:
-                        select_menu()
+                        wrapper(select_menu)
 
                 pw_num = 0
                 pw_pro = 0
@@ -248,8 +254,10 @@ def iTunes_bu(mode):
                             + "You will loose known networks, user settings and dictionary. App and User-Data will remain.\n\nWait for the device to reboot and start the extraction again.", height=18, width=52) 
                     
 
-        if pw_found == 1:                
+        if pw_found == 1:
+            curses.noecho()                
             d.infobox("Encryption has to be reactivated\n\nNew Password is: \"12345\" \n\nUnlock device with PIN/PW if prompted")
+            curses.echo()
             try:
                 beep_timer = threading.Timer(8.0,notify)
                 beep_timer.start() 
@@ -269,19 +277,22 @@ def iTunes_bu(mode):
             save_info()
             beep_timer = threading.Timer(8.0,notify)
             beep_timer.start()
-            d.infobox("iTunes Backup complete! Trying to deactivate Backup Encryption again. \n\nUnlock device with PIN/PW if prompted") 
+            curses.noecho()
+            d.infobox("iTunes Backup complete! Trying to deactivate Backup Encryption again. \n\nUnlock device with PIN/PW if prompted")
+            curses.echo() 
             c3 = str(Mobilebackup2Service(lockdown).change_password(old="12345"))
             if c3 == 'None':
                 beep_timer.cancel()
         else:
-            select_menu()
+            curses.endwin()
+            wrapper(select_menu)
 
 def perf_itunes():
-    iTunes_bu("iTunes-Style")                                                                                           #call iTunes Backup with "iTunes-Style" written in dialog
+    iTunes_bu("iTunes-Style")                                                                                       #call iTunes Backup with "iTunes-Style" written in dialog
     try: os.rename(udid, udid + "_iTunes")  
     except: pass                                                                                 #rename backup folder to prevent conflicts with other options
     d.msgbox("Backup completed!")
-    select_menu()
+    wrapper(select_menu)
     
 #Make advanced Backup - l_type(t) defines the type: 'None' for regular; 'UFED' for UFED-Style
 def perf_logical_plus(t):
@@ -492,7 +503,7 @@ def perf_logical_plus(t):
             hardware.upper() + " " + dev_name + "\nGUID=" + udid + "\nInternalBuild=\nIsEncrypted=True\nIsEncryptedBySystem=True\nMachineName=\nModel=" + hardware.upper() + " " + dev_name + "\nUfdVer=1.2\nUnitId=\nUserName=\nVendor=Apple\nVersion=other\n\n[SHA256]\n" + zipname + "=" + z_hash.upper() + "")
 
     d.msgbox("Logical+ Backup completed!")
-    select_menu()
+    wrapper(select_menu)
 
 #Start:
 
@@ -543,4 +554,4 @@ for app in apps:
 
 show_device()
 dir = chdir()
-select_menu()
+wrapper(select_menu)
