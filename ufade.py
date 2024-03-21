@@ -270,8 +270,8 @@ def iTunes_bu(mode):
             beep_timer = threading.Timer(8.0,notify)
             beep_timer.start()
             d.infobox("iTunes Backup complete! Trying to deactivate Backup Encryption again. \n\nUnlock device with PIN/PW if prompted") 
-            c4 = str(Mobilebackup2Service(lockdown).change_password(old="12345"))
-            if c4 == 'None':
+            c3 = str(Mobilebackup2Service(lockdown).change_password(old="12345"))
+            if c3 == 'None':
                 beep_timer.cancel()
         else:
             select_menu()
