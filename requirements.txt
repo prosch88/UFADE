@@ -3,3 +3,4 @@ pythondialog
 iOSbackup
 pandas
 pyarrow
+beepy
