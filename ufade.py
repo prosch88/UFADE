@@ -24,6 +24,8 @@ import re
 import string
 import plistlib
 import hashlib
+import beepy
+import threading
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -123,6 +125,10 @@ def show_device():
         "\nIMEI : " + imei +
         "\nIMEI2: " + imei2, height=26, width=52)
 
+#Play a notfication sound:
+def notify():
+    beepy.beep(1)        
+
 #Save device information to txt File
 def save_info():
     file = open("device_" + udid + ".txt", "w")
@@ -156,8 +162,12 @@ def iTunes_bu(mode):
 
     #Check for active Encryption and activate
     try:
+        beep_timer = threading.Timer(8.0,notify)
+        beep_timer.start()
         d.infobox("Checking Backup Encryption.\n\nUnlock device with PIN/PW if prompted")            
-        Mobilebackup2Service(lockdown).change_password(new="12345")
+        c1 = str(Mobilebackup2Service(lockdown).change_password(new="12345"))
+        if c1 == "None":
+            beep_timer.cancel()
         d.infobox("New Backup password: \"12345\" \n\nStarting Backup...\n\nUnlock device with PIN/PW")
         pw_found = 1            
         
@@ -217,11 +227,17 @@ def iTunes_bu(mode):
                         d.msgbox("Unlock the device. \nOpen the \"Settings\"-app \n--> \"General\" \n--> \"Reset\" (bottom) \n--> \"Reset all Settings\"\n\n"
                             + "You will loose known networks, user settings and dictionary. App and User-Data will remain.\n\nWait for the device to reboot and press \"OK\"", height=18, width=52)
                         
-                        try: 
-                            Mobilebackup2Service(lockdown).change_password(new="12345")
+                        try:
+                            beep_timer = threading.Timer(8.0,notify)
+                            beep_timer.start()
+                            d.infobox("Trying to activate Backup Encryption again. \n\nUnlock device with PIN/PW if prompted") 
+                            c = str(Mobilebackup2Service(lockdown).change_password(new="12345"))
+                            if c == 'None':
+                                beep_timer.cancel() 
                             pw_found = 1
                             SpringBoardServicesService(lockdown).set_icon_state(icons)
                         except:
+                            beep_timer.cancel()
                             d.msgbox("Uh-Oh ... An error was raised ... try again.")
                             pass
                     else:
@@ -234,8 +250,15 @@ def iTunes_bu(mode):
 
         if pw_found == 1:                
             d.infobox("Encryption has to be reactivated\n\nNew Password is: \"12345\" \n\nUnlock device with PIN/PW if prompted")
-            try: Mobilebackup2Service(lockdown).change_password(new="12345")
-            except: pass
+            try:
+                beep_timer = threading.Timer(8.0,notify)
+                beep_timer.start() 
+                c2 = str(Mobilebackup2Service(lockdown).change_password(new="12345"))
+                if c2 == "None":
+                    beep_timer.cancel()
+            except: 
+                beep_timer.cancel()
+                pass
             d.infobox("Starting Backup...")
 
     finally:
@@ -244,14 +267,19 @@ def iTunes_bu(mode):
             Mobilebackup2Service(lockdown).backup(full=True,  progress_callback=lambda x: (d.gauge_update(int(x),"Performing " + m + " Backup: ",update_text=True)))
             d.gauge_stop()
             save_info()
+            beep_timer = threading.Timer(8.0,notify)
+            beep_timer.start()
             d.infobox("iTunes Backup complete! Trying to deactivate Backup Encryption again. \n\nUnlock device with PIN/PW if prompted") 
-            Mobilebackup2Service(lockdown).change_password(old="12345")
+            c4 = str(Mobilebackup2Service(lockdown).change_password(old="12345"))
+            if c4 == 'None':
+                beep_timer.cancel()
         else:
             select_menu()
 
 def perf_itunes():
     iTunes_bu("iTunes-Style")                                                                                           #call iTunes Backup with "iTunes-Style" written in dialog
-    os.rename(udid, udid + "_iTunes")                                                                                   #rename backup folder to prevent conflicts with other options
+    try: os.rename(udid, udid + "_iTunes")  
+    except: pass                                                                                 #rename backup folder to prevent conflicts with other options
     d.msgbox("Backup completed!")
     select_menu()
     
