@@ -29,6 +29,7 @@ import hashlib
 import beepy
 import threading
 import curses
+import time
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -130,7 +131,9 @@ def show_device():
 
 #Play a notfication sound:
 def notify():
-    beepy.beep(1)        
+    beepy.beep(1)
+    curses.flash()
+    time.sleep(1)
 
 #Save device information to txt File
 def save_info():
@@ -156,6 +159,10 @@ def save_info_menu():
     save_info()
     d.msgbox("Info written to device_" + udid + ".txt")
     wrapper(select_menu)
+
+def process_beep(x,m, beep_timer):
+    beep_timer.cancel()
+    d.gauge_update(int(x),"Performing " + m + " Backup: ",update_text=True)
 
 #Perform iTunes Backup
 
@@ -272,7 +279,10 @@ def iTunes_bu(mode):
     finally:
         if pw_found == 1:
             d.gauge_start("Performing " + m + " Backup - Unlock device with PIN/PW if prompted")
-            Mobilebackup2Service(lockdown).backup(full=True,  progress_callback=lambda x: (d.gauge_update(int(x),"Performing " + m + " Backup: ",update_text=True)))
+            beep_timer = threading.Timer(8.0,notify)
+            beep_timer.start()
+            while Mobilebackup2Service(lockdown).backup(full=True,  progress_callback=lambda x: (process_beep(x,m,beep_timer))):
+                c = 1
             d.gauge_stop()
             save_info()
             beep_timer = threading.Timer(8.0,notify)
