@@ -10,6 +10,7 @@ from pymobiledevice3.services.springboard import SpringBoardServicesService
 from pymobiledevice3.services.afc import AfcService
 from pymobiledevice3.services.house_arrest import HouseArrestService
 from pymobiledevice3.services.crash_reports import CrashReportsManager
+from pymobiledevice3.services.os_trace import OsTraceService
 from dialog import Dialog
 from iOSbackup import iOSbackup
 from datetime import datetime, timedelta, timezone
@@ -64,7 +65,8 @@ def select_menu(main_screen):
     choices=[("(1)", "Save device information to text", "Save device information and a list of user-installed apps to a textfile"),
              ("(2)", "Logical (iTunes-Style) Backup", "Perform a backup as iTunes would do it."),
              ("(3)", "Logical+ Backup", "Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders and crash reports."),
-             ("(4)", "Logical+ Backup (UFED-Style)", "Creates an advanced Logical Backup as ZIP with an UFD File for PA.")],
+             ("(4)", "Logical+ Backup (UFED-Style)", "Creates an advanced Logical Backup as ZIP with an UFD File for PA."),
+             ("(5)", "Collect Unified Logs", "Collects the AUL from the device and saves them as a logarchive.")],
              item_help=True)
     if code == d.OK:
         if tag == "(1)":
@@ -75,6 +77,8 @@ def select_menu(main_screen):
             perf_logical_plus(None)
         elif tag == "(4)":
             perf_logical_plus("UFED")
+        elif tag == "(5)":
+            collect_ul()
         else:
             sys.exit()
     else:
@@ -173,7 +177,7 @@ def iTunes_bu(mode):
 
     #Check for active Encryption and activate
     try:
-        beep_timer = threading.Timer(8.0,notify)
+        beep_timer = threading.Timer(13.0,notify)
         beep_timer.start()
         curses.noecho()
         d.infobox("Checking Backup Encryption.\n\nUnlock device with PIN/PW if prompted")
@@ -185,6 +189,7 @@ def iTunes_bu(mode):
         pw_found = 1            
         
     except:
+        beep_timer.cancel()
         code = d.yesno("Backup Encryption is activated with password. Is the password known?")
         if code == d.OK:
             code, user_input = d.inputbox("Enter the password:", title="Backup password: ")
@@ -241,7 +246,7 @@ def iTunes_bu(mode):
                             + "You will loose known networks, user settings and dictionary. App and User-Data will remain.\n\nWait for the device to reboot and press \"OK\"", height=18, width=52)
                         
                         try:
-                            beep_timer = threading.Timer(8.0,notify)
+                            beep_timer = threading.Timer(13.0,notify)
                             beep_timer.start()
                             d.infobox("Trying to activate Backup Encryption again. \n\nUnlock device with PIN/PW if prompted") 
                             c = str(Mobilebackup2Service(lockdown).change_password(new="12345"))
@@ -266,7 +271,7 @@ def iTunes_bu(mode):
             d.infobox("Encryption has to be reactivated\n\nNew Password is: \"12345\" \n\nUnlock device with PIN/PW if prompted")
             curses.echo()
             try:
-                beep_timer = threading.Timer(8.0,notify)
+                beep_timer = threading.Timer(13.0,notify)
                 beep_timer.start() 
                 c2 = str(Mobilebackup2Service(lockdown).change_password(new="12345"))
                 if c2 == "None":
@@ -279,13 +284,17 @@ def iTunes_bu(mode):
     finally:
         if pw_found == 1:
             d.gauge_start("Performing " + m + " Backup - Unlock device with PIN/PW if prompted")
-            beep_timer = threading.Timer(8.0,notify)
+            beep_timer = threading.Timer(13.0,notify)
             beep_timer.start()
-            while Mobilebackup2Service(lockdown).backup(full=True,  progress_callback=lambda x: (process_beep(x,m,beep_timer))):
-                c = 1
+            stderr_old = sys.stderr
+            sys.stderr = None 
+            curses.noecho()
+            Mobilebackup2Service(lockdown).backup(full=True,  progress_callback=lambda x: (process_beep(x,m,beep_timer)))
+            curses.echo()
+            sys.stderr = stderr_old
             d.gauge_stop()
             save_info()
-            beep_timer = threading.Timer(8.0,notify)
+            beep_timer = threading.Timer(13.0,notify)
             beep_timer.start()
             curses.noecho()
             d.infobox("iTunes Backup complete! Trying to deactivate Backup Encryption again. \n\nUnlock device with PIN/PW if prompted")
@@ -513,6 +522,14 @@ def perf_logical_plus(t):
             hardware.upper() + " " + dev_name + "\nGUID=" + udid + "\nInternalBuild=\nIsEncrypted=True\nIsEncryptedBySystem=True\nMachineName=\nModel=" + hardware.upper() + " " + dev_name + "\nUfdVer=1.2\nUnitId=\nUserName=\nVendor=Apple\nVersion=other\n\n[SHA256]\n" + zipname + "=" + z_hash.upper() + "")
 
     d.msgbox("Logical+ Backup completed!")
+    wrapper(select_menu)
+
+def collect_ul():
+    try: os.mkdir("unified_logs")
+    except: pass
+    d.infobox("Collecting Unified Logs from devie. This may take some time.")
+    OsTraceService(lockdown).collect(out= "unified_logs/" + udid + ".logarchive")
+    d.msgbox("Unified Logs written to " + udid + ".logarchive")
     wrapper(select_menu)
 
 #Start:
