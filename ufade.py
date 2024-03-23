@@ -528,8 +528,12 @@ def collect_ul():
     try: os.mkdir("unified_logs")
     except: pass
     d.infobox("Collecting Unified Logs from devie. This may take some time.")
-    OsTraceService(lockdown).collect(out= "unified_logs/" + udid + ".logarchive")
-    d.msgbox("Unified Logs written to " + udid + ".logarchive")
+    try:
+        OsTraceService(lockdown).collect(out= "unified_logs/" + udid + ".logarchive")
+        d.msgbox("Unified Logs written to " + udid + ".logarchive")
+    except:
+        d.msgbox("Error: \nCoud not collect logs - Maybe the device or its iOS version is too old.")
+        pass
     wrapper(select_menu)
 
 #Start:
