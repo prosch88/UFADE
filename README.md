@@ -72,6 +72,10 @@ Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders
 
 Creates an "advanced Logical Backup" as ZIP-archive with an UFD file to load in the [Cellebrite Physical Analyzer©](https://cellebrite.com/de/cellebrite-physical-analyzer-de/)
 
+**Collect Unified Logs**
+
+Collects the AUL from the device and saves them as a logarchive.
+
 <br />
 
 Like this tool? 
