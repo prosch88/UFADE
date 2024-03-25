@@ -13,6 +13,7 @@ from pymobiledevice3.services.crash_reports import CrashReportsManager
 from pymobiledevice3.services.os_trace import OsTraceService
 from dialog import Dialog
 from iOSbackup import iOSbackup
+from pyiosbackup import Backup
 from datetime import datetime, timedelta, timezone
 from curses import wrapper
 import contextlib
@@ -67,7 +68,7 @@ def select_menu(main_screen):
              ("(3)", "Logical+ Backup", "Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders and crash reports."),
              ("(4)", "Logical+ Backup (UFED-Style)", "Creates an advanced Logical Backup as ZIP with an UFD File for PA."),
              ("(5)", "Collect Unified Logs", "Collects the AUL from the device and saves them as a logarchive.")],
-             item_help=True)
+             item_help=True, title=(dev_name + ", iOS " + version))
     if code == d.OK:
         if tag == "(1)":
             save_info_menu()
@@ -159,17 +160,18 @@ def save_info():
         file.write("\n" + '{:{l}}'.format(app, l=l) + "\t [" + sharing + "]")
     file.close()
 
+#Create the info-file as txt
 def save_info_menu():
     save_info()
     d.msgbox("Info written to device_" + udid + ".txt")
     wrapper(select_menu)
 
+#Stop the beep-timer for the PIN promt and show the backup process
 def process_beep(x,m, beep_timer):
     beep_timer.cancel()
     d.gauge_update(int(x),"Performing " + m + " Backup: ",update_text=True)
 
 #Perform iTunes Backup
-
 def iTunes_bu(mode):
     #screen = curses.initscr()
     m = mode
@@ -177,12 +179,12 @@ def iTunes_bu(mode):
 
     #Check for active Encryption and activate
     try:
-        beep_timer = threading.Timer(13.0,notify)
+        beep_timer = threading.Timer(13.0,notify)                                                                           
         beep_timer.start()
         curses.noecho()
-        d.infobox("Checking Backup Encryption.\n\nUnlock device with PIN/PW if prompted")
+        d.infobox("Checking Backup Encryption.\n\nUnlock device with PIN/PW if prompted")                                   
         curses.echo()            
-        c1 = str(Mobilebackup2Service(lockdown).change_password(new="12345"))
+        c1 = str(Mobilebackup2Service(lockdown).change_password(new="12345"))                                               #Try to activate backup encryption with password "12345"
         if c1 == "None":
             beep_timer.cancel()
         d.infobox("New Backup password: \"12345\" \n\nStarting Backup...\n\nUnlock device with PIN/PW")
@@ -190,13 +192,13 @@ def iTunes_bu(mode):
         
     except:
         beep_timer.cancel()
-        code = d.yesno("Backup Encryption is activated with password. Is the password known?")
+        code = d.yesno("Backup Encryption is activated with password. Is the password known?")                                 
         if code == d.OK:
-            code, user_input = d.inputbox("Enter the password:", title="Backup password: ")
+            code, user_input = d.inputbox("Enter the password:", title="Backup password: ")                                 #Get the password from user input
             if code == d.OK:
                 pw = user_input
                 try: 
-                    Mobilebackup2Service(lockdown).change_password(old=pw)
+                    Mobilebackup2Service(lockdown).change_password(old=pw)                                                  #Try to deactivate backup encryption with the given password
                     pw_found = 1
                 except: 
                     d.msgbox("Wrong password.")
@@ -307,58 +309,64 @@ def iTunes_bu(mode):
             wrapper(select_menu)
 
 def perf_itunes():
-    iTunes_bu("iTunes-Style")                                                                                       #call iTunes Backup with "iTunes-Style" written in dialog
+    iTunes_bu("iTunes-Style")                                                                                               #call iTunes Backup with "iTunes-Style" written in dialog
     try: os.rename(udid, udid + "_iTunes")  
-    except: pass                                                                                 #rename backup folder to prevent conflicts with other options
+    except: pass                                                                                                            #rename backup folder to prevent conflicts with other workflow-options
     d.msgbox("Backup completed!")
     wrapper(select_menu)
     
 #Make advanced Backup - l_type(t) defines the type: 'None' for regular; 'UFED' for UFED-Style
 def perf_logical_plus(t):
     l_type = t
-    if int(version.split(".")[0]) < 10:
-        d.msgbox("Not supported: \niOS " + version + " is not supported in this workflow.")
-        wrapper(select_menu)
-        raise SystemExit()
-    try: os.mkdir(".tar_tmp")                                                                                           #create temp folder for files to zip/tar
+    #if int(version.split(".")[0]) < 10:
+    #    d.msgbox("Not supported: \niOS " + version + " is not supported in this workflow.")
+    #    wrapper(select_menu)
+    #    raise SystemExit()
+    try: os.mkdir(".tar_tmp")                                                                                               #create temp folder for files to zip/tar
     except: pass
 
-    try: os.mkdir(".tar_tmp/itunes_bu")                                                                                 #create folder for decrypted backup
+    try: os.mkdir(".tar_tmp/itunes_bu")                                                                                     #create folder for decrypted backup
     except: pass
     now = datetime.now()
-    iTunes_bu("Logical+")                                                                                               #call iTunes Backup with "Logical+" written in dialog
+    iTunes_bu("Logical+")                                                                                                   #call iTunes Backup with "Logical+" written in dialog
     
     if l_type != "UFED":
-        b = iOSbackup(udid=udid, cleartextpassword="12345", derivedkey=None, backuproot="./")                           #Load Backup with Password
-        key = b.getDecryptionKey()                                                                                      #Get decryption Key
-        b = iOSbackup(udid=udid, derivedkey=key, backuproot="./")                                                       #Load Backup again with Key
-        backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])       #read dataframe from iOSbackup to pandas module
-        line_list = []
-        line_cnt = 0
-        for line in backupfiles['relativePath']:                                                                        #get amount of lines (files) of backup
-            if(line not in line_list):
-                line_cnt += 1
-                line_list.append(line)
-        d_nr = 0
-        d.gauge_start("Decrypting iTunes Backup: ")                                                                     #show percentage of decryption-process
-        tar = tarfile.open(udid + "_logical_plus.tar", "w:")
-        for file in line_list:
-            d_nr += 1
-            dpro = int(100*(d_nr/line_cnt)) 
-            d.gauge_update(dpro)
-            b.getFileDecryptedCopy(relativePath=file, targetName=file, targetFolder=".tar_tmp/itunes_bu")               #actually decrypt the backup-files
-            file_path = os.path.join('.tar_tmp/itunes_bu', file)
-            tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
-                backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
-            try: os.remove(file_path)                                                                                   #remove the file after adding
-            except: pass    
-        d.gauge_stop()
+        try:
+            b = iOSbackup(udid=udid, cleartextpassword="12345", derivedkey=None, backuproot="./")                           #Load Backup with Password
+            key = b.getDecryptionKey()                                                                                      #Get decryption Key
+            b = iOSbackup(udid=udid, derivedkey=key, backuproot="./")                                                       #Load Backup again with Key
+            backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])       #read dataframe from iOSbackup to pandas module
+            line_list = []
+            line_cnt = 0
+            for line in backupfiles['relativePath']:                                                                        #get amount of lines (files) of backup
+                if(line not in line_list):
+                    line_cnt += 1
+                    line_list.append(line)
+            d_nr = 0
+            d.gauge_start("Decrypting iTunes Backup: ")                                                                     #show percentage of decryption-process
+            tar = tarfile.open(udid + "_logical_plus.tar", "w:")
+            for file in line_list:
+                d_nr += 1
+                dpro = int(100*(d_nr/line_cnt)) 
+                d.gauge_update(dpro)
+                b.getFileDecryptedCopy(relativePath=file, targetName=file, targetFolder=".tar_tmp/itunes_bu")               #actually decrypt the backup-files
+                file_path = os.path.join('.tar_tmp/itunes_bu', file)
+                tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
+                    backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
+                try: os.remove(file_path)                                                                                   #remove the file after adding
+                except: pass    
+            d.gauge_stop()
+        except:                                                                                                             #use pyiosbackup as fallback for older devices (atm iOSbackup is behaving more reliable for newer iOS Versions)
+            d.infobox("Decrypting iTunes Backup - this may take a while.")
+            Backup.from_path(backup_path=udid, password="12345").unback(".tar_tmp/itunes_bu")
+            tar = tarfile.open(udid + "_logical_plus.tar", "w:")
+            tar.add(".tar_tmp/itunes_bu", arcname="iTunes_Backup/", recursive=True)
 
-        shutil.rmtree(".tar_tmp/itunes_bu")                                                                             #remove the backup folder
+        shutil.rmtree(".tar_tmp/itunes_bu")                                                                                 #remove the backup folder
         shutil.rmtree(udid)
         
     else:
-        zipname = "Apple_" + hardware.upper() + " " + dev_name + ".zip"                                                 #create ZIP-File for CLB PA (TAR-handling isn't as good here)
+        zipname = "Apple_" + hardware.upper() + " " + dev_name + ".zip"                                                     #create ZIP-File for CLB PA (TAR-handling isn't as good here)
         zip = zipfile.ZipFile(zipname, "w")
         d.infobox("Processing Backup ...")
         base = udid
@@ -366,15 +374,15 @@ def perf_logical_plus(t):
             for file in files:
                 source_file = os.path.join(root, file)
                 filename = os.path.relpath(source_file, base)
-                zip.write(source_file, arcname=os.path.join("iPhoneDump/Backup Service", udid, "Snapshot", filename))   #just copy the encrypted backup to a ZIP
+                zip.write(source_file, arcname=os.path.join("iPhoneDump/Backup Service", udid, "Snapshot", filename))       #just copy the encrypted backup to a ZIP
                 
-        shutil.rmtree(udid)                                                                                             #delete the backup after zipping
+        shutil.rmtree(udid)                                                                                                 #delete the backup after zipping
 
-#Gather Media Directory
+    #Gather Media Directory
     media_list = []
     d.gauge_start("Performing AFC Extraction of Mediafiles")
     for line in AfcService(lockdown).listdir("/"):
-            media_list.append(line)                                                                                     #get amount of lines (files and folders) in media root
+            media_list.append(line)                                                                                         #get amount of lines (files and folders) in media root
     media_count = len(media_list)
     try: os.mkdir(".tar_tmp/media")
     except: pass
@@ -383,25 +391,28 @@ def perf_logical_plus(t):
         m_nr += 1
         mpro = int(100*(m_nr/media_count))
         d.gauge_update(mpro)
-        AfcService(lockdown).pull(entry, ".tar_tmp/media/")
-        file_path = os.path.join('.tar_tmp/media/', entry)                                                              #get the files and folders shared over AFC
-        if l_type != "UFED":
-            tar.add(file_path, arcname=os.path.join("Media/", entry), recursive=True)                                   #add the file/folder to the TAR
-        else:
-            if os.path.isfile(file_path):
-                zip.write(file_path, arcname=os.path.join("iPhoneDump/AFC Service/", entry))                            #add the file/folder to the ZIP
-            elif os.path.isdir(file_path):
-                for root, dirs, files in os.walk(".tar_tmp/media"):
-                    for file in files:
-                        source_file = os.path.join(root, file)
-                        filename = os.path.relpath(source_file, ".tar_tmp/media")
-                        zip.write(source_file, arcname=os.path.join("iPhoneDump/AFC Service/", filename))
-        try: os.remove(file_path)
-        except: shutil.rmtree(file_path)
+        try:
+            AfcService(lockdown).pull(entry, ".tar_tmp/media/")
+            file_path = os.path.join('.tar_tmp/media/', entry)                                                              #get the files and folders shared over AFC
+            if l_type != "UFED":
+                tar.add(file_path, arcname=os.path.join("Media/", entry), recursive=True)                                   #add the file/folder to the TAR
+            else:
+                if os.path.isfile(file_path):
+                    zip.write(file_path, arcname=os.path.join("iPhoneDump/AFC Service/", entry))                            #add the file/folder to the ZIP
+                elif os.path.isdir(file_path):
+                    for root, dirs, files in os.walk(".tar_tmp/media"):
+                        for file in files:
+                            source_file = os.path.join(root, file)
+                            filename = os.path.relpath(source_file, ".tar_tmp/media")
+                            zip.write(source_file, arcname=os.path.join("iPhoneDump/AFC Service/", filename))
+            try: os.remove(file_path)
+            except: shutil.rmtree(file_path)
+        except:
+            pass
     d.gauge_stop()
-    shutil.rmtree(".tar_tmp/media")                                                                                     #remove media-folder
+    shutil.rmtree(".tar_tmp/media")                                                                                         #remove media-folder
 
-#Gather Shared App-Folders
+    #Gather Shared App-Folders
     media_count = 0
     d.gauge_start("Performing Extraction of Shared App-Files")
     for app in doc_list:
@@ -434,7 +445,7 @@ def perf_logical_plus(t):
     d.gauge_stop()
     shutil.rmtree(".tar_tmp/app_doc")
 
-#Gather Crash-Reports
+    #Gather Crash-Reports
     if l_type != "UFED":
         crash_count = 0
         crash_list = []
@@ -447,7 +458,8 @@ def perf_logical_plus(t):
         c_nr = 0
         for entry in crash_list:
             c_nr += 1
-            AfcService(lockdown, service_name="com.apple.crashreportcopymobile").pull(relative_src=entry, dst=".tar_tmp/Crash", src_dir="")
+            try: AfcService(lockdown, service_name="com.apple.crashreportcopymobile").pull(relative_src=entry, dst=".tar_tmp/Crash", src_dir="")
+            except: pass
             cpro = int(100*(c_nr/crash_count))
             d.gauge_update(cpro)
         tar.add(".tar_tmp/Crash", arcname=("/Crash"), recursive=True)
@@ -456,7 +468,7 @@ def perf_logical_plus(t):
         shutil.rmtree(".tar_tmp/Crash")
 
         
-#Gather device information for UFD-ZIP
+    #Gather device information as device_values.plist for UFD-ZIP
     else:
         de_va1 = ["ActivationPublicKey", "ActivationState", "ActivationStateAcknowledged", "BasebandSerialNumber", "BasebandStatus", "BasebandVersion", "BluetoothAddress", "BuildVersion", "CPUArchitecture", "DeviceCertificate", 
                         "DeviceClass", "DeviceColor", "DeviceName", "DevicePublicKey", "DieID", "FirmwareVersion", "HardwareModel", "HardwarePlatform", "HostAttached", "InternationalMobileEquipmentIdentity", "MLBSerialNumber", 
@@ -478,7 +490,7 @@ def perf_logical_plus(t):
         with open("device_values.plist", "wb") as file:
             plistlib.dump(de_va_di, file)
         
-#Begin Time for UFD-Report
+    #Begin Time for UFD-Report
         local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
         utc_offset = now.astimezone().utcoffset()
         utc_offset_hours = utc_offset.total_seconds() / 3600
@@ -489,7 +501,7 @@ def perf_logical_plus(t):
         output_format = "%d/%m/%Y %H:%M:%S" 
         begin = str(now.strftime(output_format)) + " (" + sign + str(int(utc_offset_hours)) + ")"
 
-#End Time for UFD-Report
+    #End Time for UFD-Report
         end = datetime.now()
         local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
         utc_offset = end.astimezone().utcoffset()
@@ -501,6 +513,7 @@ def perf_logical_plus(t):
         output_format = "%d/%m/%Y %H:%M:%S" 
         e_end = str(end.strftime(output_format)) + " (" + sign + str(int(utc_offset_hours)) + ")"
 
+        #Create the PhoneInfo.xml for the UFD-ZIP
         all_list = lockdown.get_value("","")
         dic_a = {'Request': 'GetValue', 'Value': all_list}
         with open("PhoneInfo.xml", "wb") as file:
@@ -529,6 +542,7 @@ def perf_logical_plus(t):
     d.msgbox("Logical+ Backup completed!")
     wrapper(select_menu)
 
+#Collect Unified Logs
 def collect_ul():
     try: os.mkdir("unified_logs")
     except: pass
@@ -539,6 +553,8 @@ def collect_ul():
     except:
         d.msgbox("Error: \nCoud not collect logs - Maybe the device or its iOS version is too old.")
         pass
+    try: os.rmdir("unified_logs")
+    except: pass
     wrapper(select_menu)
 
 #Start:
