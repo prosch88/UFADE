@@ -19,6 +19,10 @@ More features may follow.
 ```
 git clone https://github.com/prosch88/UFADE
 ```
+To use the developer features you need to mount a DeveloperDisk image on the device. A submodule with images can be loaded while cloning:
+```
+git clone https://github.com/prosch88/UFADE --recurse-submodules
+```
 **Install the requirements:**
 ```
 pip install -r requirements.txt 
