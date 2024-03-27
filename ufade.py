@@ -613,6 +613,7 @@ def mount_developer():
             time.sleep(1)
             try: 
                 DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg.signature")
+                return("developer")
             except: 
                 for i in range(index)[::-1]:
                     ver = str(v[0]) + "." + str(d_images[int(v[0])][i])
