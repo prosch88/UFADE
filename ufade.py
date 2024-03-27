@@ -2,6 +2,7 @@
 # UFADE - Universal Forensic Apple Device Extractor (c) C.Peter 2024
 # Licensed under GPLv3 License
 from pymobiledevice3 import usbmux, exceptions, lockdown
+from pymobiledevice3.services.mobile_image_mounter import DeveloperDiskImageMounter, MobileImageMounterService, PersonalizedImageMounter
 from pymobiledevice3.lockdown import create_using_usbmux
 from pymobiledevice3.lockdown import LockdownClient
 from pymobiledevice3.services import installation_proxy
@@ -11,6 +12,9 @@ from pymobiledevice3.services.afc import AfcService
 from pymobiledevice3.services.house_arrest import HouseArrestService
 from pymobiledevice3.services.crash_reports import CrashReportsManager
 from pymobiledevice3.services.os_trace import OsTraceService
+from pymobiledevice3.services.dvt.instruments.device_info import DeviceInfo
+from pymobiledevice3.services.dvt.instruments.screenshot import Screenshot
+from pymobiledevice3.services.dvt.dvt_secure_socket_proxy import DvtSecureSocketProxyService
 from dialog import Dialog
 from iOSbackup import iOSbackup
 from pyiosbackup import Backup
@@ -18,6 +22,7 @@ from datetime import datetime, timedelta, timezone
 from curses import wrapper
 import contextlib
 import pandas as pd
+import numpy as np
 import tarfile
 import zipfile
 import locale
@@ -32,6 +37,7 @@ import beepy
 import threading
 import curses
 import time
+
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -67,7 +73,8 @@ def select_menu(main_screen):
              ("(2)", "Logical (iTunes-Style) Backup", "Perform a backup as iTunes would do it."),
              ("(3)", "Logical+ Backup", "Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders and crash reports."),
              ("(4)", "Logical+ Backup (UFED-Style)", "Creates an advanced Logical Backup as ZIP with an UFD File for PA."),
-             ("(5)", "Collect Unified Logs", "Collects the AUL from the device and saves them as a logarchive.")],
+             ("(5)", "Collect Unified Logs", "Collects the AUL from the device and saves them as a logarchive."),
+             ("(6)", "Developer Options", "Access developer mode for further options.")],
              item_help=True, title=(dev_name + ", iOS " + version))
     if code == d.OK:
         if tag == "(1)":
@@ -80,6 +87,8 @@ def select_menu(main_screen):
             perf_logical_plus("UFED")
         elif tag == "(5)":
             collect_ul()
+        elif tag == "(6)":
+            developer_options()
         else:
             sys.exit()
     else:
@@ -184,7 +193,7 @@ def iTunes_bu(mode):
         curses.noecho()
         d.infobox("Checking Backup Encryption.\n\nUnlock device with PIN/PW if prompted")                                   
         curses.echo()            
-        c1 = str(Mobilebackup2Service(lockdown).change_password(new="12345"))                                               #Try to activate backup encryption with password "12345"
+        c1 = str(Mobilebackup2Service(lockdown).change_password(new="12345"))                                                #Try to activate backup encryption with password "12345"
         if c1 == "None":
             beep_timer.cancel()
         d.infobox("New Backup password: \"12345\" \n\nStarting Backup...\n\nUnlock device with PIN/PW")
@@ -556,6 +565,129 @@ def collect_ul():
     try: os.rmdir("unified_logs")
     except: pass
     wrapper(select_menu)
+
+def mount_developer():
+    d_images = {4:[2,3], 5:[0,1], 6:[0,1], 7:[0,1], 8:[0,1,2,3,4], 9:[0,1,2,3],
+                10:[0,1,2,3], 11:[0,1,2,3,4], 12:[0,1,2,3,4], 13:[0,1,2,3,4,5,7],
+                14:[0,1,2,4,5,6,7,7.1,8], 15:[0,1,2,3,3.1,4,5,6,6.1,7],
+                16:[0,1,2,3,3.1,4,4.1,5,6,7]}
+    
+    if DeveloperDiskImageMounter(lockdown).copy_devices() != []:
+        return("developer")
+
+    else:
+        try: 
+            info = ("Looking for version " + version)
+            d.infobox(line1)
+            time.sleep(1)
+            DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + version + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + version + "/DeveloperDiskImage.dmg.signature")    
+        except:
+            info = info + "\nVersion " + version + " not found"
+            d.infobox(info)
+            time.sleep(1)
+            v = version.split(".")
+            v_check = np.array(d_images[int(v[0])])
+            v_diff = np.absolute(v_check - int(v[1]))
+            index = v_diff.argmin()
+            ver = str(v[0]) + "." + str(d_images[int(v[0])][index])
+        finally:
+            if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+                info = info + "\nClosest version is " + ver
+                d.infobox(info)
+                time.sleep(1)
+                try: 
+                    DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg.signature")
+                except: 
+                    for i in range(index)[::-1]:
+                        ver = str(v[0]) + "." + str(d_images[int(v[0])][i])
+                        try:
+                            DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg.signature")
+                            info = info + "\nVersion: " + ver + " was used"
+                            d.infobox(info)
+                            time.sleep(1)
+                            break
+                        except:
+                            pass
+                    if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+                        d.msgbox("DeveloperDiskImage not loaded")
+                        return("nope")
+                    else:
+                        d.msgbox("DeveloperDiskImage loaded")
+                        return("developer")
+                
+            else:
+                d.msgbox("DeveloperDiskImage loaded")
+                return("developer")
+
+def developer_options():
+    if mount_developer() == "developer":
+        dvt = DvtSecureSocketProxyService(lockdown)
+        dvt.__enter__()
+        code, tag = d.menu("Choose:",
+        choices=[("(1)", "Take screenshots from device screen (PNG)", "Screenshots will be saved under \"screenshots\" as PNG"),
+                ("(2)", "Write filesystem content to textfile", "Starting from the /var Folder. This may take some time."),],
+                item_help=True, title=(dev_name + ", iOS " + version))
+        if code == d.OK:
+            if tag == "(1)":
+                try: os.mkdir("screenshots")
+                except: pass
+                screen_device(dvt)
+            elif tag == "(2)":
+                d.infobox("Creating filesystem list. This may take a while.")
+                folders = []
+                for line in DeviceInfo(dvt).ls("/"):
+                    folders.append(line)
+                fcount = len(folders)
+                cnt = 0
+                pathlist = []
+                d.gauge_start("Processing filelist:")
+                pathlist = fileloop(dvt, "/var", pathlist, fcount, cnt)
+                d.gauge_update(100)
+                d.gauge_stop()
+                with open(udid + "_var_filesystem.txt", "w") as files:
+                    for line in pathlist:
+                        files.write("\n" + line)
+                developer_options()
+            else:
+                pass
+        else:
+            #DeveloperDiskImageMounter(lockdown).umount()
+            wrapper(select_menu)
+    else:
+        wrapper(select_menu)
+
+def fileloop(dvt, start, lista, fcount, cnt):
+    pathlist = lista
+    try: 
+        next = DeviceInfo(dvt).ls(start)
+        for line in next:
+            next_path = (start + "/" + line)
+            if len(next_path.split("/")) == 3:
+                cnt += 1
+                fpro = int(44*(cnt/fcount))%100
+                d.gauge_update(fpro, "Processing filelist:\nFolder: " + next_path, update_text=True)
+            #if cnt % 66 == 1:
+            #    try: d.infobox("Processing: " + next_path)
+            #    except: pass
+            if next_path in pathlist:
+                break
+            else:
+                pathlist.append(next_path)
+                fileloop(dvt, next_path, pathlist, fcount, cnt)       
+    except: 
+        pass
+    finally:
+        return(pathlist)
+
+def screen_device(dvt):
+    shot = d.yesno("To create a screenshot of the current screen press: \n\"Screenshot\"", yes_label="Screenshot", no_label="Abort")
+    if shot == d.OK:
+        png = Screenshot(dvt).get_screenshot()
+        with open("screenshots/" + hardware + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png", "wb") as file:
+            file.write(png)
+        screen_device(dvt)
+    else:
+        developer_options()
 
 #Start:
 
