@@ -74,7 +74,7 @@ def select_menu(main_screen):
              ("(3)", "Logical+ Backup", "Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders and crash reports."),
              ("(4)", "Logical+ Backup (UFED-Style)", "Creates an advanced Logical Backup as ZIP with an UFD File for PA."),
              ("(5)", "Collect Unified Logs", "Collects the AUL from the device and saves them as a logarchive."),
-             ("(6)", "Developer Options", "Access developer mode for further options.")],
+             ("(6)", "Developer Options", "Access developer mode for further options.(< iOS 17)")],
              item_help=True, title=(dev_name + ", iOS " + version))
     if code == d.OK:
         if tag == "(1)":
@@ -620,12 +620,13 @@ def mount_developer():
                 return("developer")
 
 def developer_options():
-    if mount_developer() == "developer":
+    if int(version.split(".")[0]) < 17 and mount_developer() == "developer":
         dvt = DvtSecureSocketProxyService(lockdown)
         dvt.__enter__()
         code, tag = d.menu("Choose:",
         choices=[("(1)", "Take screenshots from device screen (PNG)", "Screenshots will be saved under \"screenshots\" as PNG"),
-                ("(2)", "Write filesystem content to textfile", "Starting from the /var Folder. This may take some time."),],
+                ("(2)", "Write filesystem content to textfile", "Starting from the /var Folder. This may take some time."),
+                ("(3)", "Unmount DeveloperDiskImage", "Leave the developer mode."),],
                 item_help=True, title=(dev_name + ", iOS " + version))
         if code == d.OK:
             if tag == "(1)":
@@ -648,6 +649,9 @@ def developer_options():
                     for line in pathlist:
                         files.write("\n" + line)
                 developer_options()
+            elif tag == "(3)":
+                DeveloperDiskImageMounter(lockdown).umount()
+                wrapper(select_menu)
             else:
                 pass
         else:
@@ -680,7 +684,10 @@ def fileloop(dvt, start, lista, fcount, cnt):
         return(pathlist)
 
 def screen_device(dvt):
-    shot = d.yesno("To create a screenshot of the current screen press: \n\"Screenshot\"", yes_label="Screenshot", no_label="Abort")
+    ls = os.listdir(path="screenshots")
+    lss = "\n".join(str(element) for element in ls)
+    #shot = d.yesno("To create a screenshot of the current screen press: \n\"Screenshot\"", yes_label="Screenshot", no_label="Abort")
+    shot = d.yesno("Screenshots taken:\n\n" + lss, height=18, width=52, yes_label="Screenshot", no_label="Abort")
     if shot == d.OK:
         png = Screenshot(dvt).get_screenshot()
         with open("screenshots/" + hardware + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png", "wb") as file:
