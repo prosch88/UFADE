@@ -493,9 +493,11 @@ def perf_logical_plus(t):
         de_va_di = {}
         de_va_di = {}
         for key in de_va1:
-            de_va_di.update([(key,(lockdown.get_value("",key)))])
+            try: de_va_di.update([(key,(lockdown.get_value("",key)))])
+            except: pass
         for key in de_va2:
-            de_va_di.update([(key,(lockdown.get_value(key,"")))])
+            try: de_va_di.update([(key,(lockdown.get_value(key,"")))])
+            except: pass
 
         with open("device_values.plist", "wb") as file:
             plistlib.dump(de_va_di, file)
