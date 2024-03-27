@@ -15,6 +15,7 @@ from pymobiledevice3.services.os_trace import OsTraceService
 from pymobiledevice3.services.dvt.instruments.device_info import DeviceInfo
 from pymobiledevice3.services.dvt.instruments.screenshot import Screenshot
 from pymobiledevice3.services.dvt.dvt_secure_socket_proxy import DvtSecureSocketProxyService
+from pymobiledevice3.services.amfi import AmfiService
 from dialog import Dialog
 from iOSbackup import iOSbackup
 from pyiosbackup import Backup
@@ -571,58 +572,75 @@ def mount_developer():
                 10:[0,1,2,3], 11:[0,1,2,3,4], 12:[0,1,2,3,4], 13:[0,1,2,3,4,5,7],
                 14:[0,1,2,4,5,6,7,7.1,8], 15:[0,1,2,3,3.1,4,5,6,6.1,7],
                 16:[0,1,2,3,3.1,4,4.1,5,6,7]}
-    
+
     if DeveloperDiskImageMounter(lockdown).copy_devices() != []:
         return("developer")
+        developer_options()
 
-    else:
-        try: 
-            info = ("Looking for version " + version)
-            d.infobox(line1)
-            time.sleep(1)
-            DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + version + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + version + "/DeveloperDiskImage.dmg.signature")    
-        except:
-            info = info + "\nVersion " + version + " not found"
+    try:
+        if lockdown.developer_mode_status == True:
+            pass
+        else:
+            code = d.yesno("The device has to be rebooted in order to activate the developer mode.\n\nDo you want to restart the device?", width=35)
+            if code == d.OK:
+                AmfiService(lockdown).enable_developer_mode(enable_post_restart=True)
+                d.msgbox("Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\n\nAfter this, press \"OK\".", width=35)
+            else:
+                wrapper(select_menu)
+    except:
+        pass
+    try: 
+        info = ("Looking for version " + version)
+        d.infobox(info)
+        time.sleep(1)
+        DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + version + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + version + "/DeveloperDiskImage.dmg.signature")
+        #developer_options()    
+    except:
+        info = info + "\nVersion " + version + " not found"
+        d.infobox(info)
+        time.sleep(1)
+        v = version.split(".")
+        v_check = np.array(d_images[int(v[0])])
+        v_diff = np.absolute(v_check - int(v[1]))
+        index = v_diff.argmin()
+        ver = str(v[0]) + "." + str(d_images[int(v[0])][index])
+    finally:
+        if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+            info = info + "\nClosest version is " + ver
             d.infobox(info)
             time.sleep(1)
-            v = version.split(".")
-            v_check = np.array(d_images[int(v[0])])
-            v_diff = np.absolute(v_check - int(v[1]))
-            index = v_diff.argmin()
-            ver = str(v[0]) + "." + str(d_images[int(v[0])][index])
-        finally:
-            if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
-                info = info + "\nClosest version is " + ver
-                d.infobox(info)
-                time.sleep(1)
-                try: 
-                    DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg.signature")
-                except: 
-                    for i in range(index)[::-1]:
-                        ver = str(v[0]) + "." + str(d_images[int(v[0])][i])
-                        try:
-                            DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg.signature")
-                            info = info + "\nVersion: " + ver + " was used"
-                            d.infobox(info)
-                            time.sleep(1)
-                            break
-                        except:
-                            pass
-                    if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
-                        d.msgbox("DeveloperDiskImage not loaded")
-                        return("nope")
-                    else:
-                        d.msgbox("DeveloperDiskImage loaded")
-                        return("developer")
-                
-            else:
-                d.msgbox("DeveloperDiskImage loaded")
-                return("developer")
+            try: 
+                DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg.signature")
+            except: 
+                for i in range(index)[::-1]:
+                    ver = str(v[0]) + "." + str(d_images[int(v[0])][i])
+                    try:
+                        DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg.signature")
+                        info = info + "\nVersion: " + ver + " was used"
+                        d.infobox(info)
+                        time.sleep(1)
+                        break
+                    except:
+                        pass
+                if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+                    d.msgbox("DeveloperDiskImage not loaded")
+                    return("nope")
+                else:
+                    d.msgbox("DeveloperDiskImage loaded")
+                    return("developer")
+            
+        else:
+            d.msgbox("DeveloperDiskImage loaded")
+            return("developer")
 
 def developer_options():
     if int(version.split(".")[0]) < 17 and mount_developer() == "developer":
-        dvt = DvtSecureSocketProxyService(lockdown)
-        dvt.__enter__()
+        try:
+            dvt = DvtSecureSocketProxyService(lockdown)
+            dvt.__enter__()
+        except:
+            DeveloperDiskImageMounter(lockdown).umount()
+            d.msgbox("Error. Try again.")
         code, tag = d.menu("Choose:",
         choices=[("(1)", "Take screenshots from device screen (PNG)", "Screenshots will be saved under \"screenshots\" as PNG"),
                 ("(2)", "Write filesystem content to textfile", "Starting from the /var Folder. This may take some time."),
