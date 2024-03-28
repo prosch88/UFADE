@@ -14,6 +14,7 @@ from pymobiledevice3.services.crash_reports import CrashReportsManager
 from pymobiledevice3.services.os_trace import OsTraceService
 from pymobiledevice3.services.dvt.instruments.device_info import DeviceInfo
 from pymobiledevice3.services.dvt.instruments.screenshot import Screenshot
+from pymobiledevice3.services.screenshot import ScreenshotService  
 from pymobiledevice3.services.dvt.dvt_secure_socket_proxy import DvtSecureSocketProxyService
 from pymobiledevice3.services.amfi import AmfiService
 from dialog import Dialog
@@ -251,7 +252,7 @@ def iTunes_bu(mode):
 
                 
                 if pw_found == 0:        
-                    code_reset = d.yesno("Dictionary exhausted. Do you want to reset the Password on the device?")
+                    code_reset = d.yesno("Dictionary exhausted. Do you want to reset the password on the device?")
                     if code_reset == d.OK:
                         icons = SpringBoardServicesService(lockdown).get_icon_state()
                         d.msgbox("Unlock the device. \nOpen the \"Settings\"-app \n--> \"General\" \n--> \"Reset\" (bottom) \n--> \"Reset all Settings\"\n\n"
@@ -574,10 +575,12 @@ def mount_developer():
                 10:[0,1,2,3], 11:[0,1,2,3,4], 12:[0,1,2,3,4], 13:[0,1,2,3,4,5,7],
                 14:[0,1,2,4,5,6,7,7.1,8], 15:[0,1,2,3,3.1,4,5,6,6.1,7],
                 16:[0,1,2,3,3.1,4,4.1,5,6,7]}
-
-    if DeveloperDiskImageMounter(lockdown).copy_devices() != []:
-        return("developer")
-        developer_options()
+    try:
+        if DeveloperDiskImageMounter(lockdown).copy_devices() != []:
+            return("developer")
+            developer_options()
+    except:
+        pass
 
     try:
         if lockdown.developer_mode_status == True:
@@ -607,7 +610,7 @@ def mount_developer():
         index = v_diff.argmin()
         ver = str(v[0]) + "." + str(d_images[int(v[0])][index])
     finally:
-        if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+        if int(v[0]) <= 10 or DeveloperDiskImageMounter(lockdown).copy_devices() == []:
             info = info + "\nClosest version is " + ver
             d.infobox(info)
             time.sleep(1)
@@ -625,6 +628,8 @@ def mount_developer():
                         break
                     except:
                         pass
+                if int(v[0]) <= 10:
+                    return("developer")
                 if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
                     d.msgbox("DeveloperDiskImage not loaded")
                     return("nope")
@@ -671,7 +676,11 @@ def developer_options():
                         files.write("\n" + line)
                 developer_options()
             elif tag == "(3)":
-                DeveloperDiskImageMounter(lockdown).umount()
+                try: 
+                    DeveloperDiskImageMounter(lockdown).umount()
+                except: 
+                    d.msgbox("DeveloperDiskImage could not be unmounted. Restart the device to unmount.")
+                    pass
                 wrapper(select_menu)
             else:
                 pass
@@ -710,7 +719,10 @@ def screen_device(dvt):
     #shot = d.yesno("To create a screenshot of the current screen press: \n\"Screenshot\"", yes_label="Screenshot", no_label="Abort")
     shot = d.yesno("Screenshots taken:\n\n" + lss, height=18, width=52, yes_label="Screenshot", no_label="Abort")
     if shot == d.OK:
-        png = Screenshot(dvt).get_screenshot()
+        try: 
+            png = Screenshot(dvt).get_screenshot()
+        except: 
+            png = ScreenshotService(lockdown).take_screenshot()
         with open("screenshots/" + hardware + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png", "wb") as file:
             file.write(png)
         screen_device(dvt)
