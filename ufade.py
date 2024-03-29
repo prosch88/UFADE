@@ -650,6 +650,7 @@ def developer_options():
         except:
             DeveloperDiskImageMounter(lockdown).umount()
             d.msgbox("Error. Try again.")
+            wrapper(select_menu)
         code, tag = d.menu("Choose:",
         choices=[("(1)", "Take screenshots from device screen (PNG)", "Screenshots will be saved under \"screenshots\" as PNG"),
                 ("(2)", "Write filesystem content to textfile", "Starting from the /var Folder. This may take some time."),
