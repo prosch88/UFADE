@@ -23,11 +23,8 @@ To use the developer features you need to mount a DeveloperDisk image on the dev
 ```
 git clone https://github.com/prosch88/UFADE --recurse-submodules
 ```
-**Install the requirements:**
-```
-pip install -r requirements.txt 
-```
-**Install dialog:**
+
+**Install Dialog (and libasound2 on Debian):**
 
 Arch / Manjaro:
 ```
@@ -44,6 +41,11 @@ sudo yum install dialog
 MacOS:
 ```
 brew install dialog
+```
+
+**Install the requirements:**
+```
+pip install -r requirements.txt 
 ```
 <br />
 
