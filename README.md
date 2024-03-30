@@ -35,7 +35,7 @@ sudo pacman -S dialog
 ```
 Debian / Ubuntu:
 ```
-sudo apt-get install dialog
+sudo apt-get install dialog libasound2-dev
 ```
 CentOS / Red Hat:
 ```
