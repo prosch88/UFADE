@@ -16,6 +16,7 @@ from pymobiledevice3.services.dvt.instruments.device_info import DeviceInfo
 from pymobiledevice3.services.dvt.instruments.screenshot import Screenshot
 from pymobiledevice3.services.screenshot import ScreenshotService  
 from pymobiledevice3.services.dvt.dvt_secure_socket_proxy import DvtSecureSocketProxyService
+from pymobiledevice3.services.accessibilityaudit import AccessibilityAudit, Direction
 from pymobiledevice3.services.amfi import AmfiService
 from dialog import Dialog
 from iOSbackup import iOSbackup
@@ -654,7 +655,8 @@ def developer_options():
         code, tag = d.menu("Choose:",
         choices=[("(1)", "Take screenshots from device screen (PNG)", "Screenshots will be saved under \"screenshots\" as PNG"),
                 ("(2)", "Write filesystem content to textfile", "Starting from the /var Folder. This may take some time. (iOS < 16)"),
-                ("(3)", "Unmount DeveloperDiskImage", "Leave the developer mode."),],
+                ("(3)", "Chat capture", "Scroll through a chat taking screenshots"),
+                ("(4)", "Unmount DeveloperDiskImage", "Leave the developer mode.")],
                 item_help=True, title=(dev_name + ", iOS " + version))
         if code == d.OK:
             if tag == "(1)":
@@ -678,6 +680,8 @@ def developer_options():
                         files.write("\n" + line)
                 developer_options()
             elif tag == "(3)":
+                chat_shotloop(dvt)
+            elif tag == "(4)":
                 try: 
                     DeveloperDiskImageMounter(lockdown).umount()
                 except: 
@@ -702,9 +706,6 @@ def fileloop(dvt, start, lista, fcount, cnt):
                 cnt += 1
                 fpro = int(44*(cnt/fcount))%100
                 d.gauge_update(fpro, "Processing filelist:\nFolder: " + next_path, update_text=True)
-            #if cnt % 66 == 1:
-            #    try: d.infobox("Processing: " + next_path)
-            #    except: pass
             if next_path in pathlist:
                 break
             else:
@@ -718,7 +719,6 @@ def fileloop(dvt, start, lista, fcount, cnt):
 def screen_device(dvt):
     ls = os.listdir(path="screenshots")
     lss = "\n".join(str(element) for element in ls)
-    #shot = d.yesno("To create a screenshot of the current screen press: \n\"Screenshot\"", yes_label="Screenshot", no_label="Abort")
     shot = d.yesno("Screenshots taken:\n\n" + lss, height=18, width=52, yes_label="Screenshot", no_label="Abort")
     if shot == d.OK:
         try: 
@@ -730,6 +730,59 @@ def screen_device(dvt):
         screen_device(dvt)
     else:
         developer_options()
+ 
+
+def chat_shotloop(dvt):
+    try: os.mkdir("screenshots")
+    except: pass
+    code, user_input = d.inputbox("Open the chat application and the chat you want to capture, \nenter the name of the app below: ", title="Screenshot loop")
+    if code == d.OK:
+        app_name = user_input
+        try: os.mkdir("screenshots/" + app_name)
+        except: pass
+    code, user_input = d.inputbox("Open the chat application and the chat you want to capture, \nenter the name of the chosen chat below: ", title="Screenshot loop")
+    if code == d.OK:
+        chat_name = user_input
+    code = d.yesno("Choose a direction to loop:", yes_label="↓ Down", no_label="↑ Up")
+    if code == d.OK:
+        ch_direction = Direction.Next
+    else:
+        ch_direction = Direction.Previous
+    png_first = Screenshot(dvt).get_screenshot()
+    with open("screenshots/" + app_name + "/" + chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png", "wb") as file:
+            file.write(png_first)
+    ab_count = 0
+    sc_count = 0
+    while True:
+        try:
+            shotloop(dvt, ch_direction, app_name, chat_name, png_first, ab_count, sc_count)
+        except KeyboardInterrupt:
+            break
+    developer_options()
+    
+def shotloop(dvt, ch_direction, app_name, chat_name, png, ab_count, sc_count):
+        d.infobox("Chat capture is running: \n\nChosen app-name:  " + app_name +
+                    "\nChosen chat-name: " + chat_name + "\n\nPress *Ctrl* and *C* to stop the loop.")
+        if ab_count >= 4:
+            d.msgbox("Chat loop finished.")
+            developer_options()
+        prev = png
+        AccessibilityAudit(lockdown).move_focus(ch_direction)
+        AccessibilityAudit(lockdown).set_show_visuals(False)
+        time.sleep(0.3)
+        png = Screenshot(dvt).get_screenshot()
+        if png != prev:
+            with open("screenshots/" + app_name + "/" + chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png", "wb") as file:
+                file.write(png)
+            sc_count += 1
+        else:
+            if sc_count > 1:
+                ab_count += 1
+            else:
+                pass
+            pass
+        shotloop(dvt, ch_direction, app_name, chat_name, png, ab_count, sc_count)
+
 
 #Start:
 
