@@ -47,6 +47,7 @@ locale.setlocale(locale.LC_ALL, '')
 d = Dialog(dialog="dialog")
 d.set_background_title("Universal Forensic Apple Device Extractor (UFADE) by Prosch")
 pw = '12345'
+app_name = None
 
 # Check for Apple device #
 def check_device():
@@ -733,23 +734,34 @@ def screen_device(dvt):
  
 
 def chat_shotloop(dvt):
+    global app_name
     try: os.mkdir("screenshots")
     except: pass
-    code, user_input = d.inputbox("Open the chat application and the chat you want to capture, \nenter the name of the app below: ", title="Screenshot loop")
-    if code == d.OK:
-        app_name = user_input
-        try: os.mkdir("screenshots/" + app_name)
-        except: pass
-    code, user_input = d.inputbox("Open the chat application and the chat you want to capture, \nenter the name of the chosen chat below: ", title="Screenshot loop")
+    if app_name != None:
+        code = d.yesno("Do you want to keep \"" + app_name + "\" as name for the app?")
+        if code == d.OK:
+            pass
+        else:
+            app_name = None
+            chat_shotloop(dvt)
+    else:
+        code, user_input = d.inputbox("Open the chat application and the chat you want to capture, \nenter the name of the app below: \n\n", title="Screenshot loop", height=15, width=30)
+        if code == d.OK:
+            app_name = user_input
+            try: os.mkdir("screenshots/" + app_name)
+            except: pass
+    code, user_input = d.inputbox("Open the chat application and the chat you want to capture, \nenter the name of the chosen chat below: \n\n", title="Screenshot loop", height=15, width=30)
     if code == d.OK:
         chat_name = user_input
+        try: os.mkdir("screenshots/" + app_name + "/" + chat_name)
+        except: pass
     code = d.yesno("Choose a direction to loop:", yes_label="↓ Down", no_label="↑ Up")
     if code == d.OK:
         ch_direction = Direction.Next
     else:
         ch_direction = Direction.Previous
     png_first = Screenshot(dvt).get_screenshot()
-    with open("screenshots/" + app_name + "/" + chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png", "wb") as file:
+    with open("screenshots/" + app_name + "/" + chat_name + "/" + chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png", "wb") as file:
             file.write(png_first)
     ab_count = 0
     sc_count = 0
@@ -772,11 +784,11 @@ def shotloop(dvt, ch_direction, app_name, chat_name, png, ab_count, sc_count):
         time.sleep(0.3)
         png = Screenshot(dvt).get_screenshot()
         if png != prev:
-            with open("screenshots/" + app_name + "/" + chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png", "wb") as file:
+            with open("screenshots/" + app_name + "/" + chat_name + "/" + chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png", "wb") as file:
                 file.write(png)
             sc_count += 1
         else:
-            if sc_count > 1:
+            if sc_count > 3:
                 ab_count += 1
             else:
                 pass
