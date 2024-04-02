@@ -56,7 +56,7 @@ Start the script:
 ```
 python ufade.py
 ```
-Possibly the trust-message is shown on the deviece screen. Confirm with "trust".
+Possibly the trust-message is shown on the device screen. Confirm with "trust".
 Now you should see the device information screen and will be prompted to choose a working directory.
 By default, the script is setting this to the directory from which it has been called.
 
@@ -81,6 +81,12 @@ Creates an "advanced Logical Backup" as ZIP-archive with an UFD file to load in 
 **Collect Unified Logs**
 
 Collects the AUL from the device and saves them as a logarchive.
+
+**Developer Options**
+
+Try to mount a suitable DeveloperDiskImage. Gives further options for screenshots and filesystem views. (iOS < 17 atm) 
+
+
 
 <br />
 
