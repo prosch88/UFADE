@@ -96,6 +96,7 @@ def select_menu(main_screen):
         else:
             raise SystemExit
     else:
+        os.system('clear')
         raise SystemExit
 
 #Set directory
@@ -604,7 +605,7 @@ def mount_developer():
         d.infobox(info)
         time.sleep(1)
         DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + version + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + version + "/DeveloperDiskImage.dmg.signature")
-        #developer_options()    
+        return("developer")   
     except:
         info = info + "\nVersion " + version + " not found"
         d.infobox(info)
@@ -636,6 +637,8 @@ def mount_developer():
                         pass
                 if int(v[0]) <= 10:
                     return("developer")
+                else:
+                    pass
                 if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
                     d.msgbox("DeveloperDiskImage not loaded")
                     return("nope")
@@ -648,8 +651,14 @@ def mount_developer():
             return("developer")
 
 def developer_options():
+    if os.path.exists(os.path.dirname(__file__) + "/ufade_developer"):
+        pass
+    else:
+        d.msgbox("Directory \"ufade_developer\" not found.\nPlease clone the submodule:\n\ngit submodule init\ngit submodule update", width=33, height=13)
+        wrapper(select_menu)
     if int(version.split(".")[0]) < 17 and mount_developer() == "developer":
         try:
+            lockdown = create_using_usbmux()
             dvt = DvtSecureSocketProxyService(lockdown)
             dvt.__enter__()
         except:
