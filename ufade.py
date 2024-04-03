@@ -94,9 +94,9 @@ def select_menu(main_screen):
         elif tag == "(6)":
             developer_options()
         else:
-            sys.exit()
+            raise SystemExit
     else:
-        sys.exit()
+        raise SystemExit
 
 #Set directory
 def chdir():
@@ -588,12 +588,15 @@ def mount_developer():
         if lockdown.developer_mode_status == True:
             pass
         else:
-            code = d.yesno("The device has to be rebooted in order to activate the developer mode.\n\nDo you want to restart the device?", width=35)
+            code = d.yesno("The device has to be rebooted in order to activate the developer mode.\n\n(Deactivate the PIN/PW before you proceed)\n\nDo you want to restart the device?", width=35, height=13)
             if code == d.OK:
                 AmfiService(lockdown).enable_developer_mode(enable_post_restart=True)
                 d.msgbox("Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\n\nAfter this, press \"OK\".", width=35)
             else:
                 wrapper(select_menu)
+                raise SystemExit
+    except SystemExit:
+        raise SystemExit
     except:
         pass
     try: 
