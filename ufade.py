@@ -48,6 +48,7 @@ d = Dialog(dialog="dialog")
 d.set_background_title("Universal Forensic Apple Device Extractor (UFADE) by Prosch")
 pw = '12345'
 app_name = None
+developer = False
 
 # Check for Apple device #
 def check_device():
@@ -185,7 +186,6 @@ def process_beep(x,m, beep_timer):
 
 #Perform iTunes Backup
 def iTunes_bu(mode):
-    #screen = curses.initscr()
     m = mode
     pw_found = 0
 
@@ -571,18 +571,20 @@ def collect_ul():
     except: pass
     wrapper(select_menu)
 
+#Try to mount a suitable DeveloperDiskImage returns "developer" and sets the global developer value to "True"
 def mount_developer():
+    global developer
     d_images = {4:[2,3], 5:[0,1], 6:[0,1], 7:[0,1], 8:[0,1,2,3,4], 9:[0,1,2,3],
                 10:[0,1,2,3], 11:[0,1,2,3,4], 12:[0,1,2,3,4], 13:[0,1,2,3,4,5,7],
                 14:[0,1,2,4,5,6,7,7.1,8], 15:[0,1,2,3,3.1,4,5,6,6.1,7],
                 16:[0,1,2,3,3.1,4,4.1,5,6,7]}
     try:
         if DeveloperDiskImageMounter(lockdown).copy_devices() != []:
+            developer = True
             return("developer")
             developer_options()
     except:
         pass
-
     try:
         if lockdown.developer_mode_status == True:
             pass
@@ -603,6 +605,7 @@ def mount_developer():
         d.infobox(info)
         time.sleep(1)
         DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + version + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + version + "/DeveloperDiskImage.dmg.signature")
+        developer = True
         return("developer")   
     except:
         info = info + "\nVersion " + version + " not found"
@@ -621,8 +624,10 @@ def mount_developer():
             try:
                 DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg.signature")
                 info = info + "\nVersion: " + ver + " was used"
+                developer = True
                 return("developer")
             except exceptions.AlreadyMountedError:
+                developer = True
                 return("developer")            
             except: 
                 for i in range(index)[::-1]:
@@ -644,10 +649,12 @@ def mount_developer():
                     return("nope")
                 else:
                     d.msgbox("DeveloperDiskImage loaded")
+                    developer = True
                     return("developer")
             
         else:
             d.msgbox("DeveloperDiskImage loaded")
+            developer = True
             return("developer")
 
 def developer_options():
@@ -656,7 +663,7 @@ def developer_options():
     else:
         d.msgbox("Directory \"ufade_developer\" not found.\nPlease clone the submodule:\n\ngit submodule init\ngit submodule update", width=33, height=13)
         wrapper(select_menu)
-    if int(version.split(".")[0]) < 17 and mount_developer() == "developer":
+    if developer == True:
         try:
             lockdown = create_using_usbmux()
             dvt = DvtSecureSocketProxyService(lockdown)
@@ -665,50 +672,60 @@ def developer_options():
             DeveloperDiskImageMounter(lockdown).umount()
             d.msgbox("Error. Try again.")
             wrapper(select_menu)
-        code, tag = d.menu("Choose:",
-        choices=[("(1)", "Take screenshots from device screen (PNG)", "Screenshots will be saved under \"screenshots\" as PNG"),
-                ("(2)", "Write filesystem content to textfile", "Starting from the /var Folder. This may take some time. (iOS < 16)"),
-                ("(3)", "Chat capture", "Scroll through a chat taking screenshots"),
-                ("(4)", "Unmount DeveloperDiskImage", "Leave the developer mode.")],
-                item_help=True, title=(dev_name + ", iOS " + version))
-        if code == d.OK:
-            if tag == "(1)":
-                try: os.mkdir("screenshots")
-                except: pass
-                screen_device(dvt)
-            elif tag == "(2)":
-                d.infobox("Creating filesystem list. This may take a while.")
-                folders = []
-                for line in DeviceInfo(dvt).ls("/"):
-                    folders.append(line)
-                fcount = len(folders)
-                cnt = 0
-                pathlist = []
-                d.gauge_start("Processing filelist:")
-                pathlist = fileloop(dvt, "/var", pathlist, fcount, cnt)
-                d.gauge_update(100)
-                d.gauge_stop()
-                with open(udid + "_var_filesystem.txt", "w") as files:
-                    for line in pathlist:
-                        files.write("\n" + line)
-                developer_options()
-            elif tag == "(3)":
-                chat_shotloop(dvt)
-            elif tag == "(4)":
-                d.infobox("Unmount is not possible on some devices. Use *Ctrl* and *C* to abort this process.")
-                try:
-                    DeveloperDiskImageMounter(lockdown).umount()
-                except: 
-                    d.msgbox("DeveloperDiskImage could not be unmounted. Restart the device to unmount.")
-                    pass
+    else:
+        if int(version.split(".")[0]) < 17 and mount_developer() == "developer":
+            try:
+                lockdown = create_using_usbmux()
+                dvt = DvtSecureSocketProxyService(lockdown)
+                dvt.__enter__()
+            except:
+                DeveloperDiskImageMounter(lockdown).umount()
+                d.msgbox("Error. Try again.")
                 wrapper(select_menu)
-            else:
-                pass
         else:
-            #DeveloperDiskImageMounter(lockdown).umount()
             wrapper(select_menu)
+    code, tag = d.menu("Choose:",
+    choices=[("(1)", "Take screenshots from device screen (PNG)", "Screenshots will be saved under \"screenshots\" as PNG"),
+            ("(2)", "Write filesystem content to textfile", "Starting from the /var Folder. This may take some time. (iOS < 16)"),
+            ("(3)", "Chat capture", "Scroll through a chat taking screenshots"),
+            ("(4)", "Unmount DeveloperDiskImage", "Leave the developer mode.")],
+            item_help=True, title=(dev_name + ", iOS " + version))
+    if code == d.OK:
+        if tag == "(1)":
+            try: os.mkdir("screenshots")
+            except: pass
+            screen_device(dvt)
+        elif tag == "(2)":
+            d.infobox("Creating filesystem list. This may take a while.")
+            folders = []
+            for line in DeviceInfo(dvt).ls("/"):
+                folders.append(line)
+            fcount = len(folders)
+            cnt = 0
+            pathlist = []
+            d.gauge_start("Processing filelist:")
+            pathlist = fileloop(dvt, "/var", pathlist, fcount, cnt)
+            d.gauge_update(100)
+            d.gauge_stop()
+            with open(udid + "_var_filesystem.txt", "w") as files:
+                for line in pathlist:
+                    files.write("\n" + line)
+            developer_options()
+        elif tag == "(3)":
+            chat_shotloop(dvt)
+        elif tag == "(4)":
+            d.infobox("Unmount is not possible on some devices. Use *Ctrl* and *C* to abort this process.")
+            try:
+                DeveloperDiskImageMounter(lockdown).umount()
+            except: 
+                d.msgbox("DeveloperDiskImage could not be unmounted. Restart the device to unmount.")
+                pass
+            wrapper(select_menu)
+        else:
+            pass
     else:
         wrapper(select_menu)
+    
 
 def fileloop(dvt, start, lista, fcount, cnt):
     pathlist = lista
