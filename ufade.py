@@ -52,9 +52,7 @@ app_name = None
 # Check for Apple device #
 def check_device():
     try:
-        device = usbmux.select_device()
-        lockdown = create_using_usbmux()
-        
+        lockdown = create_using_usbmux()      
     except:
         code = d.yesno("No Apple device found! Check again?")
         if code == d.OK:
@@ -616,14 +614,16 @@ def mount_developer():
         index = v_diff.argmin()
         ver = str(v[0]) + "." + str(d_images[int(v[0])][index])
     finally:
-        if int(v[0]) <= 10 or DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+        if int(v[0]) <= 12 or DeveloperDiskImageMounter(lockdown).copy_devices() == []:
             info = info + "\nClosest version is " + ver
             d.infobox(info)
             time.sleep(1)
-            try: 
+            try:
                 DeveloperDiskImageMounter(lockdown).mount(image=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg", signature=os.path.dirname(__file__) + "/ufade_developer/Developer/" + ver + "/DeveloperDiskImage.dmg.signature")
                 info = info + "\nVersion: " + ver + " was used"
                 return("developer")
+            except exceptions.AlreadyMountedError:
+                return("developer")            
             except: 
                 for i in range(index)[::-1]:
                     ver = str(v[0]) + "." + str(d_images[int(v[0])][i])
@@ -635,7 +635,7 @@ def mount_developer():
                         break
                     except:
                         pass
-                if int(v[0]) <= 10:
+                if int(v[0]) <= 12:
                     return("developer")
                 else:
                     pass
@@ -695,7 +695,8 @@ def developer_options():
             elif tag == "(3)":
                 chat_shotloop(dvt)
             elif tag == "(4)":
-                try: 
+                d.infobox("Unmount is not possible on some devices. Use *Ctrl* and *C* to abort this process.")
+                try:
                     DeveloperDiskImageMounter(lockdown).umount()
                 except: 
                     d.msgbox("DeveloperDiskImage could not be unmounted. Restart the device to unmount.")
