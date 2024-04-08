@@ -21,7 +21,7 @@ from pymobiledevice3.services.amfi import AmfiService
 from dialog import Dialog
 from iOSbackup import iOSbackup
 from pyiosbackup import Backup
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from curses import wrapper
 import contextlib
 import pandas as pd
@@ -77,7 +77,8 @@ def select_menu(main_screen):
              ("(3)", "Logical+ Backup", "Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders and crash reports."),
              ("(4)", "Logical+ Backup (UFED-Style)", "Creates an advanced Logical Backup as ZIP with an UFD File for PA."),
              ("(5)", "Collect Unified Logs", "Collects the AUL from the device and saves them as a logarchive."),
-             ("(6)", "Developer Options", "Access developer mode for further options.(< iOS 17)")],
+             ("(6)", "Developer Options", "Access developer mode for further options.(< iOS 17)"),
+             ("(7)", "Advanced Options", "More specific options for data handling.")],
              item_help=True, title=(dev_name + ", iOS " + version))
     if code == d.OK:
         if tag == "(1)":
@@ -89,14 +90,34 @@ def select_menu(main_screen):
         elif tag == "(4)":
             perf_logical_plus("UFED")
         elif tag == "(5)":
-            collect_ul()
+            time=None
+            collect_ul(time)
         elif tag == "(6)":
             developer_options()
+        elif tag == "(7)":
+            advanced_menu()
         else:
             raise SystemExit
     else:
         os.system('clear')
         raise SystemExit
+
+def advanced_menu():
+    code, tag = d.menu("Choose:",
+    choices=[("(1)", "Collect Unified Logs (with start time)", "Collects the AUL from the device from a given start-time and saves them as a logarchive.")],
+             item_help=True, title=(dev_name + ", iOS " + version))
+    if code == d.OK:
+        if tag == "(1)":
+            code, da = d.calendar("Set the start time for the log-collection:")
+            if code == d.OK:
+                start = datetime(da[2],da[1],da[0])
+                time = int(datetime.timestamp(start))
+                collect_ul(time)
+            else:
+                advanced_menu()
+        else:
+            wrapper(select_menu)
+
 
 #Set directory
 def chdir():
@@ -557,12 +578,12 @@ def perf_logical_plus(t):
     wrapper(select_menu)
 
 #Collect Unified Logs
-def collect_ul():
+def collect_ul(time):
     try: os.mkdir("unified_logs")
     except: pass
-    d.infobox("Collecting Unified Logs from devie. This may take some time.")
+    d.infobox("Collecting Unified Logs from device. This may take some time.")
     try:
-        OsTraceService(lockdown).collect(out= "unified_logs/" + udid + ".logarchive")
+        OsTraceService(lockdown).collect(out= "unified_logs/" + udid + ".logarchive", start_time=time)
         d.msgbox("Unified Logs written to " + udid + ".logarchive")
     except:
         d.msgbox("Error: \nCoud not collect logs - Maybe the device or its iOS version is too old.")
