@@ -116,7 +116,9 @@ def advanced_menu():
             else:
                 advanced_menu()
         else:
-            wrapper(select_menu)
+            advanced_menu()
+    else:
+        wrapper(select_menu)
 
 
 #Set directory
