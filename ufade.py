@@ -566,6 +566,7 @@ def perf_logical_plus(t):
         tar.close()
     else:
         zip.close()
+        d.infobox("Calculate SHA256 hash. This may take a while.")
         try:
             with open(zipname, 'rb', buffering=0) as z:
                 z_hash = hashlib.file_digest(z, 'sha256').hexdigest()
