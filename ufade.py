@@ -417,7 +417,8 @@ def perf_logical_plus(t):
     media_list = []
     d.gauge_start("Performing AFC Extraction of Mediafiles")
     for line in AfcService(lockdown).listdir("/"):
-            media_list.append(line)                                                                                         #get amount of lines (files and folders) in media root
+            media_list.append(line)
+    media_list.remove("DCIM")                                                                                         #get amount of lines (files and folders) in media root
     media_count = len(media_list)
     try: os.mkdir(".tar_tmp/media")
     except: pass
