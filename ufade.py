@@ -616,8 +616,13 @@ def mount_developer():
         else:
             code = d.yesno("The device has to be rebooted in order to activate the developer mode.\n\n(Deactivate the PIN/PW before you proceed)\n\nDo you want to restart the device?", width=35, height=13)
             if code == d.OK:
-                AmfiService(lockdown).enable_developer_mode(enable_post_restart=True)
-                d.msgbox("Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\n\nAfter this, press \"OK\".", width=35)
+                try:
+                    AmfiService(lockdown).enable_developer_mode(enable_post_restart=True)
+                    d.msgbox("Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\n\nAfter this, press \"OK\".", width=35)
+                except:
+                    d.msgbox("Uh-Oh, an error was raised. Please remove the PIN/PW and try again")
+                    wrapper(select_menu)
+                    raise SystemExit
             else:
                 wrapper(select_menu)
                 raise SystemExit
