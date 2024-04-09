@@ -24,7 +24,7 @@ To use the developer features you need to mount a DeveloperDisk image on the dev
 git clone https://github.com/prosch88/UFADE --recurse-submodules
 ```
 
-**Install Dialog (and libasound2 on Debian):**
+**Install Dialog (and libasound2-dev on Debian):**
 
 Arch / Manjaro:
 ```
