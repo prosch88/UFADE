@@ -104,7 +104,8 @@ def select_menu(main_screen):
 
 def advanced_menu():
     code, tag = d.menu("Choose:",
-    choices=[("(1)", "Collect Unified Logs (with start time)", "Collects the AUL from the device from a given start-time and saves them as a logarchive.")],
+    choices=[("(1)", "Collect Unified Logs (with start time)", "Collects the AUL from the device from a given start-time and saves them as a logarchive."),
+            ("(2)", "Generate WhatsApp export (TESS)", "Perform an iTunes-style Backup and extract the ChatStorage.sqlite alongside the Media-folder")],
              item_help=True, title=(dev_name + ", iOS " + version))
     if code == d.OK:
         if tag == "(1)":
@@ -115,6 +116,8 @@ def advanced_menu():
                 collect_ul(time)
             else:
                 advanced_menu()
+        elif tag == "(2)":
+            backup_tess()
         else:
             advanced_menu()
     else:
@@ -580,6 +583,21 @@ def perf_logical_plus(t):
 
     d.msgbox("Logical+ Backup completed!")
     wrapper(select_menu)
+
+def backup_tess():
+    iTunes_bu("TESS")
+    b = iOSbackup(udid=udid, cleartextpassword="12345", derivedkey=None, backuproot=".")                         
+    key = b.getDecryptionKey()                                                                                      
+    b = iOSbackup(udid=udid, derivedkey=key, backuproot="./")                                                       
+    backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])
+
+    d.infobox("Extracting WhatsApp files from backup.")
+    b.getFolderDecryptedCopy(targetFolder="WA_TESS", includeDomains="AppDomainGroup-group.net.whatsapp.WhatsApp.shared")
+    shutil.move("WA_TESS/AppDomainGroup-group.net.whatsapp.WhatsApp.shared/Message/Media", "WA_TESS/Media")
+    shutil.move("WA_TESS/AppDomainGroup-group.net.whatsapp.WhatsApp.shared/ChatStorage.sqlite", "WA_TESS/ChatStorage.sqlite")
+    shutil.rmtree("WA_TESS/AppDomainGroup-group.net.whatsapp.WhatsApp.shared")
+    d.msgbox("Files extracted to \"WA_Tess\".")  
+    advanced_menu()    
 
 #Collect Unified Logs
 def collect_ul(time):
