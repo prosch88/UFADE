@@ -5,6 +5,7 @@ from pymobiledevice3 import usbmux, exceptions, lockdown
 from pymobiledevice3.services.mobile_image_mounter import DeveloperDiskImageMounter, MobileImageMounterService, PersonalizedImageMounter
 from pymobiledevice3.lockdown import create_using_usbmux
 from pymobiledevice3.lockdown import LockdownClient
+from pymobiledevice3.services.companion import CompanionProxyService
 from pymobiledevice3.services import installation_proxy
 from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
 from pymobiledevice3.services.springboard import SpringBoardServicesService
@@ -185,11 +186,39 @@ def save_info():
     file.write("## DEVICE ##\n\n" + "Model-Nr:   " + dev_name + "\nDev-Name:   " + name + "\nHardware:   " + hardware + ", " + mnr + "\nProduct:    " + product +
         "\nSoftware:   " + version + "\nBuild-Nr:   " + build + "\nLanguage:   " + language + "\nSerialnr:   " + snr + "\nMLB-snr:    " + mlbsnr +
         "\nWifi MAC:   " + w_mac + "\nBT-MAC:     " + b_mac + "\nCapacity:   " + disk + "0 GB" + "\nFree Space: " + free + " GB" +
-        "\nUDID :      " + udid + "\nECID :      " + ecid + "\nIMEI :      " + imei + "\nIMEI2:      " + imei2 + "\n\n" + "## Installed Apps (by user) [App, shared documents] ## \n")
+        "\nUDID :      " + udid + "\nECID :      " + ecid + "\nIMEI :      " + imei + "\nIMEI2:      " + imei2)    
+    
+    
+    
+    file.write("\n\n## COMPANION DEVICES (e.g. Watches) ##")
+    try:
+        for entry in comp:
+            file.write("\nUDID: " + entry)
+    except:
+        pass
+
+    #SIM-Info
+    try: iccid = lockdown.get_value(key="IntegratedCircuitCardIdentity")
+    except: iccid = ""
+    try: imsi = lockdown.all_values.get("InternationalMobileSubscriberIdentity")
+    except: imsi = ""
+    try: number = lockdown.get_value(key="PhoneNumber")
+    except: number = ""
+    try: mcc = lockdown.all_values.get("MobileSubscriberCountryCode")
+    except: mcc = ""
+    try: mnc = lockdown.all_values.get("MobileSubscriberNetworkCode")
+    except: mnc = ""
+    file.write("\n\n## SIM-Info ##\n\nICCID:  " + iccid + 
+                                   "\nIMSI:   " + imsi + 
+                                   "\nNumber: " + number +
+                                   "\nMCC:    " + mcc +
+                                   "\nMNC:    " + mnc)
+
+    
     #Save user-installed Apps to txt
     try: l = str(len(max(app_id_list, key=len)))  
     except: l = 40 
-    #for app in app_doc_list:
+    file.write("\n\n" + "## Installed Apps (by user) [App, shared documents] ## \n")
     for app in app_id_list:
         try: 
             apps.get(app)['UIFileSharingEnabled']
@@ -197,6 +226,7 @@ def save_info():
         except:
             sharing = 'no'
         file.write("\n" + '{:{l}}'.format(app, l=l) + "\t [" + sharing + "]")
+
     file.close()
 
 #Create the info-file as txt
@@ -905,6 +935,8 @@ used1 = disk1 - free1
 used = str(round(used1,2))
 graph_progress = "" + "▓" * int(30/100*(100/disk1*used1)) + "░" * int(30/100*(100/disk1*free1)) + ""
 d_class = lockdown.get_value("","DeviceClass")
+try: comp = CompanionProxyService(lockdown).list()
+except: pass
 
 #Get installed Apps
 apps = installation_proxy.InstallationProxyService(lockdown).get_apps("User")
