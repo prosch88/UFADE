@@ -706,7 +706,7 @@ def mount_developer():
             return("developer")
 
 def developer_options():
-    if os.path.exists(os.path.dirname(__file__) + "/ufade_developer"):
+    if len(os.listdir(os.path.dirname(__file__) + "/ufade_developer")) != 0:
         pass
     else:
         d.msgbox("Directory \"ufade_developer\" not found.\nPlease clone the submodule:\n\ngit submodule init\ngit submodule update", width=33, height=13)
