@@ -625,19 +625,23 @@ def perf_logical_plus(t):
     wrapper(select_menu)
 
 def backup_tess():
-    iTunes_bu("TESS")
-    b = iOSbackup(udid=udid, cleartextpassword="12345", derivedkey=None, backuproot=".")                         
-    key = b.getDecryptionKey()                                                                                      
-    b = iOSbackup(udid=udid, derivedkey=key, backuproot="./")                                                       
-    backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])
+    if "net.whatsapp.WhatsApp" not in app_id_list:
+        d.msgbox("WhatsApp not installed on device!")
+        advanced_menu()
+    else:
+        iTunes_bu("TESS")
+        b = iOSbackup(udid=udid, cleartextpassword="12345", derivedkey=None, backuproot=".")                         
+        key = b.getDecryptionKey()                                                                                      
+        b = iOSbackup(udid=udid, derivedkey=key, backuproot="./")                                                       
+        backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])
 
-    d.infobox("Extracting WhatsApp files from backup.")
-    b.getFolderDecryptedCopy(targetFolder="WA_TESS", includeDomains="AppDomainGroup-group.net.whatsapp.WhatsApp.shared")
-    shutil.move("WA_TESS/AppDomainGroup-group.net.whatsapp.WhatsApp.shared/Message/Media", "WA_TESS/Media")
-    shutil.move("WA_TESS/AppDomainGroup-group.net.whatsapp.WhatsApp.shared/ChatStorage.sqlite", "WA_TESS/ChatStorage.sqlite")
-    shutil.rmtree("WA_TESS/AppDomainGroup-group.net.whatsapp.WhatsApp.shared")
-    d.msgbox("Files extracted to \"WA_Tess\".")  
-    advanced_menu()    
+        d.infobox("Extracting WhatsApp files from backup.")
+        b.getFolderDecryptedCopy(targetFolder="WA_TESS", includeDomains="AppDomainGroup-group.net.whatsapp.WhatsApp.shared")
+        shutil.move("WA_TESS/AppDomainGroup-group.net.whatsapp.WhatsApp.shared/Message/Media", "WA_TESS/Media")
+        shutil.move("WA_TESS/AppDomainGroup-group.net.whatsapp.WhatsApp.shared/ChatStorage.sqlite", "WA_TESS/ChatStorage.sqlite")
+        shutil.rmtree("WA_TESS/AppDomainGroup-group.net.whatsapp.WhatsApp.shared")
+        d.msgbox("Files extracted to \"WA_Tess\".")  
+        advanced_menu()    
 
 #Collect Unified Logs
 def collect_ul(time):
