@@ -189,45 +189,40 @@ def save_info():
         "\nUDID :      " + udid + "\nECID :      " + ecid + "\nIMEI :      " + imei + "\nIMEI2:      " + imei2)    
     
     
-    
-    file.write("\n\n## COMPANION DEVICES (e.g. Watches) ##")
-    try:
-        for entry in comp:
-            file.write("\nUDID: " + entry)
-    except:
-        pass
+    if comp != []:
+        file.write("\n\n## COMPANION DEVICES (e.g. Watches) ##")
+        try:
+            for entry in comp:
+                file.write("\nUDID: " + entry)
+        except:
+            pass
 
     #SIM-Info
-    try: 
-        iccid = lockdown.get_value(key="IntegratedCircuitCardIdentity")
-        if iccid == None:
-            iccid = ""
-    except: iccid = ""
-    try: 
-        imsi = lockdown.all_values.get("InternationalMobileSubscriberIdentity")
-        if imsi == None:
-            imsi = ""
-    except: imsi = ""
     try: 
         number = lockdown.get_value(key="PhoneNumber")
         if number == None:
             number = ""
     except: number = ""
     try: 
-        mcc = lockdown.all_values.get("MobileSubscriberCountryCode")
-        if mcc == None:
-            mcc = ""
-    except: mcc = ""
-    try: 
-        mnc = lockdown.all_values.get("MobileSubscriberNetworkCode")
-        if mnc == None:
-            mcn = ""
-    except: mnc = ""
-    file.write("\n\n## SIM-Info ##\n\nICCID:  " + iccid + 
-                                   "\nIMSI:   " + imsi + 
-                                   "\nNumber: " + number +
-                                   "\nMCC:    " + mcc +
-                                   "\nMNC:    " + mnc)
+        all = lockdown.all_values.get("CarrierBundleInfoArray")
+        if all == None:
+            all = ""
+    except: all = ""
+    if all != "":
+        for entry in all:
+            if entry["Slot"] == "kOne":
+                stype = "SIM"
+            else:
+                stype = "eSIM"
+            try: file.write("\n\n## SIM-Info ##\n\nICCID:  " + entry["IntegratedCircuitCardIdentity"] + 
+                                    "\nIMSI:   " + entry["InternationalMobileSubscriberIdentity"] + 
+                                    "\nMCC:    " + entry["MCC"] + 
+                                    "\nMNC:    " + entry["MNC"] +
+                                    "\nType:   " + stype)
+            except: pass
+
+    if number != "":
+        file.write("\n\nNumber: " + number)
 
     
     #Save user-installed Apps to txt
@@ -954,7 +949,7 @@ used = str(round(used1,2))
 graph_progress = "" + "▓" * int(30/100*(100/disk1*used1)) + "░" * int(30/100*(100/disk1*free1)) + ""
 d_class = lockdown.get_value("","DeviceClass")
 try: comp = CompanionProxyService(lockdown).list()
-except: pass
+except: comp = []
 
 #Get installed Apps
 apps = installation_proxy.InstallationProxyService(lockdown).get_apps("User")
