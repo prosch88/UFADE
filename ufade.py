@@ -736,6 +736,7 @@ def mount_developer():
             return("developer")
 
 def developer_options():
+    global developer
     if len(os.listdir(os.path.dirname(__file__) + "/ufade_developer")) != 0:
         pass
     else:
@@ -749,6 +750,7 @@ def developer_options():
         except:
             DeveloperDiskImageMounter(lockdown).umount()
             d.msgbox("Error. Try again.")
+            developer = False
             wrapper(select_menu)
     else:
         if int(version.split(".")[0]) < 17 and mount_developer() == "developer":
@@ -795,6 +797,7 @@ def developer_options():
             d.infobox("Unmount is not possible on some devices. Use *Ctrl* and *C* to abort this process.")
             try:
                 DeveloperDiskImageMounter(lockdown).umount()
+                developer = False
             except: 
                 d.msgbox("DeveloperDiskImage could not be unmounted. Restart the device to unmount.")
                 pass
