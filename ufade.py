@@ -855,12 +855,12 @@ def chat_shotloop(dvt):
     else:
         code, user_input = d.inputbox("Open the chat application and the chat you want to capture, \nenter the name of the app below: \n\n", title="Screenshot loop", height=15, width=30)
         if code == d.OK:
-            app_name = user_input
+            app_name = user_input.replace(" ", "_")
             try: os.mkdir("screenshots/" + app_name)
             except: pass
     code, user_input = d.inputbox("Open the chat application and the chat you want to capture, \nenter the name of the chosen chat below: \n\n", title="Screenshot loop", height=15, width=30)
     if code == d.OK:
-        chat_name = user_input
+        chat_name = user_input.replace(" ", "_")
         try: os.mkdir("screenshots/" + app_name + "/" + chat_name)
         except: pass
     code = d.yesno("Choose a direction to loop:", yes_label="↓ Down", no_label="↑ Up")
