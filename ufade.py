@@ -198,15 +198,30 @@ def save_info():
         pass
 
     #SIM-Info
-    try: iccid = lockdown.get_value(key="IntegratedCircuitCardIdentity")
+    try: 
+        iccid = lockdown.get_value(key="IntegratedCircuitCardIdentity")
+        if iccid == None:
+            iccid = ""
     except: iccid = ""
-    try: imsi = lockdown.all_values.get("InternationalMobileSubscriberIdentity")
+    try: 
+        imsi = lockdown.all_values.get("InternationalMobileSubscriberIdentity")
+        if imsi == None:
+            imsi = ""
     except: imsi = ""
-    try: number = lockdown.get_value(key="PhoneNumber")
+    try: 
+        number = lockdown.get_value(key="PhoneNumber")
+        if number == None:
+            number = ""
     except: number = ""
-    try: mcc = lockdown.all_values.get("MobileSubscriberCountryCode")
+    try: 
+        mcc = lockdown.all_values.get("MobileSubscriberCountryCode")
+        if mcc == None:
+            mcc = ""
     except: mcc = ""
-    try: mnc = lockdown.all_values.get("MobileSubscriberNetworkCode")
+    try: 
+        mnc = lockdown.all_values.get("MobileSubscriberNetworkCode")
+        if mnc == None:
+            mcn = ""
     except: mnc = ""
     file.write("\n\n## SIM-Info ##\n\nICCID:  " + iccid + 
                                    "\nIMSI:   " + imsi + 
