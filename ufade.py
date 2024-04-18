@@ -188,7 +188,14 @@ def save_info():
         "\nWifi MAC:   " + w_mac + "\nBT-MAC:     " + b_mac + "\nCapacity:   " + disk + "0 GB" + "\nFree Space: " + free + " GB" +
         "\nUDID :      " + udid + "\nECID :      " + ecid + "\nIMEI :      " + imei + "\nIMEI2:      " + imei2)    
     
-    
+    try: 
+        number = lockdown.get_value(key="PhoneNumber")
+        if number == None:
+            number = ""
+    except: number = ""
+    if number != "":
+        file.write("\n\nLast Number: " + number)
+
     if comp != []:
         file.write("\n\n## COMPANION DEVICES (e.g. Watches) ##")
         try:
@@ -199,15 +206,11 @@ def save_info():
 
     #SIM-Info
     try: 
-        number = lockdown.get_value(key="PhoneNumber")
-        if number == None:
-            number = ""
-    except: number = ""
-    try: 
         all = lockdown.all_values.get("CarrierBundleInfoArray")
         if all == None:
             all = ""
-    except: all = ""
+    except: 
+        all = ""
     if all != "":
         for entry in all:
             if entry["Slot"] == "kOne":
@@ -220,10 +223,6 @@ def save_info():
                                     "\nMNC:    " + entry["MNC"] +
                                     "\nType:   " + stype)
             except: pass
-
-    if number != "":
-        file.write("\n\nNumber: " + number)
-
     
     #Save user-installed Apps to txt
     try: l = str(len(max(app_id_list, key=len)))  
