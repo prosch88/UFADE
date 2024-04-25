@@ -19,6 +19,8 @@ from pymobiledevice3.services.screenshot import ScreenshotService
 from pymobiledevice3.services.dvt.dvt_secure_socket_proxy import DvtSecureSocketProxyService
 from pymobiledevice3.services.accessibilityaudit import AccessibilityAudit, Direction
 from pymobiledevice3.services.amfi import AmfiService
+from pymobiledevice3.tcp_forwarder import UsbmuxTcpForwarder
+from paramiko import SSHClient, AutoAddPolicy, Transport
 from dialog import Dialog
 from iOSbackup import iOSbackup
 from pyiosbackup import Backup
@@ -74,34 +76,50 @@ def check_device():
 def select_menu(main_screen):
     code, tag = d.menu("Choose:",
     choices=[("(1)", "Save device information to text", "Save device information and a list of user-installed apps to a textfile"),
-             ("(2)", "Logical (iTunes-Style) Backup", "Perform a backup as iTunes would do it."),
-             ("(3)", "Logical+ Backup", "Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders and crash reports."),
-             ("(4)", "Logical+ Backup (UFED-Style)", "Creates an advanced Logical Backup as ZIP with an UFD File for PA."),
-             ("(5)", "Collect Unified Logs", "Collects the AUL from the device and saves them as a logarchive."),
-             ("(6)", "Developer Options", "Access developer mode for further options.(< iOS 17)"),
-             ("(7)", "Advanced Options", "More specific options for data handling.")],
+             ("(2)", "Backup Options", "Data acquisition menu."),
+             ("(3)", "Collect Unified Logs", "Collects the AUL from the device and saves them as a logarchive."),
+             ("(4)", "Developer Options", "Access developer mode for further options.(< iOS 17)"),
+             ("(5)", "Advanced Options", "More specific options for data handling.")],
              item_help=True, title=(dev_name + ", iOS " + version))
     if code == d.OK:
         if tag == "(1)":
             save_info_menu()
         elif tag == "(2)":
-            perf_itunes()
+            bu_menu()
         elif tag == "(3)":
-            perf_logical_plus(None)
-        elif tag == "(4)":
-            perf_logical_plus("UFED")
-        elif tag == "(5)":
             time=None
             collect_ul(time)
-        elif tag == "(6)":
+        elif tag == "(4)":
             developer_options()
-        elif tag == "(7)":
+        elif tag == "(5)":
             advanced_menu()
         else:
             raise SystemExit
     else:
         os.system('clear')
         raise SystemExit
+
+def bu_menu():
+    code, tag = d.menu("Choose:",
+    choices=[("(1)", "Logical (iTunes-Style) Backup", "Perform a backup as iTunes would do it."),
+             ("(2)", "Logical+ Backup", "Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders and crash reports."),
+             ("(3)", "Logical+ Backup (UFED-Style)", "Creates an advanced Logical Backup as ZIP with an UFD File for PA."),
+             ("(4)", "Filesystem Backup (jailbroken)", "Creates a FFS Backup of an already jailbroken Device")],
+             item_help=True, title=(dev_name + ", iOS " + version))
+    if code == d.OK:
+        if tag == "(1)":
+            perf_itunes()
+        elif tag == "(2)":
+            perf_logical_plus(None)
+        elif tag == "(3)":
+            perf_logical_plus("UFED")
+        elif tag == "(4)":
+            perf_jailbreak_ssh_dump()
+        else:
+            bu_menu()
+    else:
+        wrapper(select_menu)
+
 
 def advanced_menu():
     code, tag = d.menu("Choose:",
@@ -640,7 +658,55 @@ def backup_tess():
         shutil.move("WA_TESS/AppDomainGroup-group.net.whatsapp.WhatsApp.shared/ChatStorage.sqlite", "WA_TESS/ChatStorage.sqlite")
         shutil.rmtree("WA_TESS/AppDomainGroup-group.net.whatsapp.WhatsApp.shared")
         d.msgbox("Files extracted to \"WA_Tess\".")  
-        advanced_menu()    
+        advanced_menu()
+
+#SSH-Dump from given path
+def ssh_dump(scr_prt, remote_folder, user, pwd):
+    d.infobox("Starting FFS Backup.")
+    mux = usbmux.select_device()
+    UsbmuxTcpForwarder(serial=mux.serial, dst_port=2222, src_port=scr_prt)
+    client = SSHClient()
+    client.set_missing_host_key_policy(AutoAddPolicy())
+    client.connect(hostname='127.0.0.1', port="2222", username='root', password='alpine', look_for_keys=False, allow_agent=False)
+    stdin, stdout, stderr = client.exec_command(f"du -s {remote_folder}")
+    remote_folder_size = [int(s) for s in stdout.read().split() if s.isdigit()][0]*512
+    tar_command = f"tar --exclude *.gl --exclude '.overprovisioning_file' -cf - {remote_folder}"
+    stdin, stdout, stderr = client.exec_command(tar_command)
+    tar_data = stdout.channel.recv(32768)
+    transferred = 0
+
+    d.gauge_start(f"Performing Filesystem Backup:\n\n {transferred / (1024 * 1024):.2f} MB received.")
+    with open(udid + "_ffs.tar", "wb") as f:
+        while tar_data:
+            f.write(tar_data)
+            tar_data = stdout.channel.recv(32768)
+            transferred += len(tar_data)
+            ffs_pro = int((transferred / remote_folder_size) * 100)
+            d.gauge_update(ffs_pro, f"Performing Filesystem Backup: (Start: " + remote_folder + f")\n\n {transferred / (1024 * 1024):.2f} MB received.", update_text=True)
+    d.gauge_update(100)
+    client.close()
+    d.gauge_stop()
+
+def perf_jailbreak_ssh_dump():
+    code, jlist = d.form("Provide the SSH parameters. The default values are suitable for Checkra1n and Palera1n: ", 
+    elements=[("Port:  ", 1, 1, "44", 1, 18, 8, 7),
+              ("User: ", 2, 1, "root", 2, 18, 8, 20),
+              ("Password:", 3, 1, "alpine", 3, 18, 8, 20),
+              ("Path: ", 4, 1, "/private", 4, 18, 8, 30)])
+    if code == d.OK:
+        scr_prt = jlist[0]
+        user = jlist[1]
+        pwd = jlist[2] 
+        remote_folder = jlist[3] 
+        try:
+            ssh_dump(scr_prt, remote_folder, user, pwd)
+            d.msgbox("Filesystem backup complete!")
+            bu_menu()
+        except:
+            d.msgbox("Error connecting to SSH. The device has to be in jailbroken state and SSH has to be installed.")
+            bu_menu()
+    else:
+        bu_menu() 
 
 #Collect Unified Logs
 def collect_ul(time):
