@@ -5,3 +5,4 @@ iOSbackup
 pandas
 pyarrow
 beepy
+paramiko
