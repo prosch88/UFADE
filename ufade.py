@@ -664,10 +664,10 @@ def backup_tess():
 def ssh_dump(scr_prt, remote_folder, user, pwd):
     d.infobox("Starting FFS Backup.")
     mux = usbmux.select_device()
-    UsbmuxTcpForwarder(serial=mux.serial, dst_port=2222, src_port=scr_prt)
+    out = mux.connect(scr_prt)
     client = SSHClient()
     client.set_missing_host_key_policy(AutoAddPolicy())
-    client.connect(hostname='127.0.0.1', port="2222", username='root', password='alpine', look_for_keys=False, allow_agent=False)
+    client.connect(sock=out, hostname='127.0.0.1', port=scr_prt, username='root', password='alpine', look_for_keys=False, allow_agent=False)
     stdin, stdout, stderr = client.exec_command(f"du -s {remote_folder}")
     remote_folder_size = [int(s) for s in stdout.read().split() if s.isdigit()][0]*512
     tar_command = f"tar --exclude *.gl --exclude '.overprovisioning_file' -cf - {remote_folder}"
@@ -694,7 +694,7 @@ def perf_jailbreak_ssh_dump():
               ("Password:", 3, 1, "alpine", 3, 18, 8, 20),
               ("Path: ", 4, 1, "/private", 4, 18, 8, 30)])
     if code == d.OK:
-        scr_prt = jlist[0]
+        scr_prt = int(jlist[0])
         user = jlist[1]
         pwd = jlist[2] 
         remote_folder = jlist[3] 
