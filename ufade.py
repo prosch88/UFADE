@@ -62,6 +62,7 @@ def check_device():
         if code == d.OK:
             check_device()
         else:
+            os.system('clear')
             raise SystemExit
 
     finally:
@@ -124,7 +125,7 @@ def bu_menu():
 def advanced_menu():
     code, tag = d.menu("Choose:",
     choices=[("(1)", "Collect Unified Logs (with start time)", "Collects the AUL from the device from a given start-time and saves them as a logarchive."),
-            ("(2)", "Generate WhatsApp export (TESS)", "Perform an iTunes-style Backup and extract the ChatStorage.sqlite alongside the Media-folder")],
+             ("(2)", "Generate WhatsApp export (TESS)", "Perform an iTunes-style Backup and extract the ChatStorage.sqlite alongside the Media-folder")],
              item_help=True, title=(dev_name + ", iOS " + version))
     if code == d.OK:
         if tag == "(1)":
