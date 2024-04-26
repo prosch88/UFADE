@@ -701,12 +701,12 @@ def perf_jailbreak_ssh_dump():
         try:
             ssh_dump(scr_prt, remote_folder, user, pwd)
             d.msgbox("Filesystem backup complete!")
-            bu_menu()
         except:
             d.msgbox("Error connecting to SSH. The device has to be in jailbroken state and SSH has to be installed.")
-            bu_menu()
+        bu_menu()
     else:
         bu_menu() 
+    
 
 #Collect Unified Logs
 def collect_ul(time):
