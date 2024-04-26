@@ -667,7 +667,7 @@ def ssh_dump(scr_prt, remote_folder, user, pwd):
     out = mux.connect(scr_prt)
     client = SSHClient()
     client.set_missing_host_key_policy(AutoAddPolicy())
-    client.connect(sock=out, hostname='127.0.0.1', port=scr_prt, username='root', password='alpine', look_for_keys=False, allow_agent=False)
+    client.connect(sock=out, hostname='127.0.0.1', port=scr_prt, username=user, password=pwd, look_for_keys=False, allow_agent=False)
     stdin, stdout, stderr = client.exec_command(f"du -s {remote_folder}")
     remote_folder_size = [int(s) for s in stdout.read().split() if s.isdigit()][0]*512
     tar_command = f"tar --exclude *.gl --exclude '.overprovisioning_file' -cf - {remote_folder}"
