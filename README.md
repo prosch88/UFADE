@@ -64,35 +64,35 @@ In the main menu you have the options:
 
 **Save device information to text**
 
-    Save device information and a list of user-installed apps to a textfile.
+Save device information and a list of user-installed apps to a textfile.
 
 **Backup Options**
 
-    including:
+including:
 
-    Logical (iTunes-Style) Backup
+***Logical (iTunes-Style) Backup***
   
-      --> Perform a backup as iTunes would do (with an option to bruteforce an unknown backup-password)
+Perform a backup as iTunes would do (with an option to bruteforce an unknown backup-password)
   
-    Logical+ Backup
+***Logical+ Backup***
   
-      --> Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders and crash reports. Creates a TAR-archive.
+Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders and crash reports. Creates a TAR-archive.
   
-    Logical+ Backup (UFED-Style)
+***Logical+ Backup (UFED-Style)***
   
-      --> Creates an "advanced Logical Backup" as ZIP-archive with an UFD file to load in the [Cellebrite Physical Analyzer©](https://cellebrite.com/de/cellebrite-physical-analyzer-de/)
+Creates an "advanced Logical Backup" as ZIP-archive with an UFD file to load in the [Cellebrite Physical Analyzer©](https://cellebrite.com/de/cellebrite-physical-analyzer-de/)
   
-    Filesystem Backup (jailbroken)
+***Filesystem Backup (jailbroken)***
   
-      --> Creates a full filesystem backup from an already jailbroken device.
+Creates a full filesystem backup from an already jailbroken device.
 
 **Collect Unified Logs**
 
-    Collects the AUL from the device and saves them as a logarchive.
+Collects the AUL from the device and saves them as a logarchive.
 
 **Developer Options**
 
-    Try to mount a suitable DeveloperDiskImage. Gives further options for screenshots and filesystem views. (iOS < 17 atm) 
+Try to mount a suitable DeveloperDiskImage. Gives further options for screenshots and filesystem views. (iOS < 17 atm) 
 
 
 
