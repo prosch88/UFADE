@@ -64,7 +64,7 @@ In the main menu you have the options:
 
 **Save device information to text**
 
-  Save device information and a list of user-installed apps to a textfile.
+    Save device information and a list of user-installed apps to a textfile.
 
 **Backup Options**
 
@@ -88,11 +88,11 @@ In the main menu you have the options:
 
 **Collect Unified Logs**
 
-  Collects the AUL from the device and saves them as a logarchive.
+    Collects the AUL from the device and saves them as a logarchive.
 
 **Developer Options**
 
-  Try to mount a suitable DeveloperDiskImage. Gives further options for screenshots and filesystem views. (iOS < 17 atm) 
+    Try to mount a suitable DeveloperDiskImage. Gives further options for screenshots and filesystem views. (iOS < 17 atm) 
 
 
 
