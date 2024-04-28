@@ -3,7 +3,7 @@
 
 This is a python script written for my masters thesis in IT-Security and Forensics at the [Wismar University](https://www.hs-wismar.de/).
 
-It utitilizes the awesome projects: [pymobiledevice3](https://github.com/doronz88/pymobiledevice3) and [iOSbackup](https://github.com/avibrazil/iOSbackup) to automate the acquisition of Apple mobile devices. Options can be selected via a dialog.
+It utitilizes the awesome projects: [pymobiledevice3](https://github.com/doronz88/pymobiledevice3) and [iOSbackup](https://github.com/avibrazil/iOSbackup) to automate the acquisition of Apple mobile devices. Options can be selected via a dialog. The SSH access is realized via [Paramiko](https://github.com/paramiko/paramiko).
 
 The use of [pythondialog](https://github.com/frougon/pythondialog) is preventig the Windows compatibility atm. Linux and MacOS should work. 
 
@@ -64,27 +64,35 @@ In the main menu you have the options:
 
 **Save device information to text**
 
-Save device information and a list of user-installed apps to a textfile.
+  Save device information and a list of user-installed apps to a textfile.
 
-**Logical (iTunes-Style) Backup**
+**Backup Options**
 
-Perform a backup as iTunes would do (with an option to bruteforce an unknown backup-password)
+    including:
 
-**Logical+ Backup**
-
-Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders and crash reports. Creates a TAR-archive.
-
-**Logical+ Backup (UFED-Style)**
-
-Creates an "advanced Logical Backup" as ZIP-archive with an UFD file to load in the [Cellebrite Physical Analyzer©](https://cellebrite.com/de/cellebrite-physical-analyzer-de/)
+    Logical (iTunes-Style) Backup
+  
+      --> Perform a backup as iTunes would do (with an option to bruteforce an unknown backup-password)
+  
+    Logical+ Backup
+  
+      --> Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders and crash reports. Creates a TAR-archive.
+  
+    Logical+ Backup (UFED-Style)
+  
+      --> Creates an "advanced Logical Backup" as ZIP-archive with an UFD file to load in the [Cellebrite Physical Analyzer©](https://cellebrite.com/de/cellebrite-physical-analyzer-de/)
+  
+    Filesystem Backup (jailbroken)
+  
+      --> Creates a full filesystem backup from an already jailbroken device.
 
 **Collect Unified Logs**
 
-Collects the AUL from the device and saves them as a logarchive.
+  Collects the AUL from the device and saves them as a logarchive.
 
 **Developer Options**
 
-Try to mount a suitable DeveloperDiskImage. Gives further options for screenshots and filesystem views. (iOS < 17 atm) 
+  Try to mount a suitable DeveloperDiskImage. Gives further options for screenshots and filesystem views. (iOS < 17 atm) 
 
 
 
