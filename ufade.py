@@ -673,14 +673,14 @@ def ssh_dump(scr_prt, remote_folder, user, pwd):
     remote_folder_size = [int(s) for s in stdout.read().split() if s.isdigit()][0]*512
     tar_command = f"tar --exclude *.gl --exclude '.overprovisioning_file' -cf - {remote_folder}"
     stdin, stdout, stderr = client.exec_command(tar_command)
-    tar_data = stdout.channel.recv(32768)
+    tar_data = stdout.channel.recv(65536)
     transferred = 0
 
     d.gauge_start(f"Performing Filesystem Backup:\n\n {transferred / (1024 * 1024):.2f} MB received.")
     with open(udid + "_ffs.tar", "wb") as f:
         while tar_data:
             f.write(tar_data)
-            tar_data = stdout.channel.recv(32768)
+            tar_data = stdout.channel.recv(65536)
             transferred += len(tar_data)
             ffs_pro = int((transferred / remote_folder_size) * 100)
             d.gauge_update(ffs_pro, f"Performing Filesystem Backup: (Start: " + remote_folder + f")\n\n {transferred / (1024 * 1024):.2f} MB received.", update_text=True)
