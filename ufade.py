@@ -684,7 +684,8 @@ def ssh_dump(scr_prt, remote_folder, user, pwd):
             transferred += len(tar_data)
             ffs_pro = int((transferred / remote_folder_size) * 100)
             d.gauge_update(ffs_pro, f"Performing Filesystem Backup: (Start: " + remote_folder + f")\n\n {transferred / (1024 * 1024):.2f} MB received.", update_text=True)
-    d.gauge_update(100)
+    for i in range(ffs_pro, 100):
+        d.gauge_update(i)
     client.close()
     d.gauge_stop()
 
