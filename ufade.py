@@ -484,6 +484,8 @@ def perf_logical_plus(t):
     try: os.mkdir(".tar_tmp/media")
     except: pass
     m_nr = 0
+    stderr_old = sys.stderr
+    sys.stderr = None
     for entry in media_list:
         m_nr += 1
         mpro = int(100*(m_nr/media_count))
@@ -507,7 +509,8 @@ def perf_logical_plus(t):
         except:
             pass
     d.gauge_stop()
-    shutil.rmtree(".tar_tmp/media")                                                                                         #remove media-folder
+    shutil.rmtree(".tar_tmp/media")
+    sys.stderr = stderr_old                                                                                         #remove media-folder
 
     #Gather Shared App-Folders
     media_count = 0
