@@ -3,7 +3,7 @@
 # Licensed under GPLv3 License
 from pymobiledevice3 import usbmux, exceptions, lockdown
 from pymobiledevice3.services.mobile_image_mounter import DeveloperDiskImageMounter, MobileImageMounterService, PersonalizedImageMounter
-from pymobiledevice3.lockdown import create_using_usbmux
+from pymobiledevice3.lockdown import create_using_usbmux, create_using_remote
 from pymobiledevice3.lockdown import LockdownClient
 from pymobiledevice3.services.companion import CompanionProxyService
 from pymobiledevice3.services import installation_proxy
@@ -20,6 +20,7 @@ from pymobiledevice3.services.dvt.dvt_secure_socket_proxy import DvtSecureSocket
 from pymobiledevice3.services.accessibilityaudit import AccessibilityAudit, Direction
 from pymobiledevice3.services.amfi import AmfiService
 from pymobiledevice3.tcp_forwarder import UsbmuxTcpForwarder
+from pymobiledevice3.services.pcapd import PcapdService
 from paramiko import SSHClient, AutoAddPolicy, Transport
 from dialog import Dialog
 from iOSbackup import iOSbackup
@@ -125,7 +126,8 @@ def bu_menu():
 def advanced_menu():
     code, tag = d.menu("Choose:",
     choices=[("(1)", "Collect Unified Logs (with start time)", "Collects the AUL from the device from a given start-time and saves them as a logarchive."),
-             ("(2)", "Generate WhatsApp export (TESS)", "Perform an iTunes-style Backup and extract the ChatStorage.sqlite alongside the Media-folder")],
+             ("(2)", "Generate WhatsApp export (TESS)", "Perform an iTunes-style Backup and extract the ChatStorage.sqlite alongside the Media-folder."),
+             ("(3)", "Sniff device traffic", "Captures the device network traffic as a pcap file.")],
              item_help=True, title=(dev_name + ", iOS " + version))
     if code == d.OK:
         if tag == "(1)":
@@ -138,6 +140,8 @@ def advanced_menu():
                 advanced_menu()
         elif tag == "(2)":
             backup_tess()
+        elif tag == "(3)":
+            network_capture()
         else:
             advanced_menu()
     else:
@@ -662,6 +666,31 @@ def backup_tess():
         shutil.move("WA_TESS/AppDomainGroup-group.net.whatsapp.WhatsApp.shared/ChatStorage.sqlite", "WA_TESS/ChatStorage.sqlite")
         shutil.rmtree("WA_TESS/AppDomainGroup-group.net.whatsapp.WhatsApp.shared")
         d.msgbox("Files extracted to \"WA_Tess\".")  
+        advanced_menu()
+
+#Generate a pcap file of the device network stream
+def network_capture():
+    code, user_input = d.inputbox("Set the number of packets to sniff (0 is endless):",init="0")
+    if code == d.OK:
+        try: 
+            count = int(user_input)
+            if count == 0:
+                count = -1
+            packet_c = 0
+            text = "Sniffing device traffic to PCAP-file.\n\nUse *Ctrl* and *C* to abort this process."
+            d.infobox(text)
+            with open(udid + ".pcap", "wb") as pcap_file:
+                serv_pcap = PcapdService(lockdown) 
+                packets_generator = serv_pcap.watch(packets_count=count)     
+                serv_pcap.write_to_pcap(pcap_file, packets_generator)
+                d.msgbox("Sniffing process stopped. " + str(count) + " packages received." )
+        except ValueError: 
+            d.msgbox("Invalid input. Provide digits only.")
+        except:
+            d.msgbox("Sniffing process stopped.")
+        finally:
+            advanced_menu()
+    else:
         advanced_menu()
 
 #SSH-Dump from given path
