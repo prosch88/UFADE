@@ -126,8 +126,9 @@ def bu_menu():
 def advanced_menu():
     code, tag = d.menu("Choose:",
     choices=[("(1)", "Collect Unified Logs (with start time)", "Collects the AUL from the device from a given start-time and saves them as a logarchive."),
-             ("(2)", "Generate WhatsApp export (TESS)", "Perform an iTunes-style Backup and extract the ChatStorage.sqlite alongside the Media-folder."),
-             ("(3)", "Sniff device traffic", "Captures the device network traffic as a pcap file.")],
+             ("(2)", "Extract crash reports", "Pull the crash report folder from the device"),
+             ("(3)", "Generate WhatsApp export (TESS)", "Perform an iTunes-style Backup and extract the ChatStorage.sqlite alongside the Media-folder."),
+             ("(4)", "Sniff device traffic", "Captures the device network traffic as a pcap file.")],
              item_help=True, title=(dev_name + ", iOS " + version))
     if code == d.OK:
         if tag == "(1)":
@@ -139,8 +140,12 @@ def advanced_menu():
             else:
                 advanced_menu()
         elif tag == "(2)":
-            backup_tess()
+            crash_report("Crash_Report")
+            d.msgbox("Extraction of crash reports completed!")
+            advanced_menu()
         elif tag == "(3)":
+            backup_tess()
+        elif tag == "(4)":
             network_capture()
         else:
             advanced_menu()
@@ -551,6 +556,7 @@ def perf_logical_plus(t):
 
     #Gather Crash-Reports
     if l_type != "UFED":
+        """
         crash_count = 0
         crash_list = []
         d.gauge_start("Performing Extraction of Crash Reports")
@@ -567,8 +573,11 @@ def perf_logical_plus(t):
             cpro = int(100*(c_nr/crash_count))
             d.gauge_update(cpro)
         tar.add(".tar_tmp/Crash", arcname=("/Crash"), recursive=True)
-        d.gauge_update(100)
-        d.gauge_stop()
+        """
+ #       d.gauge_update(100)
+ #       d.gauge_stop()
+        crash_report(".tar_tmp/Crash")
+        tar.add(".tar_tmp/Crash", arcname=("/Crash"), recursive=True)
         shutil.rmtree(".tar_tmp/Crash")
 
         
@@ -648,6 +657,25 @@ def perf_logical_plus(t):
 
     d.msgbox("Logical+ Backup completed!")
     wrapper(select_menu)
+
+def crash_report(crash_dir):
+    crash_count = 0
+    crash_list = []
+    d.gauge_start("Performing Extraction of Crash Reports")
+    for entry in CrashReportsManager(lockdown).ls(""):
+        crash_list.append(entry)
+        crash_count += 1           
+    try: os.mkdir(crash_dir)
+    except: pass
+    c_nr = 0
+    for entry in crash_list:
+        c_nr += 1
+        try: AfcService(lockdown, service_name="com.apple.crashreportcopymobile").pull(relative_src=entry, dst=crash_dir, src_dir="")
+        except: pass
+        cpro = int(100*(c_nr/crash_count))
+        d.gauge_update(cpro)
+    d.gauge_update(100)
+    d.gauge_stop()
 
 def backup_tess():
     if "net.whatsapp.WhatsApp" not in app_id_list:
