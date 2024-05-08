@@ -556,26 +556,6 @@ def perf_logical_plus(t):
 
     #Gather Crash-Reports
     if l_type != "UFED":
-        """
-        crash_count = 0
-        crash_list = []
-        d.gauge_start("Performing Extraction of Crash Reports")
-        for entry in CrashReportsManager(lockdown).ls(""):
-            crash_list.append(entry)
-            crash_count += 1           
-        try: os.mkdir(".tar_tmp/Crash")
-        except: pass
-        c_nr = 0
-        for entry in crash_list:
-            c_nr += 1
-            try: AfcService(lockdown, service_name="com.apple.crashreportcopymobile").pull(relative_src=entry, dst=".tar_tmp/Crash", src_dir="")
-            except: pass
-            cpro = int(100*(c_nr/crash_count))
-            d.gauge_update(cpro)
-        tar.add(".tar_tmp/Crash", arcname=("/Crash"), recursive=True)
-        """
- #       d.gauge_update(100)
- #       d.gauge_stop()
         crash_report(".tar_tmp/Crash")
         tar.add(".tar_tmp/Crash", arcname=("/Crash"), recursive=True)
         shutil.rmtree(".tar_tmp/Crash")
