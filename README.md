@@ -92,7 +92,7 @@ including:
 
 **Developer Options**
 
-*Try to mount a suitable DeveloperDiskImage. Gives further options for screenshots and filesystem views. (iOS < 17 atm)* 
+*Try to mount a suitable DeveloperDiskImage. Gives further options for screenshots and filesystem views.* 
 
 
 
