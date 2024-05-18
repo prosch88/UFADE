@@ -66,6 +66,7 @@ def check_device():
     except:
         code = d.yesno("No Apple device found! Check again?")
         if code == d.OK:
+            #LockdownClient.pair()
             check_device()
         else:
             os.system('clear')
@@ -156,6 +157,28 @@ def advanced_menu():
             advanced_menu()
     else:
         wrapper(select_menu)
+
+def watch_menu(main_screen):
+    code, tag = d.menu("Choose:",
+    choices=[("(1)", "Save device information to text", "Save device information and a list of user-installed apps to a textfile"),
+             ("(2)", "Collect Unified Logs", "Collects the AUL from the device and saves them as a logarchive."),
+             ("(3)", "Extract crash reports", "Pull the crash report folder from the device")],
+             item_help=True, title=(dev_name + ", WatchOS " + version))
+    if code == d.OK:
+        if tag == "(1)":
+            save_info_menu()
+        elif tag == "(2)":
+            time=None
+            collect_ul(time)
+        elif tag == "(3)":
+            crash_report("Crash_Report")
+            d.msgbox("Extraction of crash reports completed!")
+            wrapper(watch_menu)
+        else:
+            raise SystemExit
+    else:
+        os.system('clear')
+        raise SystemExit
 
 
 #Set directory
@@ -275,7 +298,10 @@ def save_info():
 def save_info_menu():
     save_info()
     d.msgbox("Info written to device_" + udid + ".txt")
-    wrapper(select_menu)
+    if d_class == "Watch":
+        wrapper(watch_menu)
+    else:
+        wrapper(select_menu)
 
 #Stop the beep-timer for the PIN promt and show the backup process
 def process_beep(x,m, beep_timer):
@@ -768,7 +794,10 @@ def collect_ul(time):
         pass
     try: os.rmdir("unified_logs")
     except: pass
-    wrapper(select_menu)
+    if d_class == "Watch":
+        wrapper(watch_menu)
+    else:
+        wrapper(select_menu)
 
 #Try to mount a suitable DeveloperDiskImage returns "developer" and sets the global developer value to "True"
 def mount_developer():
@@ -1116,8 +1145,11 @@ used1 = disk1 - free1
 used = str(round(used1,2))
 graph_progress = "" + "▓" * int(30/100*(100/disk1*used1)) + "░" * int(30/100*(100/disk1*free1)) + ""
 d_class = lockdown.get_value("","DeviceClass")
-try: comp = CompanionProxyService(lockdown).list()
-except: comp = []
+if d_class != "Watch":
+    try: comp = CompanionProxyService(lockdown).list()
+    except: comp = []
+else:
+    comp = []
 
 #Get installed Apps
 apps = installation_proxy.InstallationProxyService(lockdown).get_apps("User")
@@ -1134,6 +1166,10 @@ for app in apps:
     except:
         doc_list.append("no")
 
+
 show_device()
 dir = chdir()
-wrapper(select_menu)
+if d_class == "Watch":
+    wrapper(watch_menu)
+else:
+    wrapper(select_menu)
