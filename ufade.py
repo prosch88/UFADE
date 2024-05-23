@@ -497,7 +497,7 @@ def perf_logical_plus(t):
             Backup.from_path(backup_path=udid, password="12345").unback(".tar_tmp/itunes_bu")
             tar = tarfile.open(udid + "_logical_plus.tar", "w:")
             tar.add(".tar_tmp/itunes_bu", arcname="iTunes_Backup/", recursive=True)
-
+        
         shutil.rmtree(".tar_tmp/itunes_bu")                                                                                 #remove the backup folder
         shutil.rmtree(udid)
         
@@ -515,40 +515,14 @@ def perf_logical_plus(t):
         shutil.rmtree(udid)                                                                                                 #delete the backup after zipping
 
     #Gather Media Directory
-    media_list = []
-    d.gauge_start("Performing AFC Extraction of Mediafiles")
-    for line in AfcService(lockdown).listdir("/"):
-            media_list.append(line)
-    media_list.remove("DCIM")                                                                                         #get amount of lines (files and folders) in media root
-    media_count = len(media_list)
     try: os.mkdir(".tar_tmp/media")
     except: pass
-    m_nr = 0
     stderr_old = sys.stderr
     sys.stderr = None
-    for entry in media_list:
-        m_nr += 1
-        mpro = int(100*(m_nr/media_count))
-        d.gauge_update(mpro)
-        try:
-            AfcService(lockdown).pull(entry, ".tar_tmp/media/")
-            file_path = os.path.join('.tar_tmp/media/', entry)                                                              #get the files and folders shared over AFC
-            if l_type != "UFED":
-                tar.add(file_path, arcname=os.path.join("Media/", entry), recursive=True)                                   #add the file/folder to the TAR
-            else:
-                if os.path.isfile(file_path):
-                    zip.write(file_path, arcname=os.path.join("iPhoneDump/AFC Service/", entry))                            #add the file/folder to the ZIP
-                elif os.path.isdir(file_path):
-                    for root, dirs, files in os.walk(".tar_tmp/media"):
-                        for file in files:
-                            source_file = os.path.join(root, file)
-                            filename = os.path.relpath(source_file, ".tar_tmp/media")
-                            zip.write(source_file, arcname=os.path.join("iPhoneDump/AFC Service/", filename))
-            try: os.remove(file_path)
-            except: shutil.rmtree(file_path)
-        except:
-            pass
-    d.gauge_stop()
+    if l_type != "UFED":
+        media_export(l_type, dest=".tar_tmp/media", archive=tar)
+    else:
+        media_export(l_type, dest=".tar_tmp/media", archive=zip)
     shutil.rmtree(".tar_tmp/media")
     sys.stderr = stderr_old                                                                                         #remove media-folder
 
@@ -668,6 +642,47 @@ def perf_logical_plus(t):
 
     d.msgbox("Logical+ Backup completed!")
     wrapper(select_menu)
+
+def media_export(l_type, dest="Media", archive=None):
+    media_list = []
+    tar = archive
+    zip = archive
+    d.gauge_start("Performing AFC Extraction of Mediafiles")
+    for line in AfcService(lockdown).listdir("/"):
+            media_list.append(line)
+    if l_type != "folder":
+        media_list.remove("DCIM")                                                                                         #get amount of lines (files and folders) in media root
+    media_count = len(media_list)
+    try: os.mkdir(dest)
+    except: pass
+    m_nr = 0
+    for entry in media_list:
+        m_nr += 1
+        mpro = int(100*(m_nr/media_count))
+        d.gauge_update(mpro)
+        try:
+            AfcService(lockdown).pull(entry, dest)
+            if l_type != "folder":
+                file_path = os.path.join(dest, entry)                                                              #get the files and folders shared over AFC
+                if l_type != "UFED":
+                    tar.add(file_path, arcname=os.path.join("Media/", entry), recursive=True)                                   #add the file/folder to the TAR
+                else:
+                    if os.path.isfile(file_path):
+                        zip.write(file_path, arcname=os.path.join("iPhoneDump/AFC Service/", entry))                            #add the file/folder to the ZIP
+                    elif os.path.isdir(file_path):
+                        for root, dirs, files in os.walk(dest):
+                            for file in files:
+                                source_file = os.path.join(root, file)
+                                filename = os.path.relpath(source_file, dest)
+                                zip.write(source_file, arcname=os.path.join("iPhoneDump/AFC Service/", filename))
+                try: os.remove(file_path)
+                except: shutil.rmtree(file_path)
+            else:
+                pass
+        except:
+            pass   
+    d.gauge_stop()
+    return(archive)    
 
 def crash_report(crash_dir):
     crash_count = 0
