@@ -1128,6 +1128,7 @@ def shotloop(dvt, ch_direction, app_name, chat_name, png, ab_count, sc_count):
         with open("screenshots/" + app_name + "/" + chat_name + "/" + chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png", "wb") as file:
             file.write(png)
         sc_count += 1
+        ab_count = 0
     else:
         if sc_count > 3:
             ab_count += 1
