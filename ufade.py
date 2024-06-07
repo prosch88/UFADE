@@ -165,7 +165,8 @@ def watch_menu(main_screen):
     code, tag = d.menu("Choose:",
     choices=[("(1)", "Save device information to text", "Save device information and a list of user-installed apps to a textfile"),
              ("(2)", "Collect Unified Logs", "Collects the AUL from the device and saves them as a logarchive."),
-             ("(3)", "Extract crash reports", "Pull the crash report folder from the device")],
+             ("(3)", "Extract crash reports", "Pull the crash report folder from the device"),
+             ("(4)", "Extract Media folder","Pull AFC-files (pictures, videos, recordings)")],
              item_help=True, title=(dev_name + ", WatchOS " + version))
     if code == d.OK:
         if tag == "(1)":
@@ -177,6 +178,13 @@ def watch_menu(main_screen):
             crash_report("Crash_Report")
             d.msgbox("Extraction of crash reports completed!")
             wrapper(watch_menu)
+        elif tag == "(4)":
+            folder = ("Media_" + udid)
+            os.mkdir(folder)
+            media_export(l_type="folder", dest=folder)
+            d.msgbox("AFC extraction complete!")
+            wrapper(watch_menu)
+
         else:
             raise SystemExit
     else:
@@ -1156,6 +1164,7 @@ def shotloop(dvt, ch_direction, app_name, chat_name, png, ab_count, sc_count):
         with open("screenshots/" + app_name + "/" + chat_name + "/" + chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png", "wb") as file:
             file.write(png)
         sc_count += 1
+        ab_count = 0
     else:
         if sc_count > 3:
             ab_count += 1
