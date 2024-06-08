@@ -31,6 +31,8 @@ from pyiosbackup import Backup
 from datetime import datetime, timedelta, timezone, date
 from subprocess import Popen, PIPE, check_call, run
 from curses import wrapper
+import posixpath
+import pathlib
 from playsound import playsound
 import contextlib
 import getpass
@@ -106,6 +108,7 @@ def select_menu(main_screen):
     else:
         os.system('clear')
         raise SystemExit
+
 
 def bu_menu():
     code, tag = d.menu("Choose:",
@@ -449,7 +452,7 @@ def iTunes_bu(mode):
             if c3 == 'None':
                 beep_timer.cancel()
         else:
-            curses.endwin()
+            #curses.endwin()
             wrapper(select_menu)
 
 def perf_itunes():
@@ -552,7 +555,7 @@ def perf_logical_plus(t):
             d.gauge_update(mpro)
             file_path = os.path.join(".tar_tmp/app_doc/", app, str((apps.get(app)['EnvironmentVariables'])['CFFIXED_USER_HOME'])[1:], "Documents/")
             os.makedirs(file_path, exist_ok=True)
-            HouseArrestService(lockdown, bundle_id=app, documents_only=True).pull("/Documents/.", file_path)
+            pull(self=HouseArrestService(lockdown, bundle_id=app, documents_only=True), relative_src="/Documents/.", dst=file_path)
             if l_type != "UFED":
                 tar.add(file_path, arcname=os.path.join("App_Share/", app, str((apps.get(app)['EnvironmentVariables'])['CFFIXED_USER_HOME'])[1:], "Documents/"), recursive=True)
             else:
@@ -651,6 +654,39 @@ def perf_logical_plus(t):
     d.msgbox("Logical+ Backup completed!")
     wrapper(select_menu)
 
+def pull(self, relative_src, dst, callback=None, src_dir=''):
+        src = posixpath.join(src_dir, relative_src)
+        if callback is not None:
+            callback(src, dst)
+
+        src = self.resolve_path(src)
+
+        if not self.isdir(src):
+            # normal file
+            mtime = self.stat(src)['st_mtime'].timestamp()
+            if os.path.isdir(dst):
+                dst = os.path.join(dst, os.path.basename(relative_src))
+            with open(dst, 'wb') as f:
+                f.write(self.get_file_contents(src))
+            os.utime(dst, (mtime, mtime))
+        else:
+            # directory
+            dst_path = pathlib.Path(dst) / os.path.basename(relative_src)
+            dst_path.mkdir(parents=True, exist_ok=True)
+
+            for filename in self.listdir(src):
+                src_filename = posixpath.join(src, filename)
+                dst_filename = dst_path / filename
+
+                src_filename = self.resolve_path(src_filename)
+
+                if self.isdir(src_filename):
+                    dst_filename.mkdir(exist_ok=True)
+                    pull(self, src_filename, str(dst_path), callback=callback)
+                    continue
+
+                pull(self, src_filename, str(dst_path), callback=callback)
+
 def media_export(l_type, dest="Media", archive=None):
     media_list = []
     tar = archive
@@ -669,7 +705,7 @@ def media_export(l_type, dest="Media", archive=None):
         mpro = int(100*(m_nr/media_count))
         d.gauge_update(mpro)
         try:
-            AfcService(lockdown).pull(entry, dest)
+            pull(self=AfcService(lockdown),relative_src=entry, dst=dest)
             if l_type != "folder":
                 file_path = os.path.join(dest, entry)                                                              #get the files and folders shared over AFC
                 if l_type != "UFED":
@@ -704,7 +740,7 @@ def crash_report(crash_dir):
     c_nr = 0
     for entry in crash_list:
         c_nr += 1
-        try: AfcService(lockdown, service_name="com.apple.crashreportcopymobile").pull(relative_src=entry, dst=crash_dir, src_dir="")
+        try: pull(self=AfcService(lockdown, service_name="com.apple.crashreportcopymobile"), relative_src=entry, dst=crash_dir, src_dir="")
         except: pass
         cpro = int(100*(c_nr/crash_count))
         d.gauge_update(cpro)
