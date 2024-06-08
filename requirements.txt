@@ -4,5 +4,5 @@ pyiosbackup
 iOSbackup
 pandas
 pyarrow
-beepy
+playsound==1.2.2
 paramiko

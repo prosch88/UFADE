@@ -31,6 +31,7 @@ from pyiosbackup import Backup
 from datetime import datetime, timedelta, timezone, date
 from subprocess import Popen, PIPE, check_call, run
 from curses import wrapper
+from playsound import playsound
 import contextlib
 import getpass
 import pandas as pd
@@ -45,7 +46,6 @@ import re
 import string
 import plistlib
 import hashlib
-import beepy
 import threading
 import curses
 import time
@@ -240,7 +240,7 @@ def show_device():
 
 #Play a notfication sound:
 def notify():
-    beepy.beep(1)
+    playsound(os.path.join(os.path.dirname(__file__), "assets", "notification.mp3"))
     curses.flash()
     time.sleep(1)
 
