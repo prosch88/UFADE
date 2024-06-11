@@ -448,7 +448,11 @@ def iTunes_bu(mode):
             curses.noecho()
             d.infobox("iTunes Backup complete! Trying to deactivate Backup Encryption again. \n\nUnlock device with PIN/PW if prompted")
             curses.echo() 
-            c3 = str(Mobilebackup2Service(lockdown).change_password(old="12345"))
+            try: 
+                c3 = str(Mobilebackup2Service(lockdown).change_password(old="12345"))
+            except:
+                c3 = 'None' 
+                pass
             if c3 == 'None':
                 beep_timer.cancel()
         else:
