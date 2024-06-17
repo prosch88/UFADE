@@ -57,6 +57,7 @@ locale.setlocale(locale.LC_ALL, '')
 
 d = Dialog(dialog="dialog")
 d.set_background_title("Universal Forensic Apple Device Extractor (UFADE) by Prosch")
+main_screen = curses.initscr()
 pw = '12345'
 app_name = None
 developer = False
@@ -129,7 +130,7 @@ def bu_menu():
         else:
             bu_menu()
     else:
-        wrapper(select_menu)
+        select_menu(main_screen)
 
 
 def advanced_menu():
@@ -159,7 +160,7 @@ def advanced_menu():
         else:
             advanced_menu()
     else:
-        wrapper(select_menu)
+        select_menu(main_screen)
 
 def watch_menu(main_screen):
     code, tag = d.menu("Choose:",
@@ -177,13 +178,13 @@ def watch_menu(main_screen):
         elif tag == "(3)":
             crash_report("Crash_Report")
             d.msgbox("Extraction of crash reports completed!")
-            wrapper(watch_menu)
+            watch_menu(main_screen)
         elif tag == "(4)":
             folder = ("Media_" + udid)
             os.mkdir(folder)
             media_export(l_type="folder", dest=folder)
             d.msgbox("AFC extraction complete!")
-            wrapper(watch_menu)
+            watch_menu(main_screen)
 
         else:
             raise SystemExit
@@ -310,9 +311,9 @@ def save_info_menu():
     save_info()
     d.msgbox("Info written to device_" + udid + ".txt")
     if d_class == "Watch":
-        wrapper(watch_menu)
+        watch_menu(main_screen)
     else:
-        wrapper(select_menu)
+        select_menu(main_screen)
 
 #Stop the beep-timer for the PIN promt and show the backup process
 def process_beep(x,m, beep_timer):
@@ -369,7 +370,7 @@ def iTunes_bu(mode):
                             d.msgbox("Error loading file!")
                             pass
                     else:
-                        wrapper(select_menu)
+                        select_menu(main_screen)
 
                 pw_num = 0
                 pw_pro = 0
@@ -457,14 +458,14 @@ def iTunes_bu(mode):
                 beep_timer.cancel()
         else:
             #curses.endwin()
-            wrapper(select_menu)
+            select_menu(main_screen)
 
 def perf_itunes():
     iTunes_bu("iTunes-Style")                                                                                               #call iTunes Backup with "iTunes-Style" written in dialog
     try: os.rename(udid, udid + "_iTunes")  
     except: pass                                                                                                            #rename backup folder to prevent conflicts with other workflow-options
     d.msgbox("Backup completed!")
-    wrapper(select_menu)
+    select_menu(main_screen)
     
 #Make advanced Backup - l_type(t) defines the type: 'None' for regular; 'UFED' for UFED-Style
 def perf_logical_plus(t):
@@ -656,7 +657,7 @@ def perf_logical_plus(t):
             hardware.upper() + " " + dev_name + "\nGUID=" + udid + "\nInternalBuild=\nIsEncrypted=True\nIsEncryptedBySystem=True\nMachineName=\nModel=" + hardware.upper() + " " + dev_name + "\nUfdVer=1.2\nUnitId=\nUserName=\nVendor=Apple\nVersion=other\n\n[SHA256]\n" + zipname + "=" + z_hash.upper() + "")
 
     d.msgbox("Logical+ Backup completed!")
-    wrapper(select_menu)
+    select_menu(main_screen)
 
 def pull(self, relative_src, dst, callback=None, src_dir=''):
         src = posixpath.join(src_dir, relative_src)
@@ -858,9 +859,9 @@ def collect_ul(time):
     try: os.rmdir("unified_logs")
     except: pass
     if d_class == "Watch":
-        wrapper(watch_menu)
+        watch_menu(main_screen)
     else:
-        wrapper(select_menu)
+        select_menu(main_screen)
 
 #Try to mount a suitable DeveloperDiskImage returns "developer" and sets the global developer value to "True"
 def mount_developer():
@@ -887,10 +888,10 @@ def mount_developer():
                     d.msgbox("Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\n\nAfter this, press \"OK\".", width=35)
                 except:
                     d.msgbox("Uh-Oh, an error was raised. Please remove the PIN/PW and try again")
-                    wrapper(select_menu)
+                    select_menu(main_screen)
                     raise SystemExit
             else:
-                wrapper(select_menu)
+                select_menu(main_screen)
                 raise SystemExit
     except SystemExit:
         raise SystemExit
@@ -971,7 +972,7 @@ def developer_options():
         pass
     else:
         d.msgbox("Directory \"ufade_developer\" not found.\nPlease clone the submodule:\n\ngit submodule init\ngit submodule update", width=33, height=13)
-        wrapper(select_menu)
+        select_menu(main_screen)
     if int(version.split(".")[0]) == 17 and 0 <= int(version.split(".")[1]) < 4:
         if sys.platform.system() != "Darwin":
             code = d.yesno("On Linux systems a kernel path is needed to create a tunnel connection to devices with iOS versions between 17.0 and 17.3.1.\n" +
@@ -979,7 +980,7 @@ def developer_options():
             if code == d.OK:
                 pass
             else:
-                wrapper(select_menu)
+                select_menu(main_screen)
                 os.system('clear')
                 raise SystemExit
     if int(version.split(".")[0]) >= 17:
@@ -1015,7 +1016,7 @@ def developer_options():
                 except: pass
             d.msgbox("Error. Try again.")
             developer = False
-            wrapper(select_menu)
+            select_menu(main_screen)
 #    else:
 #        if mount_developer() == "developer":
 #            try:
@@ -1068,13 +1069,13 @@ def developer_options():
             except: 
                 d.msgbox("DeveloperDiskImage could not be unmounted. Restart the device to unmount.")
                 pass
-            wrapper(select_menu)
+            select_menu(main_screen)
         else:
             pass
     else:
         try: process.kill()
         except: pass
-        wrapper(select_menu)
+        select_menu(main_screen)
     
 
 def fileloop(dvt, start, lista, fcount, cnt):
