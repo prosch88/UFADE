@@ -470,10 +470,6 @@ def perf_itunes():
 #Make advanced Backup - l_type(t) defines the type: 'None' for regular; 'UFED' for UFED-Style
 def perf_logical_plus(t):
     l_type = t
-    #if int(version.split(".")[0]) < 10:
-    #    d.msgbox("Not supported: \niOS " + version + " is not supported in this workflow.")
-    #    wrapper(select_menu)
-    #    raise SystemExit()
     try: os.mkdir(".tar_tmp")                                                                                               #create temp folder for files to zip/tar
     except: pass
 
