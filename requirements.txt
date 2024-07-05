@@ -6,3 +6,5 @@ pandas
 pyarrow
 playsound==1.2.2
 paramiko
+customtkinter
+crossfiledialog
