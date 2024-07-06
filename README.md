@@ -7,6 +7,8 @@ It utitilizes the awesome projects: [pymobiledevice3](https://github.com/doronz8
 
 The use of [pythondialog](https://github.com/frougon/pythondialog) is preventig the Windows compatibility atm. Linux and MacOS should work. 
 
+Update: There is a new version based on [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter). This should work on Windows. You can also load the Windows version from the release Page. 
+
 Requires Python >= 3.11.
 
 More features may follow.
