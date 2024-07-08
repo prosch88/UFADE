@@ -1254,6 +1254,7 @@ class MyApp(ctk.CTk):
 
     def mount_developer(self, change, text):
         global developer
+        global lockdown
         d_images = {4:[2,3], 5:[0,1], 6:[0,1], 7:[0,1], 8:[0,1,2,3,4], 9:[0,1,2,3],
                     10:[0,1,2,3], 11:[0,1,2,3,4], 12:[0,1,2,3,4], 13:[0,1,2,3,4,5,7],
                     14:[0,1,2,4,5,6,7,7.1,8], 15:[0,1,2,3,3.1,4,5,6,6.1,7],
@@ -1304,10 +1305,11 @@ class MyApp(ctk.CTk):
                 self.after(1000)
                 text.configure(text=info, anchor="nw", justify="left")
                 self.after(1000)
+                lockdown = create_using_usbmux()
                 DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", version, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", version, "DeveloperDiskImage.dmg.signature"))
                 developer = True
                 change.set(1)
-                raise SystemExit   
+                return("developer")   
             except:
                 info = info + "\nVersion " + version + " not found"
                 text.configure(text=info)
@@ -1321,15 +1323,19 @@ class MyApp(ctk.CTk):
                 if int(v[0]) <= 12 or DeveloperDiskImageMounter(lockdown).copy_devices() == []:
                     info = info + "\nClosest version is " + ver
                     text.configure(text=info)
+                    lockdown = create_using_usbmux()
                     self.after(1000)
                     try:
                         DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
                         info = info + "\nVersion: " + ver + " was used"
                         text.configure(text=info)
+                        self.after(1000)
                         developer = True
+                        change.set(1)
                         return("developer")
                     except exceptions.AlreadyMountedError:
                         developer = True
+                        change.set(1)
                         return("developer")            
                     except: 
                         for i in range(index)[::-1]:
@@ -1345,7 +1351,7 @@ class MyApp(ctk.CTk):
                         if int(v[0]) <= 12:
                             developer = True
                             change.set(1)
-                            raise SystemExit
+                            return("developer")
                         else:
                             pass
                         if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
@@ -1355,32 +1361,33 @@ class MyApp(ctk.CTk):
                             text.configure(text="DeveloperDiskImage loaded")
                             developer = True
                             change.set(1)
-                            raise SystemExit
+                            return("developer")
                     
                 else:
                     text.configure(text="DeveloperDiskImage loaded")
                     developer = True
                     change.set(1)
-                    raise SystemExit
+                    return("developer")
         else:
             try:
                 text.configure(text="Mounting personalized image.")
                 PersonalizedImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Xcode_iOS_DDI_Personalized", "Image.dmg"), build_manifest=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Xcode_iOS_DDI_Personalized", "BuildManifest.plist"), trust_cache=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Xcode_iOS_DDI_Personalized", "Image.dmg.trustcache"))
                 developer = True
                 change.set(1)
-                raise SystemExit
+                return("developer")
             except exceptions.AlreadyMountedError:
                 developer = True
                 change.set(1)
-                raise SystemExit
+                return("developer")
             except:
                 text.configure(text="DeveloperDiskImage not loaded")
                 developer = False
                 change.set(1)
-                raise SystemExit
+                return("nope")
 
     def developer_options(self):
         global developer
+        global lockdown
         ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
         ctk.CTkLabel(self.dynamic_frame, text="Developer Options", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Checking developer status.", width=585, height=100, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
