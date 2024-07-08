@@ -38,6 +38,7 @@ import hashlib
 import plistlib
 import posixpath
 import pathlib
+import numpy as np
 import pandas as pd
 import shutil
 import tarfile
@@ -79,9 +80,9 @@ class MyApp(ctk.CTk):
 
         # Widgets (left Frame))
         if platform.uname().system == 'Windows':
-            self.info_text = ctk.CTkTextbox(self.left_frame, height=700, width=340, fg_color="#2c353e", corner_radius=0, font=("Consolas", 14), activate_scrollbars=False)
+            self.info_text = ctk.CTkTextbox(self.left_frame, height=600, width=340, fg_color="#2c353e", corner_radius=0, font=("Consolas", 14), activate_scrollbars=False)
         else:
-            self.info_text = ctk.CTkTextbox(self.left_frame, height=700, width=340, fg_color="#2c353e", corner_radius=0, font=("monospace", 14), activate_scrollbars=False)
+            self.info_text = ctk.CTkTextbox(self.left_frame, height=600, width=340, fg_color="#2c353e", corner_radius=0, font=("monospace", 14), activate_scrollbars=False)
         if lockdown != None:
             self.info_text.configure(text_color="#abb3bd")
         else:
@@ -121,7 +122,7 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="Save device info", command=lambda: self.switch_menu("DevInfo"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Acquisition Options", command=lambda: self.switch_menu("AcqMenu"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Collect Unified Logs", command=lambda: self.switch_menu("CollectUL"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Developer Options", command=lambda: self.switch_menu("DevMenu"), width=200, height=70, font=self.stfont, state="disabled"),
+            ctk.CTkButton(self.dynamic_frame, text="Developer Options", command=lambda: self.switch_menu("CheckDev"), width=200, height=70, font=self.stfont, state="disabled"),
             ctk.CTkButton(self.dynamic_frame, text="Advanced Options", command=lambda: self.switch_menu("AdvMenu"), width=200, height=70, font=self.stfont),
         ]
         self.menu_text = ["Save informations about the device, installed apps,\nSIM and companion devices.", 
@@ -153,6 +154,8 @@ class MyApp(ctk.CTk):
             self.show_acq_menu()
         elif menu_name == "DevMenu":
             self.show_dev_menu()
+        elif menu_name == "CheckDev":    
+            self.developer_options()
         elif menu_name == "AdvMenu":
             self.show_adv_menu()
         elif menu_name == "WatchMenu":
@@ -1247,6 +1250,195 @@ class MyApp(ctk.CTk):
         self.progress.pack_forget()
         self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("WatchMenu")).pack(pady=40))  
 
+### check start
+
+    def mount_developer(self, change, text):
+        global developer
+        d_images = {4:[2,3], 5:[0,1], 6:[0,1], 7:[0,1], 8:[0,1,2,3,4], 9:[0,1,2,3],
+                    10:[0,1,2,3], 11:[0,1,2,3,4], 12:[0,1,2,3,4], 13:[0,1,2,3,4,5,7],
+                    14:[0,1,2,4,5,6,7,7.1,8], 15:[0,1,2,3,3.1,4,5,6,6.1,7],
+                    16:[0,1,2,3,3.1,4,4.1,5,6,7]}
+        try:
+            if DeveloperDiskImageMounter(lockdown).copy_devices() != []:
+                developer = True
+                change.set(1)
+                return("developer")
+        except:
+            pass
+        try:
+            if lockdown.developer_mode_status == True:
+                pass
+            else:
+                self.choose = ctk.BooleanVar(self, False)
+                text.configure(text="The device has to be rebooted in order to activate the developer mode.\n\n(Deactivate the PIN/PW before you proceed)\n\nDo you want to restart the device?")
+                self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
+                self.yesb.pack(side="left", pady=(0,350), padx=140)
+                self.nob = ctk.CTkButton(self.dynamic_frame, text="NO", font=self.stfont, command=lambda: self.choose.set(False))
+                self.nob.pack(side="left", pady=(0,350))    
+                self.wait_variable(self.choose)  
+                if self.choose.get() == True:
+                    self.yesb.pack_forget()
+                    self.nob.pack_forget()
+                    try:
+                        AmfiService(lockdown).enable_developer_mode(enable_post_restart=True)
+                        text.configure(text="Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\nAfter this, press \"OK\".")
+                    except:
+                        text.configure(text="Uh-Oh, an error was raised. Please remove the PIN/PW and try again")
+                        developer = False
+                        change.set(1)
+                        raise SystemExit
+                else:
+                    self.yesb.pack_forget()
+                    self.nob.pack_forget()
+                    developer = False
+                    change.set(1)
+                    raise SystemExit
+        except SystemExit:
+            change.set(1)
+            raise SystemExit
+        except:
+            pass
+        if int(version.split(".")[0]) < 17:
+            try: 
+                info = ("Looking for version " + version)
+                self.after(1000)
+                text.configure(text=info, anchor="nw", justify="left")
+                self.after(1000)
+                DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", version, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", version, "DeveloperDiskImage.dmg.signature"))
+                developer = True
+                change.set(1)
+                raise SystemExit   
+            except:
+                info = info + "\nVersion " + version + " not found"
+                text.configure(text=info)
+                self.after(1000)
+                v = version.split(".")
+                v_check = np.array(d_images[int(v[0])])
+                v_diff = np.absolute(v_check - int(v[1]))
+                index = v_diff.argmin()
+                ver = str(v[0]) + "." + str(d_images[int(v[0])][index])
+            finally:
+                if int(v[0]) <= 12 or DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+                    info = info + "\nClosest version is " + ver
+                    text.configure(text=info)
+                    self.after(1000)
+                    try:
+                        DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
+                        info = info + "\nVersion: " + ver + " was used"
+                        text.configure(text=info)
+                        developer = True
+                        return("developer")
+                    except exceptions.AlreadyMountedError:
+                        developer = True
+                        return("developer")            
+                    except: 
+                        for i in range(index)[::-1]:
+                            ver = str(v[0]) + "." + str(d_images[int(v[0])][i])
+                            try:
+                                DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
+                                info = info + "\nVersion: " + ver + " was used"
+                                text.configure(text=info)
+                                self.after(1000)
+                                break
+                            except:
+                                pass
+                        if int(v[0]) <= 12:
+                            developer = True
+                            change.set(1)
+                            raise SystemExit
+                        else:
+                            pass
+                        if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+                            text.configure(text="DeveloperDiskImage not loaded")
+                            developer = False
+                        else:
+                            text.configure(text="DeveloperDiskImage loaded")
+                            developer = True
+                            change.set(1)
+                            raise SystemExit
+                    
+                else:
+                    text.configure(text="DeveloperDiskImage loaded")
+                    developer = True
+                    change.set(1)
+                    raise SystemExit
+        else:
+            try:
+                text.configure(text="Mounting personalized image.")
+                PersonalizedImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Xcode_iOS_DDI_Personalized", "Image.dmg"), build_manifest=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Xcode_iOS_DDI_Personalized", "BuildManifest.plist"), trust_cache=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Xcode_iOS_DDI_Personalized", "Image.dmg.trustcache"))
+                developer = True
+                change.set(1)
+                raise SystemExit
+            except exceptions.AlreadyMountedError:
+                developer = True
+                change.set(1)
+                raise SystemExit
+            except:
+                text.configure(text="DeveloperDiskImage not loaded")
+                developer = False
+                change.set(1)
+                raise SystemExit
+
+    def developer_options(self):
+        global developer
+        ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
+        ctk.CTkLabel(self.dynamic_frame, text="Developer Options", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Checking developer status.", width=585, height=100, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
+        self.text.pack(anchor="center", pady=25)
+        if len(os.listdir(os.path.join(os.path.dirname(__file__),"ufade_developer"))) != 0:
+            pass
+        else:
+            self.text.configure(text="Directory \"ufade_developer\" not found.\nPlease clone the submodule:\n\ngit submodule init\ngit submodule update")
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("MainMenu")).pack(pady=40)) 
+        """
+        if int(version.split(".")[0]) >= 17:
+            try: 
+                tun = get_tunneld_devices()
+                if tun == []:
+                    tun = None
+            except:
+                tun = None
+            if tun == None:
+                d.msgbox("To use developer options on devices with iOS >= 17 a tunnel has to be created.\n\nProvide your \"sudo\" password after pressing \"OK\". (No input is shown):", width=50)
+                process = run(["sudo", "-E", "python3", "-m", "pymobiledevice3", "remote", "tunneld", "-d"])
+                #pid = process.pid
+            else: 
+                pass
+        else:
+            pass
+        """
+        if developer == True:
+            try:
+                if int(version.split(".")[0]) >= 17:
+                    lockdown = get_tunneld_devices()[0]
+                else:
+                    lockdown = create_using_usbmux()
+                dvt = DvtSecureSocketProxyService(lockdown)
+                dvt.__enter__()
+            except:
+                if int(version.split(".")[0]) >= 17:
+                    try: PersonalizedImageMounter(lockdown).umount()
+                    except: pass
+                else:
+                    try: DeveloperDiskImageMounter(lockdown).umount()
+                    except: pass
+                self.text.configure(text="Error. Try again.")
+                developer = False
+                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("MainMenu")).pack(pady=40))
+            finally:
+                self.switch_menu("DevMenu")
+        else:
+            self.change = ctk.IntVar(self, 0)
+            self.start_developer = threading.Thread(target=lambda:self.mount_developer(self.change, self.text))
+            self.start_developer.start()
+            self.wait_variable(self.change)
+            if developer == True:
+                self.switch_menu("DevMenu")
+            else:
+                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("MainMenu")).pack(pady=40))
+
+### check stop
+
 # Pull Media-files
 def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, progress=None, change=None):
     media_list = []
@@ -1592,6 +1784,7 @@ except:
     ispaired = False
 
 device = dev_data()
+developer = False
 
 
 # Start the app
