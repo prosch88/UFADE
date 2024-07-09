@@ -2,7 +2,7 @@
 # UFADE - Universal Forensic Apple Device Extractor (c) C.Peter 2024
 # Licensed under GPLv3 License
 import customtkinter as ctk
-from PIL import ImageTk
+from PIL import ImageTk, Image
 from tkinter import StringVar
 from pymobiledevice3 import usbmux, exceptions, lockdown
 from pymobiledevice3.services.mobile_image_mounter import DeveloperDiskImageMounter, MobileImageMounterService, PersonalizedImageMounter
@@ -33,6 +33,7 @@ from importlib.metadata import version
 from iOSbackup import iOSbackup
 from pyiosbackup import Backup
 from playsound import playsound
+from io import BytesIO
 import crossfiledialog
 import hashlib
 import plistlib
@@ -180,6 +181,14 @@ class MyApp(ctk.CTk):
             self.show_crash_report()
         elif menu_name == "Media":
             self.show_media()
+        elif menu_name == "FileLS":
+            dvt = DvtSecureSocketProxyService(lockdown)
+            dvt.__enter__()
+            self.show_fileloop(dvt)
+        elif menu_name == "Shot":
+            dvt = DvtSecureSocketProxyService(lockdown)
+            dvt.__enter__()
+            self.screen_device(dvt)
         elif menu_name == "NoDevice":
             self.show_nodevice()
         elif menu_name == "NotPaired":
@@ -249,14 +258,14 @@ class MyApp(ctk.CTk):
         self.skip = ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=20, font=self.stfont)
         self.skip.grid(row=0, column=1, sticky="w")
         self.menu_buttons = [
-            ctk.CTkButton(self.dynamic_frame, text="Take screenshots", command=lambda: self.switch_menu("Menu1"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Take screenshots", command=lambda: self.switch_menu("Shot"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Chat capture", command=lambda: self.switch_menu("Menu2"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Capture filesystem\nto text", command=lambda: self.switch_menu("Menu3"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Capture filesystem\nto text", command=lambda: self.switch_menu("FileLS"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Unmount\nDeveloperDiskImage", command=lambda: self.switch_menu("Menu3"), width=200, height=70, font=self.stfont),
         ]
         self.menu_text = ["Take screenshots from device screen.\nScreenshots will be saved under \"screenshots\" as PNG.", 
                           "Loop through a chat taking screenshots.\nOne screenshot is taken per message.", 
-                          "Write a filesystem list to a textfile.\nStarting from /var Folder. This may take some time.",
+                          "Write a filesystem list to a textfile. (iOS < 16)\nStarting from /var Folder. This may take some time.",
                           "Try to unmount the image. Reboot the device if this fails"]
         self.menu_textbox = []
         for btn in self.menu_buttons:
@@ -1252,6 +1261,7 @@ class MyApp(ctk.CTk):
 
 ### check start
 
+# Try to mount a suitable developerdiskimage
     def mount_developer(self, change, text):
         global developer
         global lockdown
@@ -1282,21 +1292,22 @@ class MyApp(ctk.CTk):
                     self.nob.pack_forget()
                     try:
                         AmfiService(lockdown).enable_developer_mode(enable_post_restart=True)
+                        self.choose.set(False)
                         text.configure(text="Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\nAfter this, press \"OK\".")
+                        self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.choose.set(True))
+                        self.wait_variable(self.choose)
+                        self.okbutton.pack_forget()
                     except:
                         text.configure(text="Uh-Oh, an error was raised. Please remove the PIN/PW and try again")
                         developer = False
                         change.set(1)
-                        raise SystemExit
+                        return("nope")
                 else:
                     self.yesb.pack_forget()
                     self.nob.pack_forget()
                     developer = False
                     change.set(1)
-                    raise SystemExit
-        except SystemExit:
-            change.set(1)
-            raise SystemExit
+                    return("nope")
         except:
             pass
         if int(version.split(".")[0]) < 17:
@@ -1440,11 +1451,124 @@ class MyApp(ctk.CTk):
             self.start_developer.start()
             self.wait_variable(self.change)
             if developer == True:
+                #lockdown = create_using_usbmux()
+                #dvt = DvtSecureSocketProxyService(lockdown)
+                #dvt.__enter__()
                 self.switch_menu("DevMenu")
             else:
                 self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("MainMenu")).pack(pady=40))
 
+# Device screenshot
+    def screen_device(self, dvt):
+        #ls = os.listdir(path="screenshots")
+        #lss = "\n".join(str(element) for element in ls)
+        ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
+        ctk.CTkLabel(self.dynamic_frame, text="Take Screenshots", height=40, width=585, font=("standard",24), justify="left").pack(pady=10)
+        self.shotframe = ctk.CTkFrame(self.dynamic_frame, width=400, corner_radius=0, fg_color="transparent")
+        self.textframe = ctk.CTkFrame(self.dynamic_frame, width=200, corner_radius=0, fg_color="transparent")
+        self.shotframe.pack(side="left", pady=20, padx=40, fill="y", expand=True)
+        self.textframe.pack(side="left", pady=20, fill="both", expand=True)
+        self.placeholder_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "screen_ufade.png")), size=(240, 426))
+        self.imglabel = ctk.CTkLabel(self.shotframe, image=self.placeholder_image, text=" ", width=240, height=426, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
+        self.imglabel.pack()
+        try: os.mkdir("screenshots")
+        except: pass
+        self.abortbutton = ctk.CTkButton(self.textframe, text="Screenshot", font=self.stfont, command=lambda: self.shot(dvt, self.imglabel, self.namefield))
+        self.abortbutton.pack(pady=30, ipadx=0, anchor="w")
+        self.abortbutton = ctk.CTkButton(self.textframe, text="Back", font=self.stfont, command=lambda: self.switch_menu("DevMenu"))
+        self.abortbutton.pack(pady=5, ipadx=0, anchor="w")
+        self.namefield = ctk.CTkLabel(self.textframe, text=" ", width=300, height=100, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
+        self.namefield.pack(anchor="w", pady=10)
+
+    def shot(self, dvt, imglabel, namefield, chat=None):
+        hsize = 426
+        try:
+            png = Screenshot(dvt).get_screenshot()
+        except: 
+            png = ScreenshotService(lockdown).take_screenshot()
+        png_bytes = BytesIO()
+        png_bytes.write(png)
+        shot = Image.open(png_bytes)
+        hperc = (hsize/float(shot.size[1]))
+        wsize = int((float(shot.size[0])*float(hperc)))
+        if wsize > 300:
+            wsize = 300
+            wperc = (wsize/float(shot.size[0]))
+            hsize = int((float(shot.size[1])*float(wperc)))
+        screensh = ctk.CTkImage(dark_image=shot, size=(wsize, hsize))
+        imglabel.configure(image=screensh)
+        if chat == None:
+            filename = hardware + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png"
+            with open(os.path.join("screenshots", filename), "wb") as file:
+                file.write(png)
+            namefield.configure(text=f"Screenshot saved as:\n{filename}")
+        else:
+            pass
+
+
+# Fileloop window
+    def show_fileloop(self, dvt):
+        ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
+        ctk.CTkLabel(self.dynamic_frame, text="Filesystem content", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Creating a filesystem-list. This will take a while.", width=585, height=60, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
+        self.text.pack(anchor="center", pady=25)
+        self.prog_text = ctk.CTkLabel(self.dynamic_frame, text="0%", width=585, height=20, font=self.stfont, anchor="w", justify="left")
+        self.prog_text.pack() 
+        self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
+        self.progress.set(0)
+        self.progress.pack()
+        self.folder_text = ctk.CTkLabel(self.dynamic_frame, text="Folder: ", width=585, height=40, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
+        self.folder_text.pack()
+        self.waitls = ctk.IntVar(self, 0)
+        self.dev_ls = threading.Thread(target=lambda: self.call_fileloop(dvt, self.waitls, self.prog_text, self.progress, self.folder_text))
+        self.dev_ls.start()
+        self.wait_variable(self.waitls)
+        self.prog_text.pack_forget()
+        self.progress.pack_forget()
+        self.folder_text.pack_forget()
+        self.text.configure(text="Creation of filesystem-list complete.")
+        self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("DevMenu")).pack(pady=40))
+
+# Call the fileloop and write the output to a file
+    def call_fileloop(self, dvt, waitls, prog_text, progress, folder_text):
+        folders = []
+        for line in DeviceInfo(dvt).ls("/"):
+            folders.append(line)
+        fcount = len(folders)
+        cnt = 0
+        pathlist = []
+        pathlist = fileloop(dvt, "/var", pathlist, fcount, cnt, folder_text, progress, prog_text)
+        with open(udid + "_var_filesystem.txt", "w") as files:
+            for line in pathlist:
+                files.write("\n" + line)
+        prog_text.configure(text="100%")
+        progress.set(1)
+        waitls.set(1)
+
 ### check stop
+
+# Developer Mode filesystem-"ls"-loop
+def fileloop(dvt, start, lista, fcount, cnt, folder_text, progress, prog_text):
+    pathlist = lista
+    try: 
+        next = DeviceInfo(dvt).ls(start)
+        for line in next:
+            next_path = (start + "/" + line)
+            if len(next_path.split("/")) == 3:
+                cnt += 1
+                fpro = int(44*(cnt/fcount))%100
+                prog_text.configure(text=f"{fpro}%")
+                progress.set(fpro/100)
+                folder_text.configure(text="Folder: " + next_path)
+            if next_path in pathlist:
+                break
+            else:
+                pathlist.append(next_path)
+                fileloop(dvt, next_path, pathlist, fcount, cnt, folder_text, progress, prog_text) 
+    except: 
+        pass
+    finally:
+        return(pathlist)
 
 # Pull Media-files
 def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, progress=None, change=None):
