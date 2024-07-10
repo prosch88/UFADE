@@ -60,7 +60,7 @@ class MyApp(ctk.CTk):
         self.stop_event = threading.Event()
 
         # Define Window
-        self.title("Universal Forensic Apple Device Extractor 0.6")
+        self.title("Universal Forensic Apple Device Extractor 0.7")
         self.geometry("1100x600")
         self.resizable(False, False)
         self.iconpath = ImageTk.PhotoImage(file=os.path.join(os.path.dirname(__file__), "assets" , "ufade.png" ))
@@ -123,12 +123,12 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="Save device info", command=lambda: self.switch_menu("DevInfo"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Acquisition Options", command=lambda: self.switch_menu("AcqMenu"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Collect Unified Logs", command=lambda: self.switch_menu("CollectUL"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Developer Options", command=lambda: self.switch_menu("CheckDev"), width=200, height=70, font=self.stfont, state="disabled"),
+            ctk.CTkButton(self.dynamic_frame, text="Developer Options", command=lambda: self.switch_menu("CheckDev"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Advanced Options", command=lambda: self.switch_menu("AdvMenu"), width=200, height=70, font=self.stfont),
         ]
         self.menu_text = ["Save informations about the device, installed apps,\nSIM and companion devices.", 
                           "Allows logical, advanced logical and filesystem\nextractions.", 
-                          "Collects the AUL (Syslogs) from the device and saves\nthem as a logarchive.",
+                          "Collects the AUL from the device and saves\nthem as a logarchive.",
                           "Access developer mode for further options.\nMainly screenshotting options.",
                           "More specific options for data handling."]
         self.menu_textbox = []
@@ -189,6 +189,12 @@ class MyApp(ctk.CTk):
             dvt = DvtSecureSocketProxyService(lockdown)
             dvt.__enter__()
             self.screen_device(dvt)
+        elif menu_name == "ChatLoop":
+            dvt = DvtSecureSocketProxyService(lockdown)
+            dvt.__enter__()
+            self.chat_shotloop(dvt)
+        elif menu_name == "umount":
+            self.call_unmount()
         elif menu_name == "NoDevice":
             self.show_nodevice()
         elif menu_name == "NotPaired":
@@ -207,7 +213,7 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="Extract AFC Media files", command=lambda: self.switch_menu("Media"), width=200, height=70, font=self.stfont),
         ]
         self.menu_text = ["Save informations about the device, installed apps,\nSIM and companion devices.", 
-                          "Collects the AUL (Syslogs) from the device and saves\nthem as a logarchive.", 
+                          "Collects the AUL from the device and saves\nthem as a logarchive.", 
                           "Pull the crash report folder from the device.",
                           "Pull the \"Media\"-folder from the device\n(pictures, videos, recordings)"]
         self.menu_textbox = []
@@ -259,11 +265,11 @@ class MyApp(ctk.CTk):
         self.skip.grid(row=0, column=1, sticky="w")
         self.menu_buttons = [
             ctk.CTkButton(self.dynamic_frame, text="Take screenshots", command=lambda: self.switch_menu("Shot"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Chat capture", command=lambda: self.switch_menu("Menu2"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Chat capture", command=lambda: self.switch_menu("ChatLoop"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Capture filesystem\nto text", command=lambda: self.switch_menu("FileLS"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Unmount\nDeveloperDiskImage", command=lambda: self.switch_menu("Menu3"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Unmount\nDeveloperDiskImage", command=lambda: self.switch_menu("umount"), width=200, height=70, font=self.stfont),
         ]
-        self.menu_text = ["Take screenshots from device screen.\nScreenshots will be saved under \"screenshots\" as PNG.", 
+        self.menu_text = ["Take screenshots from device screen.\nScreenshots will be saved u(Syslogs) nder \"screenshots\" as PNG.", 
                           "Loop through a chat taking screenshots.\nOne screenshot is taken per message.", 
                           "Write a filesystem list to a textfile. (iOS < 16)\nStarting from /var Folder. This may take some time.",
                           "Try to unmount the image. Reboot the device if this fails"]
@@ -433,7 +439,7 @@ class MyApp(ctk.CTk):
             text = text + "- phone number\n"
         if comp != []:
             text = text + "- companion udid\n"
-        if all != "":
+        if all != "" and None:
             text = text + "- SIM information\n"
         if app_id_list != []:
             text = text + "- app information"
@@ -788,6 +794,7 @@ class MyApp(ctk.CTk):
     def decrypt_whatsapp(self, change):
         b.getFolderDecryptedCopy(targetFolder="WA_PuMA", includeDomains="AppDomainGroup-group.net.whatsapp.WhatsApp.shared")
         shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","Message", "Media"), os.path.join("WA_PuMA","Media"))
+        shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","Media", "Profile"), os.path.join("WA_PuMA","Profile"))
         shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","ChatStorage.sqlite"), os.path.join("WA_PuMA","ChatStorage.sqlite"))
         shutil.rmtree(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared"))
         change.set(1)
@@ -1281,7 +1288,7 @@ class MyApp(ctk.CTk):
                 pass
             else:
                 self.choose = ctk.BooleanVar(self, False)
-                text.configure(text="The device has to be rebooted in order to activate the developer mode.\n\n(Deactivate the PIN/PW before you proceed)\n\nDo you want to restart the device?")
+                text.configure(text="The device has to be rebooted in order to activate the developer mode.\n(Deactivate the PIN/PW before you proceed)\n\nDo you want to restart the device?")
                 self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
                 self.yesb.pack(side="left", pady=(0,350), padx=140)
                 self.nob = ctk.CTkButton(self.dynamic_frame, text="NO", font=self.stfont, command=lambda: self.choose.set(False))
@@ -1290,13 +1297,19 @@ class MyApp(ctk.CTk):
                 if self.choose.get() == True:
                     self.yesb.pack_forget()
                     self.nob.pack_forget()
+                    text.configure(text="Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\nAfter this, press \"OK\".")
                     try:
-                        AmfiService(lockdown).enable_developer_mode(enable_post_restart=True)
+                        amfi_dev = threading.Thread(target=lambda: AmfiService(lockdown).enable_developer_mode(enable_post_restart=True))
+                        amfi_dev.start()
                         self.choose.set(False)
-                        text.configure(text="Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\nAfter this, press \"OK\".")
                         self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.choose.set(True))
+                        self.okbutton.pack()
                         self.wait_variable(self.choose)
                         self.okbutton.pack_forget()
+                        if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+                            text.configure(text="Uh-Oh, an error was raised.\nWait for the device to reboot and try again.")
+                            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                            return
                     except:
                         text.configure(text="Uh-Oh, an error was raised. Please remove the PIN/PW and try again")
                         developer = False
@@ -1332,6 +1345,7 @@ class MyApp(ctk.CTk):
                 ver = str(v[0]) + "." + str(d_images[int(v[0])][index])
             finally:
                 if int(v[0]) <= 12 or DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+                    self.after(1000)
                     info = info + "\nClosest version is " + ver
                     text.configure(text=info)
                     lockdown = create_using_usbmux()
@@ -1397,17 +1411,32 @@ class MyApp(ctk.CTk):
                 return("nope")
 
     def developer_options(self):
+        self.change = ctk.IntVar(self, 0)
         global developer
         global lockdown
         ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
         ctk.CTkLabel(self.dynamic_frame, text="Developer Options", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Checking developer status.", width=585, height=100, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
-        if len(os.listdir(os.path.join(os.path.dirname(__file__),"ufade_developer"))) != 0:
-            pass
-        else:
+        try:
+            if len(os.listdir(os.path.join(os.path.dirname(__file__),"ufade_developer"))) != 0:
+                pass
+            else:
+                self.text.configure(text="Directory \"ufade_developer\" is empty.\nPlease clone the submodule:\n\ngit submodule init\ngit submodule update")
+                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=show_main_menu).pack(pady=40))
+                return 
+        except:
             self.text.configure(text="Directory \"ufade_developer\" not found.\nPlease clone the submodule:\n\ngit submodule init\ngit submodule update")
-            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("MainMenu")).pack(pady=40)) 
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+            return
+
+        if int(version.split(".")[0]) >= 17:
+            self.text.configure(text="Devices with iOS 17 and up aren't currently supported in this Version of UFADE.\nTry the CLI Version instead")
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+            return
+        else:
+            pass
+        #self.wait_variable(self.change)
         """
         if int(version.split(".")[0]) >= 17:
             try: 
@@ -1442,11 +1471,15 @@ class MyApp(ctk.CTk):
                     except: pass
                 self.text.configure(text="Error. Try again.")
                 developer = False
-                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("MainMenu")).pack(pady=40))
+                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                return
             finally:
-                self.switch_menu("DevMenu")
+                if developer == True:
+                    self.switch_menu("DevMenu")
+                else:
+                    pass
         else:
-            self.change = ctk.IntVar(self, 0)
+            self.change.set(0)
             self.start_developer = threading.Thread(target=lambda:self.mount_developer(self.change, self.text))
             self.start_developer.start()
             self.wait_variable(self.change)
@@ -1456,12 +1489,10 @@ class MyApp(ctk.CTk):
                 #dvt.__enter__()
                 self.switch_menu("DevMenu")
             else:
-                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("MainMenu")).pack(pady=40))
+                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
 
 # Device screenshot
     def screen_device(self, dvt):
-        #ls = os.listdir(path="screenshots")
-        #lss = "\n".join(str(element) for element in ls)
         ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
         ctk.CTkLabel(self.dynamic_frame, text="Take Screenshots", height=40, width=585, font=("standard",24), justify="left").pack(pady=10)
         self.shotframe = ctk.CTkFrame(self.dynamic_frame, width=400, corner_radius=0, fg_color="transparent")
@@ -1473,14 +1504,18 @@ class MyApp(ctk.CTk):
         self.imglabel.pack()
         try: os.mkdir("screenshots")
         except: pass
-        self.abortbutton = ctk.CTkButton(self.textframe, text="Screenshot", font=self.stfont, command=lambda: self.shot(dvt, self.imglabel, self.namefield))
-        self.abortbutton.pack(pady=30, ipadx=0, anchor="w")
+        self.shotbutton = ctk.CTkButton(self.textframe, text="Screenshot", font=self.stfont, command=lambda: self.shotthread(dvt, self.imglabel, self.namefield))
+        self.shotbutton.pack(pady=20, ipadx=0, anchor="w")
         self.abortbutton = ctk.CTkButton(self.textframe, text="Back", font=self.stfont, command=lambda: self.switch_menu("DevMenu"))
         self.abortbutton.pack(pady=5, ipadx=0, anchor="w")
         self.namefield = ctk.CTkLabel(self.textframe, text=" ", width=300, height=100, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
         self.namefield.pack(anchor="w", pady=10)
 
-    def shot(self, dvt, imglabel, namefield, chat=None):
+    def shotthread(self, dvt, imglabel, namefield):
+        self.doshot = threading.Thread(target=lambda: self.shot(dvt, self.imglabel, self.namefield))
+        self.doshot.start()
+
+    def shot(self, dvt, imglabel, namefield):
         hsize = 426
         try:
             png = Screenshot(dvt).get_screenshot()
@@ -1497,14 +1532,120 @@ class MyApp(ctk.CTk):
             hsize = int((float(shot.size[1])*float(wperc)))
         screensh = ctk.CTkImage(dark_image=shot, size=(wsize, hsize))
         imglabel.configure(image=screensh)
-        if chat == None:
-            filename = hardware + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png"
-            with open(os.path.join("screenshots", filename), "wb") as file:
+        filename = hardware + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png"
+        with open(os.path.join("screenshots", filename), "wb") as file:
+            file.write(png)
+        namefield.configure(text=f"Screenshot saved as:\n{filename}")
+
+    def chat_shotloop(self, dvt):
+        try: os.mkdir("screenshots")
+        except: pass
+        ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
+        ctk.CTkLabel(self.dynamic_frame, text="Chat Capture", height=40, width=585, font=("standard",24), justify="left").pack(pady=10)
+        self.shotframe = ctk.CTkFrame(self.dynamic_frame, width=400, corner_radius=0, fg_color="transparent")
+        self.textframe = ctk.CTkFrame(self.dynamic_frame, width=200, corner_radius=0, fg_color="transparent")
+        self.shotframe.pack(side="left", pady=20, padx=40, fill="y", expand=True)
+        self.textframe.pack(side="left", pady=20, fill="both", expand=True)
+        self.placeholder_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "screen_ufade.png")), size=(240, 426))
+        self.imglabel = ctk.CTkLabel(self.shotframe, image=self.placeholder_image, text=" ", width=240, height=426, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
+        self.imglabel.pack()
+        self.text = ctk.CTkLabel(self.textframe, text="Open the chat application and the chat\nyou want to capture, enter the name of\nthe chosen chat in the given fields", width=300, height=60, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
+        self.text.pack(anchor="w", pady=10)
+        self.appbox = ctk.CTkEntry(self.textframe, width=140, height=20, corner_radius=0, placeholder_text="name of the app")
+        self.appbox.pack(pady=10, ipadx=0, anchor="w")
+        self.chatbox = ctk.CTkEntry(self.textframe, width=140, height=20, corner_radius=0, placeholder_text="name of the chat")
+        self.chatbox.pack(pady=10, ipadx=0, anchor="w")
+        self.upbutton = ctk.CTkButton(self.textframe, text="↑ Up", font=self.stfont, command=lambda: self.chatshotthread(dvt, app_name=self.appbox.get(), chat_name=self.chatbox.get(), direction="up", imglabel=self.imglabel, namefield=self.namefield, text=self.text))
+        self.upbutton.pack(pady=10, ipadx=0, anchor="w")
+        self.downbutton = ctk.CTkButton(self.textframe, text="↓ Down", font=self.stfont, command=lambda: self.chatshotthread(dvt, app_name=self.appbox.get(), chat_name=self.chatbox.get(), direction="down", imglabel=self.imglabel, namefield=self.namefield, text=self.text))
+        self.downbutton.pack(pady=10, ipadx=0, anchor="w")
+        self.breakbutton = ctk.CTkButton(self.textframe, text="Cancel Loop", fg_color="#8c2c27", font=self.stfont, command=self.breakshotloop)
+        self.breakbutton.pack(pady=10, ipadx=0, anchor="w")
+        self.abortbutton = ctk.CTkButton(self.textframe, text="Back", font=self.stfont, command=lambda: self.switch_menu("DevMenu"))
+        self.abortbutton.pack(pady=10, ipadx=0, anchor="w")
+        self.namefield = ctk.CTkLabel(self.textframe, text=" ", width=300, height=60, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
+        self.namefield.pack(anchor="w", pady=10)
+
+
+    def chatshotthread(self, dvt, app_name, chat_name, direction, imglabel, namefield, text):
+        ab_count = 0
+        sc_count = 0
+        self.stop_event.clear()
+        self.doshot = threading.Thread(target=lambda: self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, text, first=True))
+        self.doshot.start()
+    
+    def breakshotloop(self):
+        self.stop_event.set()
+    
+    def shotloop(self, dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, text, png=None, first=False):
+        filename = chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png"
+        hsize = 426
+        if direction == "down":
+            ch_direction = Direction.Next
+        else:
+            ch_direction = Direction.Previous
+        if text != None:
+            text.configure(text="Chat capture is running.")
+        if first != False:
+            try: os.mkdir(os.path.join("screenshots", app_name))
+            except: pass
+            try: os.mkdir(os.path.join("screenshots", app_name, chat_name))
+            except: pass
+            png = Screenshot(dvt).get_screenshot()
+            png_bytes = BytesIO()
+            png_bytes.write(png)
+            shot = Image.open(png_bytes)
+            hperc = (hsize/float(shot.size[1]))
+            wsize = int((float(shot.size[0])*float(hperc)))
+            if wsize > 300:
+                wsize = 300
+                wperc = (wsize/float(shot.size[0]))
+                hsize = int((float(shot.size[1])*float(wperc)))
+            screensh = ctk.CTkImage(dark_image=shot, size=(wsize, hsize))
+            imglabel.configure(image=screensh)
+            with open(os.path.join("screenshots", app_name, chat_name, filename), "wb") as file:
                 file.write(png)
             namefield.configure(text=f"Screenshot saved as:\n{filename}")
+            self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, png=png, text=text)
         else:
-            pass
-
+            while not self.stop_event.is_set():
+                if ab_count >= 4:
+                    text.configure(text="Chat loop finished.")
+                    self.stop_event.set()
+                    return
+                else:
+                    prev = png
+                    AccessibilityAudit(lockdown).move_focus(ch_direction)
+                    AccessibilityAudit(lockdown).set_show_visuals(False)
+                    time.sleep(0.3)
+                    png = Screenshot(dvt).get_screenshot()
+                    if png != prev:
+                        png_bytes = BytesIO()
+                        png_bytes.write(png)
+                        shot = Image.open(png_bytes)
+                        hperc = (hsize/float(shot.size[1]))
+                        wsize = int((float(shot.size[0])*float(hperc)))
+                        if wsize > 300:
+                            wsize = 300
+                            wperc = (wsize/float(shot.size[0]))
+                            hsize = int((float(shot.size[1])*float(wperc)))
+                        screensh = ctk.CTkImage(dark_image=shot, size=(wsize, hsize))
+                        imglabel.configure(image=screensh)
+                        with open(os.path.join("screenshots", app_name, chat_name, filename) + ".png", "wb") as file:
+                            file.write(png)
+                        namefield.configure(text=f"Screenshot saved as:\n{filename}")
+                        sc_count += 1
+                        ab_count = 0
+                    else:
+                        if sc_count > 3:
+                            ab_count += 1
+                        else:
+                            pass
+                    self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, png=png, text=text)
+            text.configure(text="Chat loop stopped.")
+            AccessibilityAudit(lockdown).set_show_visuals(False)
+            return("interrupt")
+    
 
 # Fileloop window
     def show_fileloop(self, dvt):
@@ -1545,7 +1686,43 @@ class MyApp(ctk.CTk):
         progress.set(1)
         waitls.set(1)
 
-### check stop
+    def call_unmount(self):
+        global developer
+        ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
+        ctk.CTkLabel(self.dynamic_frame, text="Unmounting DeveloperDiskImage", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Trying to unmount the image.", width=585, height=60, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
+        self.text.pack(anchor="center", pady=25)
+        self.change = ctk.IntVar(self, 0)
+        if int(version.split(".")[0]) < 14:
+            self.text.configure(text="Unmount not possible on devices with iOS < 14.0.\nReboot the device to unmount the image. ")
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("DevMenu")).pack(pady=40))
+            return
+        else:
+            unmount_timer = threading.Timer(6.0, unmount_abort_timer)
+            unmount_timer.start()
+            umount = threading.Thread(target=lambda: unmount_developer(self.text, self.change))
+            umount.start()
+            self.wait_variable(self.change)
+            unmount_timer.cancel()
+            developer = False
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+
+def unmount_abort_timer():
+    raise exceptions.UnsupportedCommandError()
+
+def unmount_developer(text, change):
+    try:
+        if int(version.split(".")[0]) >= 17:
+            PersonalizedImageMounter(lockdown).umount()
+        else:
+            DeveloperDiskImageMounter(lockdown).umount()
+        developer = False
+        text.configure(text="DeveloperDiskImage unmounted.")
+        change.set(1)
+    except: 
+        text.configure(text="DeveloperDiskImage could not be unmounted. Restart the device to unmount.")
+        change.set(1)
+        pass
 
 # Developer Mode filesystem-"ls"-loop
 def fileloop(dvt, start, lista, fcount, cnt, folder_text, progress, prog_text):
