@@ -1570,6 +1570,9 @@ class MyApp(ctk.CTk):
     def chatshotthread(self, dvt, app_name, chat_name, direction, imglabel, namefield, text):
         ab_count = 0
         sc_count = 0
+        self.upbutton.configure(state="disabled")
+        self.downbutton.configure(state="disabled")
+        self.abortbutton.configure(state="disabled")
         self.stop_event.clear()
         self.doshot = threading.Thread(target=lambda: self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, text, first=True))
         self.doshot.start()
@@ -1611,6 +1614,9 @@ class MyApp(ctk.CTk):
             while not self.stop_event.is_set():
                 if ab_count >= 4:
                     text.configure(text="Chat loop finished.")
+                    self.upbutton.configure(state="enabled")
+                    self.downbutton.configure(state="enabled")
+                    self.abortbutton.configure(state="enabled")
                     self.stop_event.set()
                     return
                 else:
@@ -1643,7 +1649,11 @@ class MyApp(ctk.CTk):
                             pass
                     self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, png=png, text=text)
             text.configure(text="Chat loop stopped.")
+            self.upbutton.configure(state="enabled")
+            self.downbutton.configure(state="enabled")
+            self.abortbutton.configure(state="enabled")
             AccessibilityAudit(lockdown).set_show_visuals(False)
+            raise KeyboardInterrupt
             return("interrupt")
     
 
