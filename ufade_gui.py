@@ -2070,7 +2070,7 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
 
         if not self.isdir(src):
             # normal file
-            if "default.realm.management" in src:
+            if "default.realm" in src:
                 pass
             else:
                 mtime = self.stat(src)['st_mtime'].timestamp()
