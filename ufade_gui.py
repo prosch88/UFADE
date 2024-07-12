@@ -2070,12 +2070,15 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
 
         if not self.isdir(src):
             # normal file
-            mtime = self.stat(src)['st_mtime'].timestamp()
-            if os.path.isdir(dst):
-                dst = os.path.join(dst, os.path.basename(relative_src))
-            with open(dst, 'wb') as f:
-                f.write(self.get_file_contents(src))
-            os.utime(dst, (mtime, mtime))
+            if "lock.fifo" in src:
+                pass
+            else:
+           		mtime = self.stat(src)['st_mtime'].timestamp()
+           		if os.path.isdir(dst):
+               		dst = os.path.join(dst, os.path.basename(relative_src))
+           		with open(dst, 'wb') as f:
+               		f.write(self.get_file_contents(src))
+           		os.utime(dst, (mtime, mtime))
         else:
             # directory
             dst_path = pathlib.Path(dst) / os.path.basename(relative_src)
