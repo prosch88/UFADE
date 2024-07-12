@@ -664,7 +664,7 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
 
         if not self.isdir(src):
             # normal file
-             if "default.realm" in src:
+             if "default.realm." in src:
                 pass
                 mtime = self.stat(src)['st_mtime'].timestamp()
                 if os.path.isdir(dst):
