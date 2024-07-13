@@ -58,6 +58,11 @@ Start the script:
 ```
 python ufade.py
 ```
+or
+```
+python ufade_gui.py
+```
+
 Possibly the trust-message is shown on the device screen. Confirm with "trust".
 Now you should see the device information screen and will be prompted to choose a working directory.
 By default, the script is setting this to the directory from which it has been called.
@@ -104,5 +109,21 @@ Like this tool?
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/I3I3H646F)
 
+## Acknowledgements
 
+This script utilizes the following projects:
+
+[pymobiledevice3](https://github.com/doronz88/pymobiledevice3) by [doronz88](https://github.com/doronz88)
+
+[iOSbackup](https://github.com/avibrazil/iOSbackup) by [avibrazil](https://github.com/avibrazil)
+
+[pyiosbackup](https://github.com/matan1008/pyiosbackup) by [matan1008](https://github.com/matan1008)
+
+[pythondialog](https://github.com/frougon/pythondialog) by [frougon](https://github.com/frougon) 
+
+[CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) by [TomSchimansky](https://github.com/TomSchimansky) 
+
+[crossfiledialog](https://github.com/maikelwever/crossfiledialog) by [maikelwever](https://github.com/maikelwever)
+
+[paramiko](https://github.com/paramiko/paramiko), [pandas](https://github.com/pandas-dev/pandas), [pyarrow](https://github.com/apache/arrow), [playsound](https://github.com/TaylorSMarks/playsound) 
 
