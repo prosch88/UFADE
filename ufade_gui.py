@@ -456,21 +456,36 @@ class MyApp(ctk.CTk):
         save_info()
         ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
         ctk.CTkLabel(self.dynamic_frame, text="Collect Unified Logs", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
-        self.text = ctk.CTkLabel(self.dynamic_frame, text="Collecting Unified Logs from device.\nThis may take some time.", width=585, height=60, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Collecting Unified Logs will take some time.\ndo you want to continue?", width=585, height=60, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
         self.text.pack(pady=25)
-        self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
-        self.progress.pack()
-        self.progress.start()
-        self.waitul = ctk.IntVar(self, 0)
-        self.coll = threading.Thread(target=lambda: self.collect_ul(time=None, text=self.text, waitul=self.waitul))
-        self.coll.start()
-        self.wait_variable(self.waitul)
-        self.progress.stop()
-        self.progress.pack_forget()
-        if d_class == "Watch":
-            ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
+        self.choose = ctk.BooleanVar(self, False)
+        self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
+        self.yesb.pack(side="left", pady=(0,350), padx=140)
+        self.nob = ctk.CTkButton(self.dynamic_frame, text="NO", font=self.stfont, command=lambda: self.choose.set(False))
+        self.nob.pack(side="left", pady=(0,350))    
+        self.wait_variable(self.choose)                             
+        if self.choose.get() == True:  
+            self.yesb.pack_forget()
+            self.nob.pack_forget()    
+            self.text.configure(text="Collecting Unified Logs from device.\nThis may take some time.")
+            self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
+            self.progress.pack()
+            self.progress.start()
+            self.waitul = ctk.IntVar(self, 0)
+            self.coll = threading.Thread(target=lambda: self.collect_ul(time=None, text=self.text, waitul=self.waitul))
+            self.coll.start()
+            self.wait_variable(self.waitul)
+            self.progress.stop()
+            self.progress.pack_forget()
+            if d_class == "Watch":
+                ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
+            else:
+                ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=10)
         else:
-            ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=10)
+            if d_class == "Watch":
+                self.show_watch_menu()
+            else:
+                self.show_main_menu()
 
 # Crash Report extraction as single function or as part of a flow
     def show_crash_report(self, dir="Crash Report", flow=False):
