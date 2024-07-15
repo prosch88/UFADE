@@ -34,7 +34,6 @@ from iOSbackup import iOSbackup
 from pyiosbackup import Backup
 from playsound import playsound
 from io import BytesIO
-import crossfiledialog
 import hashlib
 import plistlib
 import posixpath
@@ -420,6 +419,7 @@ class MyApp(ctk.CTk):
         global dir
         olddir = dir
         if platform.uname().system == 'Linux':
+            import crossfiledialog
             dir = crossfiledialog.choose_folder()
             if dir == "":
                 dir = olddir
