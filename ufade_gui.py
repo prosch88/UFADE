@@ -268,7 +268,7 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="Capture filesystem\nto text", command=lambda: self.switch_menu("FileLS"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Unmount\nDeveloperDiskImage", command=lambda: self.switch_menu("umount"), width=200, height=70, font=self.stfont),
         ]
-        self.menu_text = ["Take screenshots from device screen.\nScreenshots will be saved u(Syslogs) nder \"screenshots\" as PNG.", 
+        self.menu_text = ["Take screenshots from device screen.\nScreenshots will be saved under \"screenshots\" as PNG.", 
                           "Loop through a chat taking screenshots.\nOne screenshot is taken per message.", 
                           "Write a filesystem list to a textfile. (iOS < 16)\nStarting from /var Folder. This may take some time.",
                           "Try to unmount the image. Reboot the device if this fails"]
@@ -1296,6 +1296,10 @@ class MyApp(ctk.CTk):
                 developer = True
                 change.set(1)
                 return("developer")
+        except exceptions.MessageNotSupportedError:
+            text.configure(text="Something went wrong. Make sure the device is unlocked.")
+            change.set(1)
+            return("nope")
         except:
             pass
         try:
@@ -1438,7 +1442,7 @@ class MyApp(ctk.CTk):
                 pass
             else:
                 self.text.configure(text="Directory \"ufade_developer\" is empty.\nPlease clone the submodule:\n\ngit submodule init\ngit submodule update")
-                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=show_main_menu).pack(pady=40))
+                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
                 return 
         except:
             self.text.configure(text="Directory \"ufade_developer\" not found.\nPlease clone the submodule:\n\ngit submodule init\ngit submodule update")
@@ -1723,13 +1727,16 @@ class MyApp(ctk.CTk):
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("DevMenu")).pack(pady=40))
             return
         else:
-            unmount_timer = threading.Timer(6.0, unmount_abort_timer)
-            unmount_timer.start()
-            umount = threading.Thread(target=lambda: unmount_developer(self.text, self.change))
-            umount.start()
-            self.wait_variable(self.change)
-            unmount_timer.cancel()
-            developer = False
+            try:
+                unmount_timer = threading.Timer(6.0, unmount_abort_timer)
+                unmount_timer.start()
+                umount = threading.Thread(target=lambda: unmount_developer(self.text, self.change))
+                umount.start()
+                self.wait_variable(self.change)
+                unmount_timer.cancel()
+                developer = False
+            except:
+                pass
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
 
 def unmount_abort_timer():
@@ -1746,6 +1753,7 @@ def unmount_developer(text, change):
         change.set(1)
     except: 
         text.configure(text="DeveloperDiskImage could not be unmounted. Restart the device to unmount.")
+        developer = True
         change.set(1)
         pass
 
@@ -1998,9 +2006,18 @@ def dev_data():
                 name_s = ' '.join(wordnames[:-2]) + "\n" + '{:13}'.format(" ") + "\t" + ' '.join(wordnames[-2:])
         else:
             name_s = name
+        if len(dev_name) > 26:
+            wordnames = dev_name.split()
+            if len(' '.join(wordnames[:-1])) < 27:
+                dev_name_s = ' '.join(wordnames[:-1]) + "\n" + '{:13}'.format(" ") + "\t" + wordnames[-1]
+            else:
+                dev_name_s = ' '.join(wordnames[:-2]) + "\n" + '{:13}'.format(" ") + "\t" + ' '.join(wordnames[-2:])
+        else:
+            dev_name_s = dev_name
+
         if ispaired == True:
             device = ("Device paired ✔ \n\n" +
-                '{:13}'.format("Model-Nr: ") + "\t" + dev_name +
+                '{:13}'.format("Model-Nr: ") + "\t" + dev_name_s +
                 "\n" + '{:13}'.format("Dev-Name: ") + "\t" + name_s +
                 "\n" + '{:13}'.format("Hardware: ") + "\t" + hardware + ", " + mnr +
                 "\n" + '{:13}'.format("Product: ") + "\t" + product +
