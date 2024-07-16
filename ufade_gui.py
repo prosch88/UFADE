@@ -521,9 +521,9 @@ class MyApp(ctk.CTk):
 
     def show_sysdiag(self):
         ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
-        ctk.CTkLabel(self.dynamic_frame, text="Extract Sysdiagnose", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
+        ctk.CTkLabel(self.dynamic_frame, text="Extract Sysdiagnose", height=40, width=585, font=("standard",24), justify="left").pack(pady=15)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Initiate the creation of a Sysdiagnose archive on the device and save \nit to disk afterwards. This may take some time. \nDo you want to continue?", width=585, height=60, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
-        self.text.pack(pady=25)
+        self.text.pack(pady=60)
         self.diagsrv = CrashReportsManager(lockdown)
         self.choose = ctk.BooleanVar(self, False)
         self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
@@ -533,8 +533,13 @@ class MyApp(ctk.CTk):
         self.wait_variable(self.choose)                             
         if self.choose.get() == True: 
             self.yesb.pack_forget()
-            self.nob.pack_forget()    
-            self.text.configure(text="\tTo trigger the creation of the Sysdiagnose files, press:\n\n\t[ⓛ Power/Side] + [⏶ VolUp] + [⏷ VolDown]\n\n\tfor 0.215 seconds.")
+            self.nob.pack_forget() 
+            self.text.pack_forget()   
+            self.text.configure(text="To trigger the creation of the Sysdiagnose files,\npress: Power/Side + VolUp + VolDown for 0.215 seconds.")
+            self.text.pack(pady=10)
+            self.diag_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "diag.png")), size=(600, 300))
+            self.diaglabel = ctk.CTkLabel(self.dynamic_frame, image=self.diag_image, text=" ", width=600, height=300, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
+            self.diaglabel.pack()
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
             self.waitsys = ctk.IntVar(self, 0)
             self.diag = threading.Thread(target=lambda: self.sysdiag(self.text, self.progress, self.waitsys))
@@ -546,12 +551,15 @@ class MyApp(ctk.CTk):
 
     def sysdiag(self, text, progress, waitsys):
         self.abort = ctk.CTkButton(self.dynamic_frame, text="Abort", font=self.stfont, command=self.abort_diag)
-        self.abort.pack(pady=10)
+        self.abort.pack(pady=15)
         sysdiagname = None
         try:
             sysdiagname = self.diagsrv._get_new_sysdiagnose_filename()
             self.abort.pack_forget()
+            self.diaglabel.pack_forget()
+            text.pack_forget()
             text.configure(text="Creation of Sysdiagnose archive has started.")
+            text.pack(pady=60)
             progress.pack()
             progress.start()
             self.diagsrv._wait_for_sysdiagnose_to_finish()
@@ -561,6 +569,7 @@ class MyApp(ctk.CTk):
             progress.pack_forget()
         except:
             text.configure(text="Extraction of Sysdiagnose canceled!")
+            self.diaglabel.pack_forget()
             self.abort.pack_forget()
             progress.pack_forget()
 
