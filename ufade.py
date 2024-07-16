@@ -137,8 +137,9 @@ def advanced_menu():
     code, tag = d.menu("Choose:",
     choices=[("(1)", "Collect Unified Logs (with start time)", "Collects the AUL from the device from a given start-time and saves them as a logarchive."),
              ("(2)", "Extract crash reports", "Pull the crash report folder from the device"),
-             ("(3)", "Generate WhatsApp export (PuMA)", "Perform an iTunes-style Backup and extract the ChatStorage.sqlite alongside the Media-folder."),
-             ("(4)", "Sniff device traffic", "Captures the device network traffic as a pcap file.")],
+             ("(3)", "Initiate Sysdiagnose", "Create a Sysdiagnose archive on the device and pull it to the disk afterwards."),
+             ("(4)", "Generate WhatsApp export (PuMA)", "Perform an iTunes-style Backup and extract the ChatStorage.sqlite alongside the Media-folder."),
+             ("(5)", "Sniff device traffic", "Captures the device network traffic as a pcap file.")],
              item_help=True, title=(dev_name + ", iOS " + version))
     if code == d.OK:
         if tag == "(1)":
@@ -154,8 +155,10 @@ def advanced_menu():
             d.msgbox("Extraction of crash reports completed!")
             advanced_menu()
         elif tag == "(3)":
-            backup_tess()
+            sysdiagnose()
         elif tag == "(4)":
+            backup_tess()
+        elif tag == "(5)":
             network_capture()
         else:
             advanced_menu()
@@ -860,6 +863,20 @@ def collect_ul(time):
         watch_menu(main_screen)
     else:
         select_menu(main_screen)
+
+def sysdiagnose():
+    d.infobox("To initiate the creation of the Sysdiagnose archive, press:\n\n[Power] + [VolUp] + [VolDown]\n\n for 0,215 seconds")
+    diagsrv = CrashReportsManager(lockdown)
+    try:
+        sysdiagname = diagsrv._get_new_sysdiagnose_filename()
+        d.infobox("Creation of Sysdiagnose archive has started.")
+        diagsrv._wait_for_sysdiagnose_to_finish()
+        d.infobox("Pulling the Sysdiagnose archive from the device")
+        diagsrv.pull(out=f"{udid}_sysdiagnose.tar.gz", entry=sysdiagname,erase=True)
+        d.msgbox("Extraction of Sysdiagnose archive completed!")
+    except:
+        d.msgbox("Creation canceled.")
+    advanced_menu()
 
 #Try to mount a suitable DeveloperDiskImage returns "developer" and sets the global developer value to "True"
 def mount_developer():
