@@ -178,6 +178,8 @@ class MyApp(ctk.CTk):
             self.show_collect_ul()
         elif menu_name == "CrashReport":
             self.show_crash_report()
+        elif menu_name == "SysDiag":
+            self.show_sysdiag()
         elif menu_name == "Media":
             self.show_media()
         elif menu_name == "FileLS":
@@ -293,10 +295,12 @@ class MyApp(ctk.CTk):
         self.skip.grid(row=0, column=1, sticky="w")
         self.menu_buttons = [
             ctk.CTkButton(self.dynamic_frame, text="Extract crash reports", command=lambda: self.switch_menu("CrashReport"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Initiate Sysdiagnose", command=lambda: self.switch_menu("SysDiag"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="WhatsApp export\n(PuMA)", command=lambda: self.switch_menu("tess"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Sniff device traffic", command=lambda: self.switch_menu("sniff"), width=200, height=70, font=self.stfont),
         ]
-        self.menu_text = ["Pull the crash report folder from the device.", 
+        self.menu_text = ["Pull the crash report folder from the device.",
+                          "Create a Sysdiagnose archive on the device and\npull it to the disk afterwards.", 
                           "Perform an iTunes-style backup and extract Whatsapp\nfiles for PuMA (LE-tool).", 
                           "Captures the device network traffic as a pcap file."]
         self.menu_textbox = []
@@ -514,6 +518,58 @@ class MyApp(ctk.CTk):
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=10)
         else:
             pass
+
+    def show_sysdiag(self):
+        ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
+        ctk.CTkLabel(self.dynamic_frame, text="Extract Sysdiagnose", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Initiate the creation of a Sysdiagnose archive on the device and save \nit to disk afterwards. This may take some time. \nDo you want to continue?", width=585, height=60, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
+        self.text.pack(pady=25)
+        self.diagsrv = CrashReportsManager(lockdown)
+        self.choose = ctk.BooleanVar(self, False)
+        self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
+        self.yesb.pack(side="left", pady=(0,350), padx=140)
+        self.nob = ctk.CTkButton(self.dynamic_frame, text="NO", font=self.stfont, command=lambda: self.choose.set(False))
+        self.nob.pack(side="left", pady=(0,350))    
+        self.wait_variable(self.choose)                             
+        if self.choose.get() == True: 
+            self.yesb.pack_forget()
+            self.nob.pack_forget()    
+            self.text.configure(text="\tTo trigger the creation of the Sysdiagnose files, press:\n\n\t[⏻ Power/Side] + [⏶ VolUp] + [⏷ VolDown]\n\n\tfor 0.215 seconds.")
+            self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
+            self.waitsys = ctk.IntVar(self, 0)
+            self.diag = threading.Thread(target=lambda: self.sysdiag(self.text, self.progress, self.waitsys))
+            self.diag.start()
+            self.wait_variable(self.waitsys)
+            ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=10)
+        else:
+            self.switch_menu("AdvMenu")
+
+    def sysdiag(self, text, progress, waitsys):
+        self.abort = ctk.CTkButton(self.dynamic_frame, text="Abort", font=self.stfont, command=self.abort_diag)
+        self.abort.pack(pady=10)
+        sysdiagname = None
+        try:
+            sysdiagname = self.diagsrv._get_new_sysdiagnose_filename()
+            self.abort.pack_forget()
+            text.configure(text="Creation of Sysdiagnose archive has started.")
+            progress.pack()
+            progress.start()
+            self.diagsrv._wait_for_sysdiagnose_to_finish()
+            text.configure(text="Pulling the Sysdiagnose archive from the device")
+            self.diagsrv.pull(out=f"{udid}_sysdiagnose.tar.gz", entry=sysdiagname,erase=True)
+            text.configure(text="Extraction of Sysdiagnose archive completed!")
+            progress.pack_forget()
+        except:
+            text.configure(text="Extraction of Sysdiagnose canceled!")
+            self.abort.pack_forget()
+            progress.pack_forget()
+
+        finally:
+            waitsys.set(1)
+            return
+
+    def abort_diag(self):
+        self.diagsrv.close()
 
 # manually send a pair command and call "notpaired" again to check the status
     def pair_button(self):
