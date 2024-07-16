@@ -558,7 +558,7 @@ class MyApp(ctk.CTk):
             self.abort.pack_forget()
             self.diaglabel.pack_forget()
             text.pack_forget()
-            text.configure(text="Creation of Sysdiagnose archive has started.")
+            text.configure(text="Creation of Sysdiagnose archive has been started.")
             text.pack(pady=60)
             progress.pack()
             progress.start()
