@@ -534,7 +534,7 @@ class MyApp(ctk.CTk):
         if self.choose.get() == True: 
             self.yesb.pack_forget()
             self.nob.pack_forget()    
-            self.text.configure(text="\tTo trigger the creation of the Sysdiagnose files, press:\n\n\t[⏻ Power/Side] + [⏶ VolUp] + [⏷ VolDown]\n\n\tfor 0.215 seconds.")
+            self.text.configure(text="\tTo trigger the creation of the Sysdiagnose files, press:\n\n\t[ⓛ Power/Side] + [⏶ VolUp] + [⏷ VolDown]\n\n\tfor 0.215 seconds.")
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
             self.waitsys = ctk.IntVar(self, 0)
             self.diag = threading.Thread(target=lambda: self.sysdiag(self.text, self.progress, self.waitsys))
