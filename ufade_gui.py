@@ -28,6 +28,7 @@ from pymobiledevice3.tunneld import TUNNELD_DEFAULT_ADDRESS, TunneldRunner, get_
 from pymobiledevice3.services.os_trace import OsTraceService
 from paramiko import SSHClient, AutoAddPolicy, Transport
 from datetime import datetime, timedelta, timezone, date
+from subprocess import Popen, PIPE, check_call, run
 from pymobiledevice3 import exceptions
 from importlib.metadata import version
 from iOSbackup import iOSbackup
@@ -48,6 +49,7 @@ import platform
 import sys
 import os
 import time
+import tempfile
 
 ctk.set_appearance_mode("dark")  # Dark Mode
 ctk.set_default_color_theme("dark-blue") 
@@ -1492,10 +1494,16 @@ class MyApp(ctk.CTk):
                     change.set(1)
                     return("developer")
         else:
+            developer = True
+            change.set(1)
+            return("developer")
+            """
             try:
+                self.after(1000)
                 text.configure(text="Mounting personalized image.")
                 PersonalizedImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Xcode_iOS_DDI_Personalized", "Image.dmg"), build_manifest=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Xcode_iOS_DDI_Personalized", "BuildManifest.plist"), trust_cache=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Xcode_iOS_DDI_Personalized", "Image.dmg.trustcache"))
                 developer = True
+                text.configure(text="Personalized image mounted.")
                 change.set(1)
                 return("developer")
             except exceptions.AlreadyMountedError:
@@ -1503,10 +1511,13 @@ class MyApp(ctk.CTk):
                 change.set(1)
                 return("developer")
             except:
+                self.after(1000)
                 text.configure(text="DeveloperDiskImage not loaded")
                 developer = False
                 change.set(1)
                 return("nope")
+            """
+
 
     def developer_options(self):
         self.change = ctk.IntVar(self, 0)
@@ -1534,7 +1545,6 @@ class MyApp(ctk.CTk):
             return
         else:
             pass
-        #self.wait_variable(self.change)
         """
         if int(version.split(".")[0]) >= 17:
             try: 
@@ -1544,9 +1554,24 @@ class MyApp(ctk.CTk):
             except:
                 tun = None
             if tun == None:
-                d.msgbox("To use developer options on devices with iOS >= 17 a tunnel has to be created.\n\nProvide your \"sudo\" password after pressing \"OK\". (No input is shown):", width=50)
-                process = run(["sudo", "-E", "python3", "-m", "pymobiledevice3", "remote", "tunneld", "-d"])
-                #pid = process.pid
+                self.text.configure(text="To use developer options on devices with iOS >= 17 a tunnel has to be created.\nThis requires administrative privileges. Do you want to continue?")
+                self.choose = ctk.BooleanVar(self, False)
+                self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
+                self.yesb.pack(side="left", pady=(0,350), padx=140)
+                self.nob = ctk.CTkButton(self.dynamic_frame, text="NO", font=self.stfont, command=lambda: self.choose.set(False))
+                self.nob.pack(side="left", pady=(0,350))    
+                self.wait_variable(self.choose)                             
+                if self.choose.get() == True:
+                    self.yesb.pack_forget()
+                    self.nob.pack_forget() 
+                    self.change.set(0)
+                    self.dev17 = threading.Thread(target=lambda: self.run_ios17_developer(self.change)) 
+                    self.dev17.start()
+                    self.wait_variable(self.change)
+                else:
+                    self.show_main_menu()
+                    return
+                    #process = run(["sudo", "-E", "python3", "-m", "pymobiledevice3", "remote", "tunneld", "-d"])
             else: 
                 pass
         else:
@@ -1560,6 +1585,7 @@ class MyApp(ctk.CTk):
                     lockdown = create_using_usbmux()
                 dvt = DvtSecureSocketProxyService(lockdown)
                 dvt.__enter__()
+                print("dvt_success")
             except:
                 if int(version.split(".")[0]) >= 17:
                     try: PersonalizedImageMounter(lockdown).umount()
@@ -1582,12 +1608,48 @@ class MyApp(ctk.CTk):
             self.start_developer.start()
             self.wait_variable(self.change)
             if developer == True:
-                #lockdown = create_using_usbmux()
+                if int(version.split(".")[0]) >= 17:
+                    lockdown = get_tunneld_devices()[0]
+                else:
+                    lockdown = create_using_usbmux()
                 #dvt = DvtSecureSocketProxyService(lockdown)
                 #dvt.__enter__()
                 self.switch_menu("DevMenu")
             else:
                 self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+
+        def run_ios17_developer(self, change):
+            if platform.uname().system == 'Linux':
+                try:
+                    script = create_linux_shell_script()
+                    self.run_linux_script(self.change)
+                    self.waitvar(self.change)
+                    process = run(["pkexec", script])
+                except:
+                    self.text.configure(text="Couldn't create a tunnel. Try again.")
+                    self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                    return
+            else:
+                if platform.uname().system == 'Windows':
+                    try:
+                        process = run(["python3", "-m", "pymobiledevice3", "remote", "tunneld", "-d"])
+                    except:
+                        self.text.configure(text="Couldn't create a tunnel. Try again.")
+                        self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                        return
+                elif platform.uname().system == 'Darwin':
+                    command = "python3 -m pymobiledevice3 remote tunneld -d"
+                    applescript = f'''
+                    do shell script "{command}" with administrator privileges
+                    '''
+                    full_command = f"osascript -e '{applescript}'"
+                    try:
+                        process = run(full_command)
+                    except:
+                        self.text.configure(text="Couldn't create a tunnel. Try again.")
+                        self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                        return
+            change.set(1)
 
 # Device screenshot
     def screen_device(self, dvt):
@@ -2207,6 +2269,21 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                     continue
 
                 pull(self, src_filename, str(dst_path), callback=callback)
+
+# Create a temporary script to start the rsd tunnel privileged on linux
+def create_linux_shell_script():
+    env_vars = os.environ
+    script_content = "#!/bin/bash\n"
+    
+    for key, value in env_vars.items():
+        script_content += f'export {key}="{value}"\n'
+    
+    script_content += f"python3 -m pymobiledevice3 remote tunneld -d\n"
+    script_file = tempfile.NamedTemporaryFile(delete=False, suffix=".sh")
+    script_file.write(script_content.encode('utf-8'))
+    script_file.close()
+    os.chmod(script_file.name, 0o755)
+    return script_file.name
 
 lockdown = check_device()
 try:
