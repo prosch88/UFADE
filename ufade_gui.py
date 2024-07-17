@@ -211,11 +211,13 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="Save device info", command=lambda: self.switch_menu("DevInfo"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Collect Unified Logs", command=lambda: self.switch_menu("CollectUL"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Extract crash reports", command=lambda: self.switch_menu("CrashReport"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Initiate Sysdiagnose", command=lambda: self.switch_menu("SysDiag"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Extract AFC Media files", command=lambda: self.switch_menu("Media"), width=200, height=70, font=self.stfont),
         ]
         self.menu_text = ["Save informations about the device, installed apps,\nSIM and companion devices.", 
                           "Collects the AUL from the device and saves\nthem as a logarchive.", 
                           "Pull the crash report folder from the device.",
+                          "Create a Sysdiagnose archive on the device and\npull it to the disk afterwards.", 
                           "Pull the \"Media\"-folder from the device\n(pictures, videos, recordings)"]
         self.menu_textbox = []
         for btn in self.menu_buttons:
@@ -534,10 +536,16 @@ class MyApp(ctk.CTk):
         if self.choose.get() == True: 
             self.yesb.pack_forget()
             self.nob.pack_forget() 
-            self.text.pack_forget()   
-            self.text.configure(text="To trigger the creation of the Sysdiagnose files,\npress: Power/Side + VolUp + VolDown for 0.215 seconds.")
+            self.text.pack_forget()
+            if d_class == "Watch":
+                self.text.configure(text="To trigger the creation of the Sysdiagnose files,\npress: Power/Side + Digital Crown for 0.215 seconds.")
+            else:
+                self.text.configure(text="To trigger the creation of the Sysdiagnose files,\npress: Power/Side + VolUp + VolDown for 0.215 seconds.")
             self.text.pack(pady=10)
-            self.diag_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "diag.png")), size=(600, 300))
+            if d_class == "Watch":
+                self.diag_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "diag_watch.png")), size=(600, 300))
+            else:
+                self.diag_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "diag.png")), size=(600, 300))
             self.diaglabel = ctk.CTkLabel(self.dynamic_frame, image=self.diag_image, text=" ", width=600, height=300, fg_color="transparent", font=self.stfont, anchor="w", justify="left")
             self.diaglabel.pack()
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
@@ -545,9 +553,15 @@ class MyApp(ctk.CTk):
             self.diag = threading.Thread(target=lambda: self.sysdiag(self.text, self.progress, self.waitsys))
             self.diag.start()
             self.wait_variable(self.waitsys)
-            ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=10)
+            if d_class == "Watch":
+                ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
+            else:
+                ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=10)     
         else:
-            self.switch_menu("AdvMenu")
+            if d_class == "Watch":
+                self.show_watch_menu()
+            else:
+                self.switch_menu("AdvMenu")
 
     def sysdiag(self, text, progress, waitsys):
         self.abort = ctk.CTkButton(self.dynamic_frame, text="Abort", font=self.stfont, command=self.abort_diag)
