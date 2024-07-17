@@ -28,7 +28,7 @@ from pymobiledevice3.tunneld import TUNNELD_DEFAULT_ADDRESS, TunneldRunner, get_
 from pymobiledevice3.services.os_trace import OsTraceService
 from paramiko import SSHClient, AutoAddPolicy, Transport
 from datetime import datetime, timedelta, timezone, date
-from subprocess import Popen, PIPE, check_call, run
+from subprocess import Popen, PIPE, check_call, run, CREATE_NEW_CONSOLE, CREATE_NO_WINDOW
 from pymobiledevice3 import exceptions
 from importlib.metadata import version
 from iOSbackup import iOSbackup
@@ -1539,13 +1539,13 @@ class MyApp(ctk.CTk):
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
             return
 
-        if int(version.split(".")[0]) >= 17:
-            self.text.configure(text="Devices with iOS 17 and up aren't currently supported in this Version of UFADE.\nTry the CLI Version instead")
-            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
-            return
-        else:
-            pass
-        """
+        #if int(version.split(".")[0]) >= 17:
+        #    self.text.configure(text="Devices with iOS 17 and up aren't currently supported in this Version of UFADE.\nTry the CLI Version instead")
+        #    self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+        #    return
+        #else:
+        #    pass
+
         if int(version.split(".")[0]) >= 17:
             try: 
                 tun = get_tunneld_devices()
@@ -1576,7 +1576,7 @@ class MyApp(ctk.CTk):
                 pass
         else:
             pass
-        """
+
         if developer == True:
             try:
                 if int(version.split(".")[0]) >= 17:
@@ -1618,38 +1618,39 @@ class MyApp(ctk.CTk):
             else:
                 self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
 
-        def run_ios17_developer(self, change):
-            if platform.uname().system == 'Linux':
+    def run_ios17_developer(self, change):
+        if platform.uname().system == 'Linux':
+            try:
+                script = create_linux_shell_script()
+                self.run_linux_script(self.change)
+                self.waitvar(self.change)
+                process = run(["pkexec", script])
+            except:
+                self.text.configure(text="Couldn't create a tunnel. Try again.")
+                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                return
+        else:
+            if platform.uname().system == 'Windows':
                 try:
-                    script = create_linux_shell_script()
-                    self.run_linux_script(self.change)
-                    self.waitvar(self.change)
-                    process = run(["pkexec", script])
+                    Popen(["python", "-m", "pymobiledevice3", "remote", "tunneld"], creationflags=CREATE_NO_WINDOW)
+                    self.after(3000)
                 except:
                     self.text.configure(text="Couldn't create a tunnel. Try again.")
                     self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
                     return
-            else:
-                if platform.uname().system == 'Windows':
-                    try:
-                        process = run(["python3", "-m", "pymobiledevice3", "remote", "tunneld", "-d"])
-                    except:
-                        self.text.configure(text="Couldn't create a tunnel. Try again.")
-                        self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
-                        return
-                elif platform.uname().system == 'Darwin':
-                    command = "python3 -m pymobiledevice3 remote tunneld -d"
-                    applescript = f'''
-                    do shell script "{command}" with administrator privileges
-                    '''
-                    full_command = f"osascript -e '{applescript}'"
-                    try:
-                        process = run(full_command)
-                    except:
-                        self.text.configure(text="Couldn't create a tunnel. Try again.")
-                        self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
-                        return
-            change.set(1)
+            elif platform.uname().system == 'Darwin':
+                command = "python3 -m pymobiledevice3 remote tunneld -d"
+                applescript = f'''
+                do shell script "{command}" with administrator privileges
+                '''
+                full_command = f"osascript -e '{applescript}'"
+                try:
+                    process = run(full_command)
+                except:
+                    self.text.configure(text="Couldn't create a tunnel. Try again.")
+                    self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                    return
+        change.set(1)
 
 # Device screenshot
     def screen_device(self, dvt):
