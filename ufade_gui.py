@@ -50,6 +50,7 @@ import sys
 import os
 import time
 import tempfile
+import re
 
 ctk.set_appearance_mode("dark")  # Dark Mode
 ctk.set_default_color_theme("dark-blue") 
@@ -859,23 +860,29 @@ class MyApp(ctk.CTk):
     def init_backup_decrypt(self, change):
         global b
         global backupfiles
-        b = iOSbackup(udid=udid, cleartextpassword="12345", derivedkey=None, backuproot="./")                           #Load Backup with Password
-        key = b.getDecryptionKey()                                                                                      #Get decryption Key
-        b = iOSbackup(udid=udid, derivedkey=key, backuproot="./")                                                       #Load Backup again with Key
-        backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])
-        change.set(1)
+        try:
+            b = iOSbackup(udid=udid, cleartextpassword="12345", derivedkey=None, backuproot="./")                           #Load Backup with Password
+            key = b.getDecryptionKey()                                                                                      #Get decryption Key
+            b = iOSbackup(udid=udid, derivedkey=key, backuproot="./")                                                       #Load Backup again with Key
+            backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])
+            change.set(1)
+        except:
+            change.set(2)
 
 # Decrypting / "unbacking" the Backup
     def decrypt_itunes(self, b, backupfiles, tar, progress, prog_text, line_list, line_cnt, d_nr, change):
         for file in line_list:
+            fileout = file
+            if platform.uname().system == 'Windows':
+                fileout = re.sub(r"[?%*:|\"<>\x7F\x00-\x1F]", "-", file)
             d_nr += 1
             dpro = int(100*(d_nr/line_cnt))
             progress.set(dpro/100)
             prog_text.configure(text=f"{int(dpro)}%")
             progress.update()
             prog_text.update()
-            b.getFileDecryptedCopy(relativePath=file, targetName=file, targetFolder=".tar_tmp/itunes_bu")               #actually decrypt the backup-files
-            file_path = os.path.join('.tar_tmp/itunes_bu', file)
+            b.getFileDecryptedCopy(relativePath=file, targetName=fileout, targetFolder=os.path.join(".tar_tmp", "itunes_bu"))               #actually decrypt the backup-files
+            file_path = os.path.join('.tar_tmp', 'itunes_bu', file)
             tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
                 backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
             try: os.remove(file_path)                                                                                   #remove the file after adding
@@ -884,7 +891,8 @@ class MyApp(ctk.CTk):
 
 # Fallback decrption function for older devices
     def decrypt_old_itunes(self, tar, change):
-        Backup.from_path(backup_path=udid, password="12345").unback(".tar_tmp/itunes_bu")
+        bu = Backup.from_path(backup_path=udid, password="12345")
+        unback_alt(bu, os.path.join(".tar_tmp", "itunes_bu"))
         tar.add(".tar_tmp/itunes_bu", arcname="iTunes_Backup/", recursive=True)
         change.set(1)
 
@@ -896,7 +904,13 @@ class MyApp(ctk.CTk):
         shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","ChatStorage.sqlite"), os.path.join("WA_PuMA","ChatStorage.sqlite"))
         shutil.rmtree(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared"))
         change.set(1)
-    
+
+    def decrypt_whatsapp_alt(self,change):
+        Backup.from_path(backup_path=udid, password="12345").extract_domain_and_path("AppDomainGroup-group.net.whatsapp.WhatsApp.shared", "Message/Media", "WA_PuMA")
+        Backup.from_path(backup_path=udid, password="12345").extract_domain_and_path("AppDomainGroup-group.net.whatsapp.WhatsApp.shared", "Media/Profile", "WA_PuMA")
+        Backup.from_path(backup_path=udid, password="12345").extract_domain_and_path("AppDomainGroup-group.net.whatsapp.WhatsApp.shared", "ChatStorage.sqlite", "WA_PuMA")
+        change.set(1)
+
  # Move the backup files to a zip archive   
     def zip_itunes(self, zip, change):
         base = udid
@@ -963,11 +977,11 @@ class MyApp(ctk.CTk):
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
             self.progress.set(0)
             self.progress.pack()
-            try:
-                self.change.set(0)
-                panda_backup = threading.Thread(target=lambda: self.init_backup_decrypt(self.change))
-                panda_backup.start()
-                self.wait_variable(self.change)
+            self.change.set(0)
+            panda_backup = threading.Thread(target=lambda: self.init_backup_decrypt(self.change))
+            panda_backup.start()
+            self.wait_variable(self.change)
+            if self.change.get() == 1:
                 line_list = []
                 line_cnt = 0
                 for line in backupfiles['relativePath']:                                                                        #get amount of lines (files) of backup
@@ -976,20 +990,19 @@ class MyApp(ctk.CTk):
                         line_list.append(line)
                 d_nr = 0
                 self.change.set(0)                                                                     
-                
-                
                 tar = tarfile.open(udid + "_logical_plus.tar", "w:")
                 zip = None
                 decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, tar, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change))
                 decrypt.start()
 
-            except:
+            else:
                 self.text.configure(text="Decrypting iTunes Backup - this may take a while.")
                 self.prog_text.configure(text=" ")
                 self.progress.pack_forget()
                 self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
                 self.progress.pack()
                 self.progress.start()
+                self.change.set(0)
                 tar = tarfile.open(udid + "_logical_plus.tar", "w:") 
                 zip = None
                 self.decrypt = threading.Thread(target=lambda: self.decrypt_old_itunes(tar, self.change))
@@ -1184,10 +1197,16 @@ class MyApp(ctk.CTk):
             self.tess_init = threading.Thread(target=lambda: self.init_backup_decrypt(self.change))
             self.tess_init.start()
             self.waitvar(self.change)
-            self.change.set(0)
-            self.tess_backup = threading.Thread(target=lambda: self.decrypt_whatsapp(self.change))
-            self.tess_backup.start()
-            self.waitvar(self.change)
+            if self.change.get() == 1:
+                self.change.set(0)
+                self.tess_backup = threading.Thread(target=lambda: self.decrypt_whatsapp(self.change))
+                self.tess_backup.start()
+                self.waitvar(self.change)
+            else:
+                self.change.set(0)
+                self.tess_backup_alt = threading.Thread(target=lambda: self.decrypt_whatsapp_alt(self.change))
+                self.tess_backup_alt.start()
+                self.waitvar(self.change)
             self.prog_text.pack_forget()
             self.progress.pack_forget()
             self.after(100, lambda: self.text.configure(text="Files extracted to \"WA_PuMA\"."))  
@@ -2273,6 +2292,17 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                     continue
 
                 pull(self, src_filename, str(dst_path), callback=callback)
+
+# modified unback commanf from pyiosbackup for better Windows support
+def unback_alt(self, path='.'):
+    dest_dir = pathlib.Path(path)
+    dest_dir.mkdir(exist_ok=True, parents=True)
+    for file in self.iter_files():
+        if platform.uname().system == 'Windows':
+                file.relative_path = re.sub(r"[?%*:|\"<>\x7F\x00-\x1F]", "-", file.relative_path)
+        dest_file = dest_dir / file.domain / file.relative_path
+        dest_file.parent.mkdir(exist_ok=True, parents=True)
+        dest_file.write_bytes(file.read_bytes())
 
 # Create a temporary script to start the rsd tunnel privileged on linux
 def create_linux_shell_script():
