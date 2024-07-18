@@ -1643,8 +1643,8 @@ class MyApp(ctk.CTk):
         if platform.uname().system == 'Linux':
             try:
                 script = create_linux_shell_script()
-                self.run_linux_script(self.change)
-                self.waitvar(self.change)
+                self.run_linux_script(change)
+                self.waitvar(change)
                 process = run(["pkexec", script])
             except:
                 self.text.configure(text="Couldn't create a tunnel. Try again.")
@@ -1661,18 +1661,21 @@ class MyApp(ctk.CTk):
                     self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
                     return
             elif platform.uname().system == 'Darwin':
-                command = "python3 -m pymobiledevice3 remote tunneld -d"
-                applescript = f'''
-                do shell script "{command}" with administrator privileges
-                '''
-                full_command = f"osascript -e '{applescript}'"
-                try:
-                    process = run(full_command)
-                except:
-                    self.text.configure(text="Couldn't create a tunnel. Try again.")
-                    self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
-                    return
+                self.waitm = ctk.IntVar(self, 0)
+                self.mac_os_17 = threading.Thread(target=lambda: self.macos_dev17(self.waitm))
+                self.mac_os_17.start()
+                self.wait_variable(self.waitm)
         change.set(1)
+
+    def macos_dev17(self, change):
+        try:
+            run(["osascript", "-e", 'do shell script \"python3 -m pymobiledevice3 remote tunneld -d\" with administrator privileges'])
+            change.set(1)
+        except:
+            self.text.configure(text="Couldn't create a tunnel. Try again.")
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+            change.set(2)
+            return
 
 # Device screenshot
     def screen_device(self, dvt):
