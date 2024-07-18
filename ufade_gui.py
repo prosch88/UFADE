@@ -882,7 +882,7 @@ class MyApp(ctk.CTk):
             progress.update()
             prog_text.update()
             b.getFileDecryptedCopy(relativePath=file, targetName=fileout, targetFolder=os.path.join(".tar_tmp", "itunes_bu"))               #actually decrypt the backup-files
-            file_path = os.path.join('.tar_tmp', 'itunes_bu', file)
+            file_path = os.path.join('.tar_tmp', 'itunes_bu', fileout)
             tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
                 backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
             try: os.remove(file_path)                                                                                   #remove the file after adding
