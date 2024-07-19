@@ -62,7 +62,7 @@ class MyApp(ctk.CTk):
         self.stop_event = threading.Event()
 
         # Define Window
-        self.title("Universal Forensic Apple Device Extractor 0.7")
+        self.title("Universal Forensic Apple Device Extractor 0.8")
         self.geometry("1100x600")
         self.resizable(False, False)
         self.iconpath = ImageTk.PhotoImage(file=os.path.join(os.path.dirname(__file__), "assets" , "ufade.png" ))
@@ -1427,21 +1427,26 @@ class MyApp(ctk.CTk):
                         self.okbutton.pack()
                         self.wait_variable(self.choose)
                         self.okbutton.pack_forget()
-                        if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+                        #lockdown = create_using_usbmux()
+                        self.after(50)
+                        #if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+                        if lockdown.developer_mode_status != True:
                             text.configure(text="Uh-Oh, an error was raised.\nWait for the device to reboot and try again.")
                             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
                             return
+                        else:
+                            pass
                     except:
                         text.configure(text="Uh-Oh, an error was raised. Please remove the PIN/PW and try again")
                         developer = False
                         change.set(1)
-                        return("nope")
+                        return
                 else:
                     self.yesb.pack_forget()
                     self.nob.pack_forget()
                     developer = False
                     change.set(1)
-                    return("nope")
+                    return
         except:
             pass
         if int(version.split(".")[0]) < 17:
@@ -1568,13 +1573,17 @@ class MyApp(ctk.CTk):
         #    pass
 
         if int(version.split(".")[0]) >= 17:
-            try: 
-                tun = get_tunneld_devices()
-                if tun == []:
-                    tun = None
-            except:
-                tun = None
-            if tun == None:
+            self.chk_tun = threading.Thread(target=lambda: self.check_tun(self.change))
+            self.chk_tun.start()
+            self.wait_variable(self.change)
+            self.change.set(0)
+            #try: 
+            #    tun = get_tunneld_devices()
+            #    if tun == []:
+            #        tun = None
+            #except:
+            #    tun = None
+            if self.tun == None:
                 self.text.configure(text="To use developer options on devices with iOS >= 17 a tunnel has to be created.\nThis requires administrative privileges. Do you want to continue?")
                 self.choose = ctk.BooleanVar(self, False)
                 self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
@@ -1606,7 +1615,6 @@ class MyApp(ctk.CTk):
                     lockdown = create_using_usbmux()
                 dvt = DvtSecureSocketProxyService(lockdown)
                 dvt.__enter__()
-                print("dvt_success")
             except:
                 if int(version.split(".")[0]) >= 17:
                     try: PersonalizedImageMounter(lockdown).umount()
@@ -1630,7 +1638,10 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.change)
             if developer == True:
                 if int(version.split(".")[0]) >= 17:
-                    lockdown = get_tunneld_devices()[0]
+                    try:
+                        lockdown = get_tunneld_devices()[0]
+                    except:
+                        lockdown.connect()
                 else:
                     lockdown = create_using_usbmux()
                 #dvt = DvtSecureSocketProxyService(lockdown)
@@ -1639,17 +1650,23 @@ class MyApp(ctk.CTk):
             else:
                 self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
 
+    def check_tun(self, change):
+        try: 
+            self.tun = get_tunneld_devices()
+            if self.tun == []:
+                self.tun = None
+        except:
+            self.tun = None
+        finally:
+            change.set(1)
+
     def run_ios17_developer(self, change):
-        if platform.uname().system == 'Linux':
-            try:
-                script = create_linux_shell_script()
-                self.run_linux_script(change)
-                self.waitvar(change)
-                process = run(["pkexec", script])
-            except:
-                self.text.configure(text="Couldn't create a tunnel. Try again.")
-                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
-                return
+        if platform.uname().system == 'Linux':            
+            #self.waitl = ctk.IntVar(self, 0)
+            script = create_linux_shell_script()
+            self.run_linux_script(script, change)
+            self.wait_variable(change)
+            print("Developer script run")
         else:
             if platform.uname().system == 'Windows':
                 from subprocess import CREATE_NO_WINDOW
@@ -1666,6 +1683,16 @@ class MyApp(ctk.CTk):
                 self.mac_os_17.start()
                 self.wait_variable(self.waitm)
         change.set(1)
+
+    def run_linux_script(self, script, waitl):
+        try:
+            run(["pkexec", script])
+            waitl.set(1)
+        except:
+            self.text.configure(text="Couldn't create a tunnel. Try again.")
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+            waitl.set(2)
+            return
 
     def macos_dev17(self, change):
         try:
