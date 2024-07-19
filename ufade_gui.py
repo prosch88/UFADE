@@ -1577,12 +1577,6 @@ class MyApp(ctk.CTk):
             self.chk_tun.start()
             self.wait_variable(self.change)
             self.change.set(0)
-            #try: 
-            #    tun = get_tunneld_devices()
-            #    if tun == []:
-            #        tun = None
-            #except:
-            #    tun = None
             if self.tun == None:
                 self.text.configure(text="To use developer options on devices with iOS >= 17 a tunnel has to be created.\nThis requires administrative privileges. Do you want to continue?")
                 self.choose = ctk.BooleanVar(self, False)
@@ -1660,6 +1654,7 @@ class MyApp(ctk.CTk):
         finally:
             change.set(1)
 
+# Try to open a tun device
     def run_ios17_developer(self, change):
         if platform.uname().system == 'Linux':            
             #self.waitl = ctk.IntVar(self, 0)
@@ -1669,13 +1664,21 @@ class MyApp(ctk.CTk):
             print("Developer script run")
         else:
             if platform.uname().system == 'Windows':
-                from subprocess import CREATE_NO_WINDOW
+                from subprocess import CREATE_NO_WINDOW, CREATE_NEW_CONSOLE
                 try:
                     Popen(["python", "-m", "pymobiledevice3", "remote", "tunneld"], creationflags=CREATE_NO_WINDOW)
-                    self.after(3000)
+                    self.text.configure(text="Opening tunnel. This may take some time.")
+                    while True:
+                        try:
+                            tun = get_tunneld_devices()
+                        except:
+                            tun = []
+                        if tun != []:
+                            break
                 except:
-                    self.text.configure(text="Couldn't create a tunnel. Try again.")
+                    self.text.configure(text="Couldn't create a tunnel. Try again.\nYou have to run UFADE as administrator for this.")
                     self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                    change.set(1)
                     return
             elif platform.uname().system == 'Darwin':
                 self.waitm = ctk.IntVar(self, 0)
