@@ -898,17 +898,38 @@ class MyApp(ctk.CTk):
 
 # Only decrypt Whatsaap (TESS)
     def decrypt_whatsapp(self, change):
-        b.getFolderDecryptedCopy(targetFolder="WA_PuMA", includeDomains="AppDomainGroup-group.net.whatsapp.WhatsApp.shared")
+        try:
+            b.getFolderDecryptedCopy(targetFolder="WA_PuMA", includeDomains="AppDomainGroup-group.net.whatsapp.WhatsApp.shared")
+            shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","Message", "Media"), os.path.join("WA_PuMA","Media"))
+            shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","Media", "Profile"), os.path.join("WA_PuMA","Profile"))
+            shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","ChatStorage.sqlite"), os.path.join("WA_PuMA","ChatStorage.sqlite"))
+            shutil.rmtree(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared"))
+            
+        except:
+            self.text.configure(text="An error occured. Try again.")
+            pass
+        change.set(1)
+
+    def decrypt_whatsapp_alt(self,change):
+        try: os.mkdir("WA_PuMA")
+        except: pass
+        
+        bu = Backup.from_path(backup_path=udid, password="12345")
+        dest_dir = pathlib.Path("WA_PuMA")
+        for file in bu.iter_files():
+            if file.domain == "AppDomainGroup-group.net.whatsapp.WhatsApp.shared":
+                dest_file = dest_dir / file.domain / file.relative_path
+                dest_file.parent.mkdir(exist_ok=True, parents=True)
+                dest_file.write_bytes(file.read_bytes())
         shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","Message", "Media"), os.path.join("WA_PuMA","Media"))
         shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","Media", "Profile"), os.path.join("WA_PuMA","Profile"))
         shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","ChatStorage.sqlite"), os.path.join("WA_PuMA","ChatStorage.sqlite"))
         shutil.rmtree(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared"))
-        change.set(1)
+            
 
-    def decrypt_whatsapp_alt(self,change):
-        Backup.from_path(backup_path=udid, password="12345").extract_domain_and_path("AppDomainGroup-group.net.whatsapp.WhatsApp.shared", "Message/Media", "WA_PuMA")
-        Backup.from_path(backup_path=udid, password="12345").extract_domain_and_path("AppDomainGroup-group.net.whatsapp.WhatsApp.shared", "Media/Profile", "WA_PuMA")
-        Backup.from_path(backup_path=udid, password="12345").extract_domain_and_path("AppDomainGroup-group.net.whatsapp.WhatsApp.shared", "ChatStorage.sqlite", "WA_PuMA")
+        #except:
+        #    self.text.configure(text="An error occured. Try again.")
+        #    pass
         change.set(1)
 
  # Move the backup files to a zip archive   
@@ -1202,7 +1223,7 @@ class MyApp(ctk.CTk):
                 self.tess_backup = threading.Thread(target=lambda: self.decrypt_whatsapp(self.change))
                 self.tess_backup.start()
                 self.waitvar(self.change)
-            else:
+            elif self.change.get() == 2:
                 self.change.set(0)
                 self.tess_backup_alt = threading.Thread(target=lambda: self.decrypt_whatsapp_alt(self.change))
                 self.tess_backup_alt.start()
