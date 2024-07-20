@@ -839,7 +839,7 @@ class MyApp(ctk.CTk):
             self.after(500, save_info())
             self.prog_text.pack_forget()
             self.progress.pack_forget()
-            if m == "iTunes":
+            if m == "iTunes" or "PuMA":
                 self.text.configure(text="iTunes Backup complete!\nTrying to deactivate Backup Encryption again. \nUnlock device with PIN/PW if prompted")
                 self.change.set(0)
                 beep_timer = threading.Timer(13.0,self.notification)  
@@ -847,8 +847,9 @@ class MyApp(ctk.CTk):
                 remove_enc = threading.Thread(target=lambda: self.deactivate_encryption(change=self.change, text=self.text))
                 remove_enc.start()
                 self.wait_variable(self.change)
-                beep_timer.cancel()   
-                self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
+                beep_timer.cancel()
+                if m == "iTunes":
+                    self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
             else:
                 pass
         else:
