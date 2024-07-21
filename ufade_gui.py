@@ -24,7 +24,7 @@ from pymobiledevice3.services.accessibilityaudit import AccessibilityAudit, Dire
 from pymobiledevice3.services.amfi import AmfiService
 from pymobiledevice3.tcp_forwarder import UsbmuxTcpForwarder
 from pymobiledevice3.services.pcapd import PcapdService
-from pymobiledevice3.cli import remote
+from pymobiledevice3.remote.module_imports import MAX_IDLE_TIMEOUT, start_tunnel, verify_tunnel_imports
 from pymobiledevice3.tunneld import TUNNELD_DEFAULT_ADDRESS, TunnelProtocol, TunneldRunner, get_tunneld_devices, get_rsds
 from pymobiledevice3.services.os_trace import OsTraceService
 from paramiko import SSHClient, AutoAddPolicy, Transport
@@ -1716,7 +1716,8 @@ class MyApp(ctk.CTk):
 
     def wintunnel(self):
         try:
-            remote.cli_tunneld()
+            tunnel_win()
+            #remote.cli_tunneld()
         except:
             return
 
@@ -2369,6 +2370,9 @@ def unback_alt(self, path='.'):
         dest_file = dest_dir / file.domain / file.relative_path
         dest_file.parent.mkdir(exist_ok=True, parents=True)
         dest_file.write_bytes(file.read_bytes())
+
+def tunnel_win():
+    TunneldRunner.create(TUNNELD_DEFAULT_ADDRESS[0], TUNNELD_DEFAULT_ADDRESS[1])
 
 # Create a temporary script to start the rsd tunnel privileged on linux
 def create_linux_shell_script():
