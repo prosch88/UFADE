@@ -24,7 +24,8 @@ from pymobiledevice3.services.accessibilityaudit import AccessibilityAudit, Dire
 from pymobiledevice3.services.amfi import AmfiService
 from pymobiledevice3.tcp_forwarder import UsbmuxTcpForwarder
 from pymobiledevice3.services.pcapd import PcapdService
-from pymobiledevice3.tunneld import TUNNELD_DEFAULT_ADDRESS, TunneldRunner, get_tunneld_devices, get_rsds
+from pymobiledevice3.cli import remote
+from pymobiledevice3.tunneld import TUNNELD_DEFAULT_ADDRESS, TunnelProtocol, TunneldRunner, get_tunneld_devices, get_rsds
 from pymobiledevice3.services.os_trace import OsTraceService
 from paramiko import SSHClient, AutoAddPolicy, Transport
 from datetime import datetime, timedelta, timezone, date
@@ -1686,7 +1687,11 @@ class MyApp(ctk.CTk):
             if platform.uname().system == 'Windows':
                 from subprocess import CREATE_NO_WINDOW, CREATE_NEW_CONSOLE
                 try:
-                    Popen(["python", "-m", "pymobiledevice3", "remote", "tunneld"], creationflags=CREATE_NO_WINDOW)
+                    #Popen(["python", "-m", "pymobiledevice3", "remote", "tunneld"], creationflags=CREATE_NO_WINDOW)
+                    #tunneld_win(host=TUNNELD_DEFAULT_ADDRESS[0], port=TUNNELD_DEFAULT_ADDRESS[1], daemonize=False, protocol=TunnelProtocol.QUIC.value, usb=True, wifi=False, usbmux=True, mobdev2=True)
+                    self.tunnel_win = threading.Thread(target=self.wintunnel)
+                    self.tunnel_win.daemon = True
+                    self.tunnel_win.start()
                     self.text.configure(text="Opening tunnel. This may take some time.")
                     while True:
                         try:
@@ -1695,6 +1700,8 @@ class MyApp(ctk.CTk):
                             tun = []
                         if tun != []:
                             break
+                        if self.tunnel_win.is_alive() != True:
+                            raise BaseException()
                 except:
                     self.text.configure(text="Couldn't create a tunnel. Try again.\nYou have to run UFADE as administrator for this.")
                     self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
@@ -1706,6 +1713,12 @@ class MyApp(ctk.CTk):
                 self.mac_os_17.start()
                 self.wait_variable(self.waitm)
         change.set(1)
+
+    def wintunnel(self):
+        try:
+            remote.cli_tunneld()
+        except:
+            return
 
     def run_linux_script(self, script, waitl):
         try:
