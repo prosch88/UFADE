@@ -24,6 +24,7 @@ from pymobiledevice3.services.accessibilityaudit import AccessibilityAudit, Dire
 from pymobiledevice3.services.amfi import AmfiService
 from pymobiledevice3.tcp_forwarder import UsbmuxTcpForwarder
 from pymobiledevice3.services.pcapd import PcapdService
+from pymobiledevice3.osu.os_utils import get_os_utils
 from pymobiledevice3.remote.module_imports import MAX_IDLE_TIMEOUT, start_tunnel, verify_tunnel_imports
 from pymobiledevice3.tunneld import TUNNELD_DEFAULT_ADDRESS, TunnelProtocol, TunneldRunner, get_tunneld_devices, get_rsds
 from pymobiledevice3.services.os_trace import OsTraceService
@@ -49,6 +50,10 @@ import threading
 import platform
 import sys
 import os
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w")
 import time
 import tempfile
 import re
@@ -1716,7 +1721,10 @@ class MyApp(ctk.CTk):
 
     def wintunnel(self):
         try:
-            tunnel_win()
+            if not get_os_utils().is_admin:
+                raise exceptions.AccessDeniedError()
+            else:
+                tunnel_win()
             #remote.cli_tunneld()
         except:
             return
@@ -2372,7 +2380,11 @@ def unback_alt(self, path='.'):
         dest_file.write_bytes(file.read_bytes())
 
 def tunnel_win():
-    TunneldRunner.create(TUNNELD_DEFAULT_ADDRESS[0], TUNNELD_DEFAULT_ADDRESS[1])
+    if not verify_tunnel_imports():
+        return
+    else:
+        protocol = TunnelProtocol(TunnelProtocol.QUIC.value)
+        TunneldRunner.create(TUNNELD_DEFAULT_ADDRESS[0], TUNNELD_DEFAULT_ADDRESS[1], protocol=protocol)
 
 # Create a temporary script to start the rsd tunnel privileged on linux
 def create_linux_shell_script():
