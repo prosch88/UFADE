@@ -845,7 +845,7 @@ class MyApp(ctk.CTk):
             self.after(500, save_info())
             self.prog_text.pack_forget()
             self.progress.pack_forget()
-            if m == "iTunes" or "PuMA":
+            if m == "iTunes" or m == "PuMA":
                 self.text.configure(text="iTunes Backup complete!\nTrying to deactivate Backup Encryption again. \nUnlock device with PIN/PW if prompted")
                 self.change.set(0)
                 beep_timer = threading.Timer(13.0,self.notification)  
