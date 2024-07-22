@@ -123,7 +123,8 @@ class MyApp(ctk.CTk):
          # Erase content of dynamic frame
         for widget in self.dynamic_frame.winfo_children():
             widget.destroy()
-
+        global lockdown
+        lockdown = create_using_usbmux()
         # Show Main Menu
         self.menu_var.set("MainMenu")
         self.current_menu = "MainMenu"
@@ -537,6 +538,7 @@ class MyApp(ctk.CTk):
         ctk.CTkLabel(self.dynamic_frame, text="Extract Sysdiagnose", height=40, width=585, font=("standard",24), justify="left").pack(pady=15)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Initiate the creation of a Sysdiagnose archive on the device and save \nit to disk afterwards. This may take some time. \nDo you want to continue?", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(pady=60)
+
         self.diagsrv = CrashReportsManager(lockdown)
         self.choose = ctk.BooleanVar(self, False)
         self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
@@ -738,8 +740,6 @@ class MyApp(ctk.CTk):
 
 # Main iTunes Backup function for other methods
     def perf_iTunes_bu(self, mode):
-        global lockdown
-        lockdown = create_using_usbmux()
         m = mode
         global notify
         self.pw_found = ctk.IntVar(self,0)
@@ -1295,8 +1295,6 @@ class MyApp(ctk.CTk):
         ctk.CTkLabel(self.dynamic_frame, text="Filesystem Backup", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Provide the SSH parameters. The default values are suitable for Checkra1n and Palera1n: ", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
-        global lockdown
-        lockdown = create_using_usbmux()
         self.change = ctk.IntVar(self, 0)
         self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.choose_jb_params(self.text, self.portbox, self.userbox, self.pwbox, self.pathbox))
         self.okbutton.pack(side="bottom", pady=(0,400))
@@ -1344,8 +1342,6 @@ class MyApp(ctk.CTk):
     def show_sniffer(self):
         ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
         ctk.CTkLabel(self.dynamic_frame, text="Capture Device Traffic", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
-        global lockdown
-        lockdown = create_using_usbmux()
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Set the number of packets to sniff (0 is endless):", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
         self.change = ctk.IntVar(self, 0)
