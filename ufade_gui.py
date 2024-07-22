@@ -1719,13 +1719,16 @@ class MyApp(ctk.CTk):
                 self.mac_os_17 = threading.Thread(target=lambda: self.macos_dev17(self.waitm))
                 self.mac_os_17.start()
                 self.wait_variable(self.waitm)
-                while True:
-                        try:
-                            tun = get_tunneld_devices()
-                        except:
-                            tun = []
-                        if tun != []:
-                            break
+                if self.waitm.get() == 1:
+                    while True:
+                            try:
+                                tun = get_tunneld_devices()
+                            except:
+                                tun = []
+                            if tun != []:
+                                break
+                except:
+                    pass
         change.set(1)
 
     def wintunnel(self):
