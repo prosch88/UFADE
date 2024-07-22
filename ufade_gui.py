@@ -738,6 +738,8 @@ class MyApp(ctk.CTk):
 
 # Main iTunes Backup function for other methods
     def perf_iTunes_bu(self, mode):
+        global lockdown
+        lockdown = create_using_usbmux()
         m = mode
         global notify
         self.pw_found = ctk.IntVar(self,0)
