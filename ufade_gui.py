@@ -1721,13 +1721,13 @@ class MyApp(ctk.CTk):
                 self.wait_variable(self.waitm)
                 if self.waitm.get() == 1:
                     while True:
-                            try:
-                                tun = get_tunneld_devices()
-                            except:
-                                tun = []
-                            if tun != []:
-                                break
-                except:
+                        try:
+                            tun = get_tunneld_devices()
+                        except:
+                            tun = []
+                        if tun != []:
+                            break
+                else:
                     pass
         change.set(1)
 
