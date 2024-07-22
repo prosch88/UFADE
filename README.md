@@ -9,7 +9,7 @@ The use of [pythondialog](https://github.com/frougon/pythondialog) is preventig 
 
 Update: There is a new version based on [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter). This one works on Windows. You can also load the Windows version from the release page. 
 
-Requires Python >= 3.11.
+Requires Python == 3.11.
 
 More features may follow.
 
@@ -44,11 +44,19 @@ MacOS:
 ```
 brew install dialog
 ```
+for the GUI-version on MacOS:
+```
+brew install python@3.11 python-tk@3.11
+```
 
 **Install the requirements:**
 ```
 pip install -r requirements.txt 
 ```
+Windows:
+
+install [Apple-Devices](https://apps.microsoft.com/detail/9np83lwlpz9k?hl)
+
 <br />
 
 ## Usage
