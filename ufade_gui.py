@@ -1802,10 +1802,15 @@ class MyApp(ctk.CTk):
             hsize = int((float(shot.size[1])*float(wperc)))
         screensh = ctk.CTkImage(dark_image=shot, size=(wsize, hsize))
         imglabel.configure(image=screensh)
-        filename = hardware + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png"
+        hash_sha256 = hashlib.sha256(png).hexdigest()
+        name = hardware + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
+        filename = name + ".png"
+        hashname = name + ".txt"
         with open(os.path.join("screenshots", filename), "wb") as file:
             file.write(png)
-        namefield.configure(text=f"Screenshot saved as:\n{filename}")
+        with open(os.path.join("screenshots", hashname), "w") as hash_file:
+            hash_file.write(hash_sha256)
+        namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
 
     def chat_shotloop(self, dvt):
         try: os.mkdir("screenshots")
@@ -1851,7 +1856,9 @@ class MyApp(ctk.CTk):
         self.stop_event.set()
     
     def shotloop(self, dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, text, png=None, first=False):
-        filename = chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S")) + ".png"
+        name = chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
+        filename = name + ".png"
+        hashname = name + ".txt"
         hsize = 426
         if direction == "down":
             ch_direction = Direction.Next
@@ -1878,7 +1885,10 @@ class MyApp(ctk.CTk):
             imglabel.configure(image=screensh)
             with open(os.path.join("screenshots", app_name, chat_name, filename), "wb") as file:
                 file.write(png)
-            namefield.configure(text=f"Screenshot saved as:\n{filename}")
+            hash_sha256 = hashlib.sha256(png).hexdigest()
+            with open(os.path.join("screenshots", app_name, chat_name, hashname), "w") as hash_file:
+                hash_file.write(hash_sha256)
+            namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
             self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, png=png, text=text)
         else:
             while not self.stop_event.is_set():
@@ -1907,9 +1917,13 @@ class MyApp(ctk.CTk):
                             hsize = int((float(shot.size[1])*float(wperc)))
                         screensh = ctk.CTkImage(dark_image=shot, size=(wsize, hsize))
                         imglabel.configure(image=screensh)
+                        
                         with open(os.path.join("screenshots", app_name, chat_name, filename) + ".png", "wb") as file:
                             file.write(png)
-                        namefield.configure(text=f"Screenshot saved as:\n{filename}")
+                        hash_sha256 = hashlib.sha256(png).hexdigest()
+                        with open(os.path.join("screenshots", app_name, chat_name, hashname), "w") as hash_file:
+                            hash_file.write(hash_sha256)
+                        namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
                         sc_count += 1
                         ab_count = 0
                     else:
