@@ -1825,7 +1825,7 @@ class MyApp(ctk.CTk):
         self.imglabel = ctk.CTkLabel(self.shotframe, image=self.placeholder_image, text=" ", width=240, height=426, font=self.stfont, anchor="w", justify="left")
         self.imglabel.pack()
         self.text = ctk.CTkLabel(self.textframe, text="Open the chat application and the chat\nyou want to capture, enter the name of\nthe chosen chat in the given fields", width=300, height=60, font=self.stfont, anchor="w", justify="left")
-        self.text.pack(anchor="w", pady=10)
+        self.text.pack(anchor="w")
         self.appbox = ctk.CTkEntry(self.textframe, width=140, height=20, corner_radius=0, placeholder_text="name of the app")
         self.appbox.pack(pady=10, ipadx=0, anchor="w")
         self.chatbox = ctk.CTkEntry(self.textframe, width=140, height=20, corner_radius=0, placeholder_text="name of the chat")
@@ -1839,7 +1839,7 @@ class MyApp(ctk.CTk):
         self.abortbutton = ctk.CTkButton(self.textframe, text="Back", font=self.stfont, command=lambda: self.switch_menu("DevMenu"))
         self.abortbutton.pack(pady=10, ipadx=0, anchor="w")
         self.namefield = ctk.CTkLabel(self.textframe, text=" ", width=300, height=60, font=self.stfont, anchor="w", justify="left")
-        self.namefield.pack(anchor="w", pady=10)
+        self.namefield.pack(anchor="w", pady=5)
 
 
     def chatshotthread(self, dvt, app_name, chat_name, direction, imglabel, namefield, text):
@@ -1851,11 +1851,13 @@ class MyApp(ctk.CTk):
         self.stop_event.clear()
         self.doshot = threading.Thread(target=lambda: self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, text, first=True))
         self.doshot.start()
+        
     
     def breakshotloop(self):
         self.stop_event.set()
     
     def shotloop(self, dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, text, png=None, first=False):
+        AccessibilityAudit(lockdown).set_show_visuals(False)
         name = chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
         filename = name + ".png"
         hashname = name + ".txt"
@@ -1937,7 +1939,7 @@ class MyApp(ctk.CTk):
             self.downbutton.configure(state="enabled")
             self.abortbutton.configure(state="enabled")
             AccessibilityAudit(lockdown).set_show_visuals(False)
-            raise KeyboardInterrupt
+            raise SystemExit
             return("interrupt")
     
 
