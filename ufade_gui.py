@@ -1403,7 +1403,7 @@ class MyApp(ctk.CTk):
         self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
         self.progress.set(0)
         self.progress.pack()
-        self.tar_media = threading.Thread(target=lambda: media_export(l_type=folder, dest=folder, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
+        self.tar_media = threading.Thread(target=lambda: media_export(l_type="folder", dest=folder, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
         self.tar_media.start()
         self.wait_variable(self.change)
         self.text.configure(text="AFC Extraction complete.")
