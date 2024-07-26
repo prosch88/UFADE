@@ -1485,9 +1485,12 @@ class MyApp(ctk.CTk):
             pass
         if int(version.split(".")[0]) < 17:
             try: 
-                info = ("Looking for version " + version)
+                self.after(100)
+                text.configure(text=" ", anchor="nw", justify="left")
+                text.update()
                 self.after(1000)
-                text.configure(text=info, anchor="nw", justify="left")
+                info = ("Looking for version " + version)
+                text.configure(text=info)
                 self.after(1000)
                 lockdown = create_using_usbmux()
                 DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", version, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", version, "DeveloperDiskImage.dmg.signature"))
