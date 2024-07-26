@@ -68,7 +68,7 @@ class MyApp(ctk.CTk):
         self.stop_event = threading.Event()
 
         # Define Window
-        self.title("Universal Forensic Apple Device Extractor 0.8")
+        self.title("Universal Forensic Apple Device Extractor 0.8.1")
         self.geometry("1100x600")
         self.resizable(False, False)
         self.iconpath = ImageTk.PhotoImage(file=os.path.join(os.path.dirname(__file__), "assets" , "ufade.png" ))
@@ -436,6 +436,8 @@ class MyApp(ctk.CTk):
     def browse_cwd(self, outputbox):
         global dir
         olddir = dir
+        self.okbutton.configure(state="disabled")
+        outputbox.configure(state="disabled")
         if platform.uname().system == 'Linux':
             import crossfiledialog
             dir = crossfiledialog.choose_folder()
@@ -445,6 +447,8 @@ class MyApp(ctk.CTk):
             dir = ctk.filedialog.askdirectory()
             if not dir:
                 dir = olddir
+        self.okbutton.configure(state="enabled")
+        outputbox.configure(state="normal")    
         outputbox.delete(0, "end")
         outputbox.insert(0, string=dir)
         
@@ -557,6 +561,8 @@ class MyApp(ctk.CTk):
             self.text.pack(pady=10)
             if d_class == "Watch":
                 self.diag_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "diag_watch.png")), size=(600, 300))
+            elif d_class == "iPad":
+                self.diag_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "diag_ipad.png")), size=(600, 300))
             else:
                 self.diag_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "diag.png")), size=(600, 300))
             self.diaglabel = ctk.CTkLabel(self.dynamic_frame, image=self.diag_image, text=" ", width=600, height=300, font=self.stfont, anchor="w", justify="left")
