@@ -37,7 +37,9 @@ from iOSbackup import iOSbackup
 from pyiosbackup import Backup
 from playsound import playsound
 from io import BytesIO
+import mimetypes
 import hashlib
+import json
 import plistlib
 import posixpath
 import pathlib
@@ -312,11 +314,14 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="Initiate Sysdiagnose", command=lambda: self.switch_menu("SysDiag"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="WhatsApp export\n(PuMA)", command=lambda: self.switch_menu("tess"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Sniff device traffic", command=lambda: self.switch_menu("sniff"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Extract AFC Media files", command=lambda: self.switch_menu("Media"), width=200, height=70, font=self.stfont)
         ]
         self.menu_text = ["Pull the crash report folder from the device.",
                           "Create a Sysdiagnose archive on the device and\npull it to the disk afterwards.", 
                           "Perform an iTunes-style backup and extract Whatsapp\nfiles for PuMA (LE-tool).", 
-                          "Captures the device network traffic as a pcap file."]
+                          "Captures the device network traffic as a pcap file.",
+                          "Pull the \"Media\"-folder from the device\n(pictures, videos, recordings)"
+                          ]
         self.menu_textbox = []
         for btn in self.menu_buttons:
             self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=70, font=self.stfont, anchor="w", justify="left"))
@@ -1418,8 +1423,10 @@ class MyApp(ctk.CTk):
         self.text.configure(text="AFC Extraction complete.")
         self.prog_text.pack_forget()
         self.progress.pack_forget()
-        self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("WatchMenu")).pack(pady=40))  
-
+        if d_class == "Watch":
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("WatchMenu")).pack(pady=40))  
+        else:
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=40)) 
 ### check start
 
 # Try to mount a suitable developerdiskimage
@@ -2074,6 +2081,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
     try: os.mkdir(dest)
     except: pass
     m_nr = 0
+
     for entry in media_list:
         m_nr += 1
         mpro = int(100*(m_nr/media_count))
@@ -2082,7 +2090,10 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         prog_text.update()
         progress.update()
         try:
-            pull(self=AfcService(lockdown),relative_src=entry, dst=dest)
+            if d_class == "Watch":
+                pull(self=AfcService(lockdown),relative_src=entry, dst=dest, fdict=True)
+            else:
+                pull(self=AfcService(lockdown),relative_src=entry, dst=dest, fdict=False)
             if l_type != "folder":
                 file_path = os.path.join(dest, entry)                                                              #get the files and folders shared over AFC
                 if l_type != "UFED":
@@ -2102,6 +2113,9 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
                 pass
         except:
             pass
+
+    with open(f"afc_files_{udid}.json", "w") as file:
+                    json.dump(filedict, file)
     change.set(1)   
     return(archive)    
 
@@ -2372,7 +2386,8 @@ def dev_data():
     return(device)
 
 # modified pull function from pymobiledevice3 (sets atime to mtime as it's not readable)
-def pull(self, relative_src, dst, callback=None, src_dir=''):
+def pull(self, relative_src, dst, fdict=False, callback=None, src_dir=''):
+        global filedict
         src = posixpath.join(src_dir, relative_src)
         if callback is not None:
             callback(src, dst)
@@ -2384,11 +2399,51 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
             if "default.realm." in src:
                 pass
             else:
+                output_format = "%Y-%m-%dT%H:%M:%S-00:00" 
+                filecontent = self.get_file_contents(str(src))
+                #fdict = True
+                if fdict != False:
+                    dbfiles = [".db", ".sqlite", ".realm", ".kgdb"]
+                    try:                  
+                        mimetype = mimetypes.guess_type(src)
+                        if "image" in mimetype[0]:
+                            tag = "Image"
+                        elif "video" in mimetype[0]:
+                            tag = "Video"
+                        elif "audio" in mimetype[0]:
+                            tag = "Audio"
+                        elif "text" in mimetype[0]:
+                            tag = "Text"
+                        elif "application" in mimetype[0]:
+                            tag = "Application"
+                        elif any(x in src.lower() for x in dbfiles):
+                            tag = "Database"
+                        elif any(x in src.lower() for x in dbfiles):
+                            tag = "Database"
+                        else: 
+                            tag = "Uncategorized"
+                        print(src)
+                        print(mimetype)
+                        print(tag)
+                    except:
+                        mimetype = ["uncategorized", None]
+                        if any(x in src.lower() for x in dbfiles):
+                            tag = "Database"
+                        elif ".plist" in src.lower():
+                            tag = "Text"
+                        else: 
+                            tag = "Uncategorized"
+                        print(src)
+                        print(mimetype)
+                        print(tag)
+                    finally:
+                        filedict[str(src)] = {"size": self.stat(src)['st_size'], "accessInfo": {"CreationTime": str(self.stat(src)['st_birthtime'].strftime(output_format)), "ModifyTime": str(self.stat(src)['st_mtime'].strftime(output_format)), "AccessTime": ""}}#, "metadata": {"Local Path": os.path.join("files", "AFC", os.path.basename(str(src)))}}, #"Tags": tag}}
+
                 mtime = self.stat(src)['st_mtime'].timestamp()
                 if os.path.isdir(dst):
                     dst = os.path.join(dst, os.path.basename(relative_src))
                 with open(dst, 'wb') as f:
-                    f.write(self.get_file_contents(src))
+                    f.write(filecontent)
                 os.utime(dst, (mtime, mtime))
         else:
             # directory
@@ -2403,10 +2458,10 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
 
                 if self.isdir(src_filename):
                     dst_filename.mkdir(exist_ok=True)
-                    pull(self, src_filename, str(dst_path), callback=callback)
+                    pull(self, src_filename, str(dst_path), callback=callback, fdict=fdict)
                     continue
 
-                pull(self, src_filename, str(dst_path), callback=callback)
+                pull(self, src_filename, str(dst_path), callback=callback, fdict=fdict)
 
 # modified unback commanf from pyiosbackup for better Windows support
 def unback_alt(self, path='.'):
@@ -2450,6 +2505,7 @@ except:
 
 device = dev_data()
 developer = False
+filedict = {}
 
 
 # Start the app
