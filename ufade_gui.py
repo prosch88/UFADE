@@ -2,7 +2,7 @@
 # UFADE - Universal Forensic Apple Device Extractor (c) C.Peter 2024
 # Licensed under GPLv3 License
 import customtkinter as ctk
-from PIL import ImageTk, Image
+from PIL import ImageTk, Image, ExifTags
 from tkinter import StringVar
 from pymobiledevice3 import usbmux, exceptions, lockdown
 from pymobiledevice3.services.mobile_image_mounter import DeveloperDiskImageMounter, MobileImageMounterService, PersonalizedImageMounter
@@ -2093,7 +2093,10 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
             if d_class == "Watch":
                 pull(self=AfcService(lockdown),relative_src=entry, dst=dest, fdict=True)
             else:
-                pull(self=AfcService(lockdown),relative_src=entry, dst=dest, fdict=False)
+                if l_type == "folder":
+                    pull(self=AfcService(lockdown),relative_src=entry, dst=dest, fdict=True)
+                else:
+                    pull(self=AfcService(lockdown),relative_src=entry, dst=dest, fdict=False)
             if l_type != "folder":
                 file_path = os.path.join(dest, entry)                                                              #get the files and folders shared over AFC
                 if l_type != "UFED":
@@ -2405,12 +2408,12 @@ def pull(self, relative_src, dst, fdict=False, callback=None, src_dir=''):
                 if fdict != False:
                     dbfiles = [".db", ".sqlite", ".realm", ".kgdb"]
                     try:                  
-                        mimetype = mimetypes.guess_type(src)
+                        mimetype = mimetypes.guess_type(src, strict=True)
                         if "image" in mimetype[0]:
                             tag = "Image"
                         elif "video" in mimetype[0]:
                             tag = "Video"
-                        elif "audio" in mimetype[0]:
+                        elif "audio" in mimetype[0] and not "plj" in mimetype[0]:
                             tag = "Audio"
                         elif "text" in mimetype[0]:
                             tag = "Text"
@@ -2422,9 +2425,9 @@ def pull(self, relative_src, dst, fdict=False, callback=None, src_dir=''):
                             tag = "Database"
                         else: 
                             tag = "Uncategorized"
-                        print(src)
-                        print(mimetype)
-                        print(tag)
+                        #print(src)
+                        #print(mimetype)
+                        #print(tag)
                     except:
                         mimetype = ["uncategorized", None]
                         if any(x in src.lower() for x in dbfiles):
@@ -2433,11 +2436,31 @@ def pull(self, relative_src, dst, fdict=False, callback=None, src_dir=''):
                             tag = "Text"
                         else: 
                             tag = "Uncategorized"
-                        print(src)
-                        print(mimetype)
-                        print(tag)
                     finally:
-                        filedict[str(src)] = {"size": self.stat(src)['st_size'], "accessInfo": {"CreationTime": str(self.stat(src)['st_birthtime'].strftime(output_format)), "ModifyTime": str(self.stat(src)['st_mtime'].strftime(output_format)), "AccessTime": ""}}#, "metadata": {"Local Path": os.path.join("files", "AFC", os.path.basename(str(src)))}}, #"Tags": tag}}
+                        filedict[str(src)] = {"size": str(self.stat(src)['st_size']), "accessInfo": {"CreationTime": str(self.stat(src)['st_birthtime'].strftime(output_format)), "ModifyTime": str(self.stat(src)['st_mtime'].strftime(output_format)), "AccessTime": ""}, 
+                        "metadata": {"Local Path": os.path.join("files", "AFC", os.path.basename(src)), "SHA256": hashlib.sha256(filecontent).hexdigest(), "MD5": hashlib.md5(filecontent).hexdigest(), "Tags": tag}}
+                        if tag == "Image":
+                            try:
+                                img_bytes = BytesIO()
+                                img_bytes.write(filecontent)
+                                img_data = Image.open(img_bytes)
+                                exif = {
+                                            ExifTags.TAGS[k]: str(v)
+                                            for k, v in img_data._getexif().items()
+                                            if k in ExifTags.TAGS
+                                        }
+                                exif.pop("ExifVersion", None)
+                                exif.pop("ComponentsConfiguration", None)
+                                exif.pop("MakerNote", None)
+                                exif.pop("SceneType", None)
+                                exif.pop("FlashPixVersion", None)
+                                exif_exist = True
+                            except:
+                                exif = None
+                                exif_exist = False
+                            finally:
+                                if isinstance(exif, dict):
+                                    filedict[str(src)]['Exif'] = exif
 
                 mtime = self.stat(src)['st_mtime'].timestamp()
                 if os.path.isdir(dst):
