@@ -33,6 +33,7 @@ from datetime import datetime, timedelta, timezone, date
 from subprocess import Popen, PIPE, check_call, run
 from pymobiledevice3 import exceptions
 from importlib.metadata import version
+from pillow_heif import register_heif_opener
 from iOSbackup import iOSbackup
 from pyiosbackup import Backup
 from playsound import playsound
@@ -2081,7 +2082,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
     try: os.mkdir(dest)
     except: pass
     m_nr = 0
-
+    register_heif_opener()
     for entry in media_list:
         m_nr += 1
         mpro = int(100*(m_nr/media_count))
@@ -2117,8 +2118,11 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         except:
             pass
 
-    with open(f"afc_files_{udid}.json", "w") as file:
-                    json.dump(filedict, file)
+    if l_type == "folder":
+        with open(f"afc_files_{udid}.json", "w") as file:
+            json.dump(filedict, file)
+    else:
+        pass
     change.set(1)   
     return(archive)    
 
@@ -2444,11 +2448,19 @@ def pull(self, relative_src, dst, fdict=False, callback=None, src_dir=''):
                                 img_bytes = BytesIO()
                                 img_bytes.write(filecontent)
                                 img_data = Image.open(img_bytes)
-                                exif = {
-                                            ExifTags.TAGS[k]: str(v)
-                                            for k, v in img_data._getexif().items()
-                                            if k in ExifTags.TAGS
-                                        }
+    
+                                if ".heic" in src.lower():
+                                    exif = {
+                                                ExifTags.TAGS[k]: str(v)
+                                                for k, v in img_data.getexif().items()
+                                                if k in ExifTags.TAGS
+                                            }
+                                else:      
+                                    exif = {
+                                                ExifTags.TAGS[k]: str(v)
+                                                for k, v in img_data._getexif().items()
+                                                if k in ExifTags.TAGS
+                                            }
                                 exif.pop("ExifVersion", None)
                                 exif.pop("ComponentsConfiguration", None)
                                 exif.pop("MakerNote", None)

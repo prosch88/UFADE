@@ -8,3 +8,4 @@ playsound==1.2.2
 paramiko
 customtkinter
 crossfiledialog
+pillow-heif
