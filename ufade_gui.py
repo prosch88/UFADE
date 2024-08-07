@@ -60,6 +60,7 @@ if sys.stderr is None:
 import time
 import tempfile
 import re
+import exifread
 
 ctk.set_appearance_mode("dark")  # Dark Mode
 ctk.set_default_color_theme("dark-blue") 
@@ -2409,7 +2410,7 @@ def pull(self, relative_src, dst, fdict=False, callback=None, src_dir=''):
                 output_format = "%Y-%m-%dT%H:%M:%S-00:00" 
                 filecontent = self.get_file_contents(str(src))
                 #fdict = True
-                if fdict != False:
+                if fdict == True:
                     dbfiles = [".db", ".sqlite", ".realm", ".kgdb"]
                     try:                  
                         mimetype = mimetypes.guess_type(src, strict=True)
@@ -2447,33 +2448,45 @@ def pull(self, relative_src, dst, fdict=False, callback=None, src_dir=''):
                             try:
                                 img_bytes = BytesIO()
                                 img_bytes.write(filecontent)
-                                img_data = Image.open(img_bytes)
-    
-                                if ".heic" in src.lower():
-                                    exif = {
-                                                ExifTags.TAGS[k]: str(v)
-                                                for k, v in img_data.getexif().items()
-                                                if k in ExifTags.TAGS
-                                            }
-                                else:      
-                                    exif = {
-                                                ExifTags.TAGS[k]: str(v)
-                                                for k, v in img_data._getexif().items()
-                                                if k in ExifTags.TAGS
-                                            }
-                                exif.pop("ExifVersion", None)
-                                exif.pop("ComponentsConfiguration", None)
-                                exif.pop("MakerNote", None)
-                                exif.pop("SceneType", None)
-                                exif.pop("FlashPixVersion", None)
-                                exif_exist = True
+                                etags = {}
+                                etags = exifread.process_file(img_bytes, details=False)
+                                if isinstance(etags, dict):
+                                    exifb = True
+                                else:
+                                    exifb = False
                             except:
-                                exif = None
-                                exif_exist = False
-                            finally:
-                                if isinstance(exif, dict):
-                                    filedict[str(src)]['Exif'] = exif
+                                exifb = False
+                            exifdict = {}
+                            if exifb == True:
+                                try: exifdict['ExifEnumPixelXDimension'] = str(etags['Image XResolution'])
+                                except: pass
+                                try: exifdict['ExifEnumPixelYDimension'] = str(etags['Image YResolution'])
+                                except: pass
+                                try: exifdict['ExifEnumOrientation'] = str(etags["Image Orientation"])
+                                except: pass
+                                try: exifdict['ExifEnumDateTimeOriginal'] = str(etags["EXIF DateTimeOriginal"])
+                                except: pass
+                                try: exifdict['ExifEnumDateTimeDigitized'] = str(etags["EXIF DateTimeDigitized"])
+                                except: pass
+                                try: exifdict['ExifEnumMake'] = str(etags["Image Make"])
+                                except: pass
+                                try: exifdict['ExifEnumModel'] = str(etags["Image Model"])
+                                except: pass
+                                try: exifdict['ExifEnumExposureTime'] = str(etags["EXIF ExposureTime"])
+                                except: pass
+                                try: exifdict['ExifEnumFocalLength'] = str(etags["EXIF FocalLength"])
+                                except: pass
+                                try: exifdict['ExifEnumFNumber'] = str(etags["EXIF FNumber"])
+                                except: pass
+                                try: exifdict['EXIFCaptureTime'] = str(etags["EXIF CaptureTime"])
+                                except: pass
+                                try: exifdict['MetaDataPixelResolution'] = f"{str(etags['EXIF ExifImageWidth'])}x{str(etags['EXIF ExifImageLength'])}"
+                                except: pass
+                                #if isinstance(exifdict, dict):
+                                if exifdict != {}:
+                                    filedict[str(src)]["Exif"] = exifdict
 
+                            
                 mtime = self.stat(src)['st_mtime'].timestamp()
                 if os.path.isdir(dst):
                     dst = os.path.join(dst, os.path.basename(relative_src))
