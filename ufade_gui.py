@@ -16,6 +16,7 @@ from pymobiledevice3.services.afc import AfcService
 from pymobiledevice3.services.house_arrest import HouseArrestService
 from pymobiledevice3.services.crash_reports import CrashReportsManager
 from pymobiledevice3.services.os_trace import OsTraceService
+from pymobiledevice3.services.diagnostics import DiagnosticsService
 from pymobiledevice3.services.dvt.instruments.device_info import DeviceInfo
 from pymobiledevice3.services.dvt.instruments.screenshot import Screenshot
 from pymobiledevice3.services.screenshot import ScreenshotService
@@ -37,6 +38,8 @@ from iOSbackup import iOSbackup
 from pyiosbackup import Backup
 from playsound import playsound
 from io import BytesIO
+import xml.etree.ElementTree as ET
+from xml.dom import minidom
 import mimetypes
 import hashlib
 import json
@@ -60,6 +63,7 @@ import time
 import tempfile
 import re
 import exifread
+import uuid
 
 ctk.set_appearance_mode("dark")  # Dark Mode
 ctk.set_default_color_theme("dark-blue") 
@@ -175,6 +179,8 @@ class MyApp(ctk.CTk):
             self.show_adv_menu()
         elif menu_name == "WatchMenu":
             self.show_watch_menu()
+        elif menu_name == "ReportMenu":
+            self.show_report_menu()
         elif menu_name == "DevInfo":
             self.show_save_device_info()
         elif menu_name == "iTunes":
@@ -209,6 +215,8 @@ class MyApp(ctk.CTk):
             dvt = DvtSecureSocketProxyService(lockdown)
             dvt.__enter__()
             self.chat_shotloop(dvt)
+        elif menu_name == "Report":
+            self.show_report()
         elif menu_name == "umount":
             self.call_unmount()
         elif menu_name == "NoDevice":
@@ -223,13 +231,13 @@ class MyApp(ctk.CTk):
         self.skip = ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=20, font=self.stfont)
         self.skip.grid(row=0, column=1, sticky="w")
         self.menu_buttons = [
-            ctk.CTkButton(self.dynamic_frame, text="Save device info", command=lambda: self.switch_menu("DevInfo"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Reporting Options", command=lambda: self.switch_menu("ReportMenu"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Collect Unified Logs", command=lambda: self.switch_menu("CollectUL"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Extract crash reports", command=lambda: self.switch_menu("CrashReport"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Initiate Sysdiagnose", command=lambda: self.switch_menu("SysDiag"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Extract AFC Media files", command=lambda: self.switch_menu("Media"), width=200, height=70, font=self.stfont),
         ]
-        self.menu_text = ["Save informations about the device, installed apps,\nSIM and companion devices.", 
+        self.menu_text = ["Extract device informations and content.", 
                           "Collects the AUL from the device and saves\nthem as a logarchive.", 
                           "Pull the crash report folder from the device.",
                           "Create a Sysdiagnose archive on the device and\npull it to the disk afterwards.", 
@@ -247,6 +255,29 @@ class MyApp(ctk.CTk):
             r+=1
             i+=1
 
+# Watch Report Menu
+    def show_report_menu(self):
+        self.skip = ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=20, font=self.stfont)
+        self.skip.grid(row=0, column=1, sticky="w")
+        self.menu_buttons = [
+            ctk.CTkButton(self.dynamic_frame, text="Save device info", command=lambda: self.switch_menu("DevInfo"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Create UFDR Report", command=lambda: self.switch_menu("Report"), width=200, height=70, font=self.stfont, state="disabled"),
+        ]
+        self.menu_text = ["Save informations about the device, installed apps,\nSIM and companion devices.",
+                          "Create a UFDR-Zip container viewable\nin the Cellebrite Reader application"]
+        self.menu_textbox = []
+        for btn in self.menu_buttons:
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=70, font=self.stfont, anchor="w", justify="left"))
+        r=1
+        i=0
+        for btn in self.menu_buttons:
+            btn.grid(row=r,column=0, padx=30, pady=10)
+            self.menu_textbox[i].grid(row=r,column=1, padx=10, pady=10)
+            self.menu_textbox[i].configure(text=self.menu_text[i])
+            r+=1
+            i+=1
+
+        ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_watch_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
 
 # Acquisition Menu
     def show_acq_menu(self):
@@ -1481,6 +1512,7 @@ class MyApp(ctk.CTk):
         self.prog_text.pack()
         self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
         self.progress.set(0)
+        self.prog_text.configure(text="0%")
         self.progress.pack()
         self.tar_media = threading.Thread(target=lambda: media_export(l_type="folder", dest=folder, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
         self.tar_media.start()
@@ -1493,6 +1525,374 @@ class MyApp(ctk.CTk):
         else:
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=40)) 
 ### check start
+
+    def show_report(self):
+        ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
+        ctk.CTkLabel(self.dynamic_frame, text="Generate UFDR Report", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Performing AFC Extraction of Mediafiles", width=585, height=60, font=self.stfont, anchor="w", justify="left")
+        self.text.pack(anchor="center", pady=25)
+        self.change = ctk.IntVar(self, 0)
+        now = datetime.now()
+        try: os.mkdir("Report")
+        except: pass
+        try: os.mkdir(os.path.join("Report", "files"))
+        except: pass
+        try: os.mkdir(os.path.join("Report", "files", "Diagnostics"))
+        except: pass
+        mfolder = os.path.join("Report", "files", "AFC_Media" )
+        try: os.mkdir(mfolder)
+        except: pass
+        cfolder = os.path.join("Report", "files", "Diagnostics", "~CrashLogs")
+        try: os.mkdir(cfolder)
+        except: pass    
+        self.prog_text = ctk.CTkLabel(self.dynamic_frame, text="0%", width=585, height=20, font=self.stfont, anchor="w", justify="left")
+        self.prog_text.pack()
+        self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
+        self.progress.set(0)
+        self.progress.pack()
+        self.mediaexport = threading.Thread(target=lambda: media_export(l_type="folder", dest=mfolder, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
+        self.mediaexport.start()
+        self.wait_variable(self.change)
+        self.change.set(0)
+        self.progress.set(0)
+        self.prog_text.configure(text="0%")
+        self.text.configure(text="Pulling Crash Logs from the device.")
+        self.crashl = threading.Thread(target=lambda: crash_report(crash_dir=cfolder, change=self.change, progress=self.progress, prog_text=self.prog_text))
+        self.crashl.start()
+        self.wait_variable(self.change)
+        self.prog_text.configure(text="")
+        self.progress.pack_forget()
+        self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
+        self.progress.pack()
+        self.progress.start()
+        self.text.configure(text="Generating report files. This may take some time")
+        self.change.set(0)
+        self.text.configure(text="Pulling Crash Logs from the device.")
+        self.report = threading.Thread(target=lambda: self.watch_report(text=self.text, change=self.change, progress=self.progress, prog_text=self.prog_text, now=now))
+        self.report.start()
+        self.wait_variable(self.change)
+        self.text.configure(text="Report generation complete")
+        self.prog_text.pack_forget()
+        self.progress.pack_forget()
+        self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("WatchMenu")).pack(pady=40))
+
+    def watch_report(self, text, prog_text, progress, change, now, case_number="", case_name="", evidence_number="", examiner=""):   
+        cfolder = os.path.join("Report", "files", "Diagnostics", "~CrashLogs")
+        prog_text.configure(text="")
+        text.configure(text="Generating report files. This may take some time.")
+        progress.pack_forget()
+        self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
+        self.progress.pack()
+        self.progress.start()
+        diagnostics = {}
+        diagnostics["Diagnostics"] = DiagnosticsService(lockdown).info()
+        with open(os.path.join("Report", "files", "Diagnostics", "~Diagnostics"), "wb") as file:
+            plistlib.dump(diagnostics, file)
+
+        ioreg = {}
+        ior = DiagnosticsService(lockdown).ioregistry()
+        if ior == None:
+            ior = {}
+            ior["IORegistry"] = {}
+        ioreg["Diagnostics"] = ior
+        with open(os.path.join("Report", "files", "Diagnostics", "~IORegistry"), "wb") as file:
+            plistlib.dump(ioreg, file)
+
+        devinfo = lockdown.all_values
+        with open(os.path.join("Report", "files", "Diagnostics", "devinfo.plist"), "wb") as file:
+            plistlib.dump(devinfo, file)
+
+        de_va_di = self.devinfo_plist()
+        with open(os.path.join("Report", "files", "Diagnostics", "devvalues.plist"), "wb") as file:
+            plistlib.dump(de_va_di, file)
+
+        allappsinfo = installation_proxy.InstallationProxyService(lockdown).get_apps()
+        with open(os.path.join("Report", "files", "Diagnostics", "allappsinfo.plist"), "wb") as file:
+            plistlib.dump(allappsinfo, file)
+
+        allappsitunes = {}
+        itunes = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier', 'iTunesMetadata'])
+        for app in itunes:
+            allappsitunes[app['CFBundleIdentifier']] = app
+        with open(os.path.join("Report", "files", "Diagnostics", "allappsitunes.plist"), "wb") as file:
+            plistlib.dump(allappsitunes, file)
+
+        allappsicons = {}
+        icons = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier','CFBundleIcon', 'CFBundleName'])
+        for app in icons:
+            icon = {}
+            try:
+                icon['CFBundleIcon'] = app['CFBundleIcon']
+                icon['CFBundleName'] = app['CFBundleName']
+            except:
+                icon['CFBundleIcon'] = bytes(0)
+                icon['CFBundleName'] = app['CFBundleName']
+            allappsicons[app['CFBundleIdentifier']] = icon
+        with open(os.path.join("Report", "files", "Diagnostics", "allappsicons.plist"), "wb") as file:
+            plistlib.dump(allappsicons, file)
+
+        allappsusage = {}
+        usages = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier','DynamicDiskUsage', 'StaticDiskUsage'])
+        for app in usages:
+            usage = {}
+            try:
+                usage['CFBundleIdentifier'] = app['CFBundleIdentifier']
+                usage['DynamicDiskUsage'] = app['DynamicDiskUsage']
+                usage['StaticDiskUsage'] = app['StaticDiskUsage']
+            except:
+                usage['CFBundleIdentifier'] = app['CFBundleIdentifier']
+            allappsusage[app['CFBundleIdentifier']] = usage
+        with open(os.path.join("Report", "files", "Diagnostics", "allappsusage.plist"), "wb") as file:
+            plistlib.dump(allappsusage, file)
+
+        try: os.mkdir(os.path.join("Report", "files", "Diagnostics", "~DiagnosticRelay"))
+        except: pass
+        try: os.mkdir(os.path.join("Report", "files", "Diagnostics", "~DiagnosticRelay", "MobileGestalt"))
+        except: pass
+        mg = {}
+        mgval = {}
+        try:
+            mgval["MobileGestalt"] = DiagnosticsService(lockdown).mobilegestalt()
+        except:
+            status = {}
+            status["Status"] = 'MobileGestaltDeprecated'
+            mgval["MobileGestalt"] = status
+        mg["Diagnostics"] = mgval
+        mg["Status"] = "Success"
+        with open(os.path.join("Report", "files", "Diagnostics", "~DiagnosticRelay", "MobileGestalt", "All.plist"), "wb") as file:
+            plistlib.dump(mg, file)
+
+        try: os.mkdir(os.path.join("Report", "files", "Applications"))
+        except: pass
+
+        appfile = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier', 'iTunesMetadata', 'ApplicationDSID', 'ApplicationSINF', 'ApplicationType', 'CFBundleDisplayName', 'CFBundleExecutable', 'CFBundleName', 'CFBundlePackageType', 'CFBundleShortVersionString', 'CFBundleVersion', 'Container', 'GroupContainers', 'MinimumOSVersion', 'Path', 'UIDeviceFamily', 'DynamicDiskUsage', 'StaticDiskUsage', 'UIFileSharingEnabled'])
+        for app in appfile:
+            appname = app['CFBundleIdentifier']
+            try: os.mkdir(os.path.join("Report", "files", "Applications", appname))
+            except: pass
+            try: 
+                itunesplist = app['iTunesMetadata']
+                with open(os.path.join("Report", "files", "Applications", appname, "iTunesMetadata.plist"), "wb") as file:
+                    file.write(itunesplist)
+            except:
+                pass
+            addition = {}
+            try:addition['ApplicationDSID'] = app['ApplicationDSID']
+            except: pass
+            try: addition['ApplicationSINF'] = app['ApplicationSINF']
+            except: pass
+            try: addition['ApplicationType'] = app['ApplicationType']
+            except: pass
+            try: addition['CFBundleDisplayName'] = app['CFBundleDisplayName']
+            except: pass
+            try: addition['CFBundleIdentifier'] = app['CFBundleIdentifier']
+            except: pass
+            try: addition['CFBundleName'] = app['CFBundleName']
+            except: pass
+            try: addition['CFBundlePackageType'] = app['CFBundlePackageType']
+            except: pass
+            try: addition['CFBundleShortVersionString'] = app['CFBundleShortVersionString']
+            except: pass
+            try: addition['CFBundleVersion'] = app['CFBundleVersion']
+            except: pass
+            try: addition['Container'] = app['Container']
+            except: pass
+            try: addition['GroupContainers'] = app['GroupContainers']
+            except: pass
+            try: addition['MinimumOSVersion'] = app['MinimumOSVersion']
+            except: pass
+            try: addition['Path'] = app['Path']
+            except: pass
+            try: addition['UIDeviceFamily'] = app['UIDeviceFamily']
+            except: pass
+            try: addition['iTunesMetadata'] = app['iTunesMetadata']
+            except: pass
+            with open(os.path.join("Report", "files", "Applications", appname, "AdditionInfo.plist"), "wb") as file:
+                plistlib.dump(addition, file)
+
+            with open(os.path.join("Report", "files", "Applications", appname, "description.info"), "w") as file:
+                file.write(f"Name={app['CFBundleDisplayName']}\n")
+                file.write(f"Package={app['CFBundleIdentifier']}\n")
+                try: file.write(f"Version={app['CFBundleVersion']}\n")
+                except: file.write("Version=")
+                if app['ApplicationType'] == "User":
+                    file.write("IsSystem=0\n")
+                else:
+                    file.write("IsSystem=1\n")
+                try: file.write(f"AppSize={app['StaticDiskUsage']}\n")
+                except: file.write("AppSize=0\n")
+                try: file.write(f"DataSize={app['DynamicDiskUsage']}\n")
+                except: file.write("DataSize=0\n")
+                try: file.write(f"MinimumOS={app['MinimumOSVersion']}\n")
+                except: file.write(f"MinimumOS=0\n")
+                try:
+                    if app['UIFileSharingEnabled'] == True:            
+                        file.write("FileSharing=1\n")
+                except:
+                    file.write("FileSharing=0\n")
+
+            with open(os.path.join("Report", "files", "Applications", appname, "description.info.xml"), "w", encoding="UTF-8") as file:
+                file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+                file.write('<Appinfo type="iOS">\n')
+                file.write(f'<Name sourceValue="CFBundleDisplayName">{app['CFBundleDisplayName']}</Name>\n')
+                file.write(f'<Package sourceValue="CFBundleIdentifier">{app['CFBundleIdentifier']}</Package>\n')
+                file.write(f'<iOSValue sourceValue="CFBundlePackageType">{app['CFBundlePackageType']}</iOSValue>\n')
+                try: file.write(f'<Version sourceValue="CFBundleVersion">{app['CFBundleVersion']}</Version>\n')
+                except: file.write('<Version sourceValue="CFBundleVersion">0</Version>\n')
+                file.write(f'<iOSValue sourceValue="CFBundleName">{app['CFBundleName']}</iOSValue>\n')
+                try: file.write(f'<iOSValue sourceValue="Container">{app['Container']}</iOSValue>\n')
+                except: file.write('<iOSValue sourceValue="Container"></iOSValue>\n')
+                try: file.write(f'<iOSValue sourceValue="Path">{app['Path']}</iOSValue>\n')
+                except: file.write('<iOSValue sourceValue="Path"></iOSValue>\n')
+                file.write(f'<iOSValue sourceValue="ApplicationType">{app['ApplicationType']}</iOSValue>\n')
+                try: file.write(f'<MinimumOS sourceValue="MinimumOS">{app['MinimumOS']}</MinimumOS>\n')
+                except: file.write('<MinimumOS sourceValue="MinimumOS"></MinimumOS>\n')
+                try: file.write(f'<FileSharing sourceValue="UIFileSharingEnabled">{app['UIFileSharingEnabled']}</FileSharing>\n')
+                except: file.write('<FileSharing sourceValue="UIFileSharingEnabled">0</FileSharing>\n')
+                try: file.write(f'<iOSValue sourceValue="ApplicationDSID">{app['ApplicationDSID']}</iOSValue>\n')
+                except: file.write('<iOSValue sourceValue="ApplicationDSID">0</iOSValue>\n')
+                try: file.write(f'<AppSize sourceValue="StaticDiskUsage">{app['StaticDiskUsage']}</AppSize>\n')
+                except: file.write('<AppSize sourceValue="StaticDiskUsage">0</AppSize>\n')
+                try: file.write(f'<DataSize sourceValue="DynamicDiskUsage">{app['DynamicDiskUsage']}</DataSize>\n')
+                except: file.write('<DataSize sourceValue="DynamicDiskUsage">0</DataSize>\n')
+                file.write('<CacheSize>-1</CacheSize>\n')
+                file.write('</Appinfo>\n')
+
+        #Begin Time for UFD-Report
+        local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
+        utc_offset = now.astimezone().utcoffset()
+        utc_offset_hours = utc_offset.total_seconds() / 3600
+        if utc_offset_hours >= 0:
+            sign = "+"
+        else:
+            sign = "-"
+        output_format = "%d/%m/%Y %H:%M:%S" 
+        begin = str(now.strftime(output_format)) + " (" + sign + str(int(utc_offset_hours)) + ")"
+
+        #End Time for UFD-Report
+        end = datetime.now()
+        local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
+        utc_offset = end.astimezone().utcoffset()
+        utc_offset_hours = utc_offset.total_seconds() / 3600
+        if utc_offset_hours >= 0:
+            sign = "+"
+        else:
+            sign = "-"
+        output_format = "%d/%m/%Y %H:%M:%S" 
+        e_end = str(end.strftime(output_format)) + " (" + sign + str(int(utc_offset_hours)) + ")"
+
+        reportid = str(str(uuid.uuid4()))
+        project = ET.Element('project', {
+            'xmlns': 'http://pa.cellebrite.com/report/2.0',
+            'id': reportid,
+            'name': f'{dev_name} - UFADE Export',
+            'reportVersion': '5.0.0.0',
+            'containsGarbage': 'False',
+            'extractionType': 'AdvancedLogical'
+            })
+
+        source_extractions = ET.SubElement(project, 'sourceExtractions')
+        ET.SubElement(source_extractions, 'extractionInfo', {
+            'id': '0',
+            'name': 'Logical',
+            'isCustomName': 'False',
+            'type': 'AdvancedLogical',
+            'deviceName': '',
+            'fullName': '',
+            'index': '0',
+            'IsPartialData': 'False'
+            })
+        case_information = ET.SubElement(project, 'caseInformation')
+        ET.SubElement(case_information, 'field', {
+            'name': 'Case number',
+            'isSystem': 'True',
+            'isRequired': 'True',
+            'fieldType': 'CaseNumber',
+            'multipleLines': 'False'
+        }).text = case_number
+
+        ET.SubElement(case_information, 'field', {
+            'name': 'Case name',
+            'isSystem': 'True',
+            'isRequired': 'True',
+            'fieldType': 'CaseName',
+            'multipleLines': 'False'
+        }).text = case_name
+
+        ET.SubElement(case_information, 'field', {
+            'name': 'Evidence number',
+            'isSystem': 'True',
+            'isRequired': 'True',
+            'fieldType': 'EvidenceNumber',
+            'multipleLines': 'False'
+        }).text = evidence_number
+
+        ET.SubElement(case_information, 'field', {
+            'name': 'Examiner name',
+            'isSystem': 'True',
+            'isRequired': 'True',
+            'fieldType': 'ExaminerName',
+            'multipleLines': 'False'
+        }).text = examiner
+
+        metadata = ET.SubElement(project, 'metadata', {'section': 'Extraction Data'})
+        ET.SubElement(metadata, 'item', {
+            'name': 'DeviceInfoExtractionStartDateTime',
+            'sourceExtraction': '0'
+        }).text = begin
+
+        ET.SubElement(metadata, 'item', {
+            'name': 'DeviceInfoExtractionEndDateTime',
+            'sourceExtraction': '0'
+        }).text = e_end
+
+        metadata_device_info = ET.SubElement(project, 'metadata', {'section': 'Device Info'})
+        me_dev_info = {'Detected Manufacturer': 'Apple', 'Serial Number': snr, 'Device Name': name, 'WiFi Address': w_mac, 'Model Number': hardware + ", Model:" + mnr, 'Bluetooth Address': b_mac, 'Product Type': dev_name, 'Time Zone': d_tz, 'Unique Identifier': udid}
+        for key, value in me_dev_info.items():
+             ET.SubElement(metadata_device_info, 'item', {
+                'id': str(uuid.uuid4()),
+                'name': key,
+                'sourceExtraction': '0'
+            }).text = value
+
+        afc_id = str(uuid.uuid4())
+        appl_id = str(uuid.uuid4())
+        diag_id = str(uuid.uuid4())
+        
+        tagged_files = ET.SubElement(project, 'taggedFiles')
+        for file_info in filedict:
+            file_elem = ET.SubElement(tagged_files, 'file', {
+                'fs': 'AFC_Media',
+                'fsid': afc_id,
+                'path': filedict[file_info]['metadata']['Local Path'],
+                'size': filedict[file_info]['size'],
+                'id': str(uuid.uuid4()),
+                'extractionId': "0",
+                'embedded': "false",
+                'isrelated': "False"
+            })
+            access_info = ET.SubElement(file_elem, 'accessInfo')
+            for timestamp_name, timestamp_value in filedict[file_info]['accessInfo'].items():
+                ET.SubElement(access_info, 'timestamp', {'name': timestamp_name}).text = timestamp_value
+            metadata_file = ET.SubElement(file_elem, 'metadata', {'section': 'File'})
+            for item_name, item_value in filedict[file_info]['metadata'].items():
+                ET.SubElement(metadata_file, 'item', {'name': item_name}).text = item_value
+            metadata_metadata = ET.SubElement(file_elem, 'metadata', {'section': 'MetaData'})
+            if "Exif" in filedict[file_info]:
+                for item_name, item_value in filedict[file_info]["Exif"].items():
+                    item_attributes = {'name': item_name}
+                    item_attributes['group'] = "EXIF"
+                    ET.SubElement(metadata_metadata, 'item', item_attributes).text = item_value
+
+
+        rough_string = ET.tostring(project, 'utf-8')
+        reparsed = minidom.parseString(rough_string)
+        xml_str = reparsed.toprettyxml(indent="  ", encoding="UTF-8")
+
+        with open(os.path.join("Report", "report.xml"), "w", encoding="UTF-8") as f:
+            #f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+            f.write(xml_str)
+        change.set(1)
 
 # Try to mount a suitable developerdiskimage
     def mount_developer(self, change, text):
@@ -2146,7 +2546,6 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
     try: os.mkdir(dest)
     except: pass
     m_nr = 0
-    register_heif_opener()
     for entry in media_list:
         m_nr += 1
         mpro = int(100*(m_nr/media_count))
@@ -2328,7 +2727,9 @@ def dev_data():
             snr = lockdown.get_value("","SerialNumber")
             global mlbsnr 
             mlbsnr = lockdown.get_value("","MLBSerialNumber")
-            global b_mac 
+            global d_tz 
+            d_tz = lockdown.get_value("","TimeZone")
+            global b_mac
             b_mac = lockdown.get_value("","BluetoothAddress")
             global mnr
             mnr = lockdown.get_value("", "ModelNumber")
@@ -2545,10 +2946,32 @@ def pull(self, relative_src, dst, fdict=False, callback=None, src_dir=''):
                                 except: pass
                                 try: exifdict['MetaDataPixelResolution'] = f"{str(etags['EXIF ExifImageWidth'])}x{str(etags['EXIF ExifImageLength'])}"
                                 except: pass
-                                #if isinstance(exifdict, dict):
                                 if exifdict != {}:
                                     filedict[str(src)]["Exif"] = exifdict
-
+                                if 'GPS GPSLatitude' in etags.keys():
+                                    gpsdict = {}
+                                    lat = eval(str(etags['GPS GPSLatitude']))
+                                    try: latref = etags['GPS GPSLatitudeRef']
+                                    except: latref = "0"
+                                    lon = eval(str(etags['GPS GPSLongitude']))
+                                    try: lonref = etags['GPS GPSLongitudeRef']
+                                    except: lonref = "0"
+                                    ele = eval(str(etags['GPS GPSAltitude']))
+                                    try: eleref = etags['GPS GPSAltitudeRef']
+                                    except: eleref = 0
+                                    if eleref == 1:
+                                        ele = -ele
+                                    ele = int(ele)
+                                    deci_lat = lat[0] + lat[1] / 60 + lat[2] / 3600
+                                    if latref == "S" or latref =='W' :
+                                        deci_lat = -deci_lat
+                                    gpsdict['Latitude'] = round(deci_lat, 5)
+                                    deci_lon = lon[0] + lon[1] / 60 + lon[2] / 3600
+                                    if lonref == "S" or lonref =='W' :
+                                        deci_lon = -deci_lon
+                                    gpsdict['Longitude'] = round(deci_lon, 5)
+                                    gpsdict['Elevation'] = ele
+                                    filedict[str(src)]["GPS"] = gpsdict
                             
                 mtime = self.stat(src)['st_mtime'].timestamp()
                 if os.path.isdir(dst):
