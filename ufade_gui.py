@@ -1282,7 +1282,11 @@ class MyApp(ctk.CTk):
                 self.wab_button.pack(pady=10)
                 self.b_button = ctk.CTkButton(self.dynamic_frame, text="Both", font=self.stfont, command=lambda: self.wachange.set(3))
                 self.b_button.pack(pady=10)
+                self.backbutton = ctk.CTkButton(self.dynamic_frame, text="Back", command=lambda: [self.switch_menu("AdvMenu"), self.wachange.set(0)])
+                self.backbutton.pack(anchor="e", pady=85, padx=(0,65))
             self.waitvar(self.wachange)
+            if self.wachange.get() == 0:
+                return()
             self.label1.pack_forget()
             self.label2.pack_forget()
             if "net.whatsapp.WhatsApp" in app_id_list and "net.whatsapp.WhatsAppSMB" in app_id_list:  
@@ -1290,6 +1294,7 @@ class MyApp(ctk.CTk):
                 self.wa_button.pack_forget()
                 self.wab_button.pack_forget()
                 self.b_button.pack_forget()
+                self.backbutton.pack_forget()
             self.perf_iTunes_bu("PuMA")
             self.after(100, lambda: self.text.configure(text="Extracting WhatsApp files from backup."))
             self.prog_text = ctk.CTkLabel(self.dynamic_frame, text=" ", width=585, height=20, font=self.stfont, anchor="w", justify="left")
@@ -1312,7 +1317,6 @@ class MyApp(ctk.CTk):
                 self.waitvar(self.change)
             self.prog_text.pack_forget()
             self.progress.pack_forget()
-            #self.after(100, lambda: self.text.configure(text="Files extracted to \"WA_PuMA\"."))  
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=40))   
 
 #SSH-Dump from given path
