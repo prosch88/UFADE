@@ -33,7 +33,6 @@ from datetime import datetime, timedelta, timezone, date
 from subprocess import Popen, PIPE, check_call, run
 from pymobiledevice3 import exceptions
 from importlib.metadata import version
-from pillow_heif import register_heif_opener
 from iOSbackup import iOSbackup
 from pyiosbackup import Backup
 from playsound import playsound
@@ -919,38 +918,72 @@ class MyApp(ctk.CTk):
         change.set(1)
 
 # Only decrypt Whatsaap (TESS)
-    def decrypt_whatsapp(self, change):
+    def decrypt_whatsapp(self, change, wachange):
+        finish = False
+        if wachange.get() in [1,3]:
+            app = "Whatsapp"
+            domain = "AppDomainGroup-group.net.whatsapp.WhatsApp.shared"
+            folder = "WA_PuMA"
+        elif wachange.get() == 2:
+            app = "Whatapp Business"
+            domain = "AppDomainGroup-group.net.whatsapp.WhatsAppSMB.shared"
+            folder = "WAB_PuMA"
         try:
-            b.getFolderDecryptedCopy(targetFolder="WA_PuMA", includeDomains="AppDomainGroup-group.net.whatsapp.WhatsApp.shared")
-            shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","Message", "Media"), os.path.join("WA_PuMA","Media"))
-            shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","Media", "Profile"), os.path.join("WA_PuMA","Profile"))
-            shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","ChatStorage.sqlite"), os.path.join("WA_PuMA","ChatStorage.sqlite"))
-            shutil.rmtree(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared"))
-            
+            b.getFolderDecryptedCopy(targetFolder=folder, includeDomains=domain)
+            shutil.move(os.path.join(folder,domain,"Message", "Media"), os.path.join(folder,"Media"))
+            shutil.move(os.path.join(folder,domain,"Media", "Profile"), os.path.join(folder,"Profile"))
+            shutil.move(os.path.join(folder,domain,"ChatStorage.sqlite"), os.path.join(folder,"ChatStorage.sqlite"))
+            shutil.rmtree(os.path.join(folder,domain))
+            finish = True
         except:
-            self.text.configure(text="An error occured. Try again.")
+            self.text.configure(text=f"An error occured while extracting {app}. Try again.")
             pass
+        if wachange.get() == 3:
+            wachange.set(2)
+            self.decrypt_whatsapp(change, wachange)
+        else:
+            pass
+        if finish == True:
+            self.after(100, lambda: self.text.configure(text="Whatsapp files extracted.")) 
         change.set(1)
 
-    def decrypt_whatsapp_alt(self,change):
-        try: os.mkdir("WA_PuMA")
+    def decrypt_whatsapp_alt(self,change, wachange):
+        finish = False
+        if wachange.get() in [1,3]:
+            app = "Whatsapp"
+            domain = "AppDomainGroup-group.net.whatsapp.WhatsApp.shared"
+            folder = "WA_PuMA"
+        if wachange.get() == 2:
+            app = "Whatapp Business"
+            domain = "AppDomainGroup-group.net.whatsapp.WhatsAppSMB.shared"
+            folder = "WAB_PuMA"
+        try: os.mkdir(folder)
         except: pass
         try:
             bu = Backup.from_path(backup_path=udid, password="12345")
-            dest_dir = pathlib.Path("WA_PuMA")
+            dest_dir = pathlib.Path(folder)
             for file in bu.iter_files():
-                if file.domain == "AppDomainGroup-group.net.whatsapp.WhatsApp.shared":
+                if file.domain == domain:
                     dest_file = dest_dir / file.domain / file.relative_path
                     dest_file.parent.mkdir(exist_ok=True, parents=True)
                     dest_file.write_bytes(file.read_bytes())
-            shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","Message", "Media"), os.path.join("WA_PuMA","Media"))
-            shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","Media", "Profile"), os.path.join("WA_PuMA","Profile"))
-            shutil.move(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared","ChatStorage.sqlite"), os.path.join("WA_PuMA","ChatStorage.sqlite"))
-            shutil.rmtree(os.path.join("WA_PuMA","AppDomainGroup-group.net.whatsapp.WhatsApp.shared"))         
+            shutil.move(os.path.join(folder,domain,"Message", "Media"), os.path.join(folder,"Media"))
+            shutil.move(os.path.join(folder,domain,"Media", "Profile"), os.path.join(folder,"Profile"))
+            shutil.move(os.path.join(folder,domain,"ChatStorage.sqlite"), os.path.join(folder,"ChatStorage.sqlite"))
+            shutil.rmtree(os.path.join(folder,domain))
+            finish = True       
         except:
-            self.text.configure(text="An error occured. Try again.")
+            self.text.configure(text=f"An error occured while extracting {app}. Try again.")
             pass
-        change.set(1)
+        finally:
+            if wachange.get() == 3:
+                wachange.set(2)
+                #self.wabwait = ctk.IntVar(self, 0)
+                self.decrypt_whatsapp_alt(change, wachange)
+                #self.waitvar(self.wabwait)
+            if finish == True:
+                self.after(100, lambda: self.text.configure(text="Whatsapp files extracted.")) 
+            change.set(1)
 
  # Move the backup files to a zip archive   
     def zip_itunes(self, zip, change):
@@ -1223,7 +1256,7 @@ class MyApp(ctk.CTk):
 
 #Perform an iTunes Backup and extract only WhatsApp files (ChatStorage.sqlite and Media folder)
     def backup_tess(self):
-        if "net.whatsapp.WhatsApp" not in app_id_list:
+        if "net.whatsapp.WhatsApp" not in app_id_list and "net.whatsapp.WhatsAppSMB" not in app_id_list:
             ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
             ctk.CTkLabel(self.dynamic_frame, text="PuMA Backup", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
             self.text = ctk.CTkLabel(self.dynamic_frame, text="WhatsApp not installed on device!", width=585, height=60, font=self.stfont, anchor="w", justify="left")
@@ -1231,6 +1264,32 @@ class MyApp(ctk.CTk):
             self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=40))   
 
         else:
+            self.wachange = ctk.IntVar(self, 0)
+            self.label1 = ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont)
+            self.label1.pack(anchor="center")
+            self.label2 = ctk.CTkLabel(self.dynamic_frame, text="PuMA Backup", height=80, width=585, font=("standard",24), justify="left")
+            self.label2.pack(pady=20)
+            if "net.whatsapp.WhatsApp" in app_id_list and "net.whatsapp.WhatsAppSMB" not in app_id_list:
+                self.after(100, lambda: self.wachange.set(1))
+            elif "net.whatsapp.WhatsApp" not in app_id_list and "net.whatsapp.WhatsAppSMB" in app_id_list:
+                self.after(100, lambda: self.wachange.set(2))
+            elif "net.whatsapp.WhatsApp" in app_id_list and "net.whatsapp.WhatsAppSMB" in app_id_list:                
+                self.text = ctk.CTkLabel(self.dynamic_frame, text="Choose the Whatsapp application to extract:", width=585, height=60, font=self.stfont, anchor="w", justify="left")
+                self.text.pack(anchor="center", pady=25)
+                self.wa_button = ctk.CTkButton(self.dynamic_frame, text="WhatsApp", font=self.stfont, command=lambda: self.wachange.set(1))
+                self.wa_button.pack(pady=10)
+                self.wab_button = ctk.CTkButton(self.dynamic_frame, text="WhatsApp Business", font=self.stfont, command=lambda: self.wachange.set(2))
+                self.wab_button.pack(pady=10)
+                self.b_button = ctk.CTkButton(self.dynamic_frame, text="Both", font=self.stfont, command=lambda: self.wachange.set(3))
+                self.b_button.pack(pady=10)
+            self.waitvar(self.wachange)
+            self.label1.pack_forget()
+            self.label2.pack_forget()
+            if "net.whatsapp.WhatsApp" in app_id_list and "net.whatsapp.WhatsAppSMB" in app_id_list:  
+                self.text.pack_forget()
+                self.wa_button.pack_forget()
+                self.wab_button.pack_forget()
+                self.b_button.pack_forget()
             self.perf_iTunes_bu("PuMA")
             self.after(100, lambda: self.text.configure(text="Extracting WhatsApp files from backup."))
             self.prog_text = ctk.CTkLabel(self.dynamic_frame, text=" ", width=585, height=20, font=self.stfont, anchor="w", justify="left")
@@ -1243,17 +1302,17 @@ class MyApp(ctk.CTk):
             self.waitvar(self.change)
             if self.change.get() == 1:
                 self.change.set(0)
-                self.tess_backup = threading.Thread(target=lambda: self.decrypt_whatsapp(self.change))
+                self.tess_backup = threading.Thread(target=lambda: self.decrypt_whatsapp(self.change, self.wachange))
                 self.tess_backup.start()
                 self.waitvar(self.change)
             elif self.change.get() == 2:
                 self.change.set(0)
-                self.tess_backup_alt = threading.Thread(target=lambda: self.decrypt_whatsapp_alt(self.change))
+                self.tess_backup_alt = threading.Thread(target=lambda: self.decrypt_whatsapp_alt(self.change, self.wachange))
                 self.tess_backup_alt.start()
                 self.waitvar(self.change)
             self.prog_text.pack_forget()
             self.progress.pack_forget()
-            self.after(100, lambda: self.text.configure(text="Files extracted to \"WA_PuMA\"."))  
+            #self.after(100, lambda: self.text.configure(text="Files extracted to \"WA_PuMA\"."))  
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=40))   
 
 #SSH-Dump from given path
