@@ -741,6 +741,8 @@ class MyApp(ctk.CTk):
     def password_known(self, passwordbox, pw_found, okbutton, abort, text):
         pw=passwordbox.get()
         try:
+            okbutton.configure(state="disabled")
+            text.configure(text="Checking password...")
             Mobilebackup2Service(lockdown).change_password(old=pw)                     #Try to deactivate backup encryption with the given password
             passwordbox.pack_forget()
             okbutton.pack_forget()
@@ -749,6 +751,8 @@ class MyApp(ctk.CTk):
             pw_found.set(1)
         except:
             text.configure(text="Wrong password.\nProvide the correct backup password:\n(UFADE sets this to \"12345\")")
+            okbutton.configure(state="normal")
+            return()
 
 # Filedialog for selecting the password-list for the backup password
     def pw_file_call(self):
@@ -824,9 +828,11 @@ class MyApp(ctk.CTk):
                 self.passwordbox.pack(side="left", pady=(0,350), padx=(130,0))                
                 self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.call_known_pw(self.passwordbox, self.pw_found, self.okbutton, self.abort, self.text))
                 self.okbutton.pack(side="left", pady=(0,350), padx=(10,120))
-                self.abort = ctk.CTkButton(self.dynamic_frame, text="Back", font=self.stfont, command=lambda: self.switch_menu("AcqMenu"))
+                self.abort = ctk.CTkButton(self.dynamic_frame, text="Back", font=self.stfont, command=lambda: self.pw_found.set(2))
                 self.abort.pack(side="bottom", ipadx=(140), pady=(0, 260), padx=(0,40))
                 self.wait_variable(self.pw_found)
+                if self.pw_found.get() == 2:
+                    self.switch_menu("AcqMenu")
             else:
                 self.text.configure(text="Do you want to attemt a password bruteforce?\n(Disable PIN/PW on Device beforehand)") 
                 self.wait_variable(self.choose)                    
@@ -1073,7 +1079,9 @@ class MyApp(ctk.CTk):
         try: os.mkdir(".tar_tmp/itunes_bu")                                                                                     #create folder for decrypted backup
         except: pass
         now = datetime.now()
-        self.perf_iTunes_bu("Logical+")                                                                                                  #call iTunes Backup with "Logical+" written in dialog
+        self.perf_iTunes_bu("Logical+")
+        if self.pw_found.get() == 2:
+            return()                                                                                                  #call iTunes Backup with "Logical+" written in dialog
         
         if l_type != "UFED":
             self.after(100, lambda: self.text.configure(text="Decrypting iTunes Backup: "))
@@ -1734,26 +1742,26 @@ class MyApp(ctk.CTk):
             with open(os.path.join("Report", "files", "Applications", appname, "description.info.xml"), "w", encoding="UTF-8") as file:
                 file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
                 file.write('<Appinfo type="iOS">\n')
-                file.write(f'<Name sourceValue="CFBundleDisplayName">{app['CFBundleDisplayName']}</Name>\n')
-                file.write(f'<Package sourceValue="CFBundleIdentifier">{app['CFBundleIdentifier']}</Package>\n')
-                file.write(f'<iOSValue sourceValue="CFBundlePackageType">{app['CFBundlePackageType']}</iOSValue>\n')
-                try: file.write(f'<Version sourceValue="CFBundleVersion">{app['CFBundleVersion']}</Version>\n')
+                file.write(f'<Name sourceValue="CFBundleDisplayName">{app["CFBundleDisplayName"]}</Name>\n')
+                file.write(f'<Package sourceValue="CFBundleIdentifier">{app["CFBundleIdentifier"]}</Package>\n')
+                file.write(f'<iOSValue sourceValue="CFBundlePackageType">{app["CFBundlePackageType"]}</iOSValue>\n')
+                try: file.write(f'<Version sourceValue="CFBundleVersion">{app["CFBundleVersion"]}</Version>\n')
                 except: file.write('<Version sourceValue="CFBundleVersion">0</Version>\n')
-                file.write(f'<iOSValue sourceValue="CFBundleName">{app['CFBundleName']}</iOSValue>\n')
-                try: file.write(f'<iOSValue sourceValue="Container">{app['Container']}</iOSValue>\n')
+                file.write(f'<iOSValue sourceValue="CFBundleName">{app["CFBundleName"]}</iOSValue>\n')
+                try: file.write(f'<iOSValue sourceValue="Container">{app["Container"]}</iOSValue>\n')
                 except: file.write('<iOSValue sourceValue="Container"></iOSValue>\n')
-                try: file.write(f'<iOSValue sourceValue="Path">{app['Path']}</iOSValue>\n')
+                try: file.write(f'<iOSValue sourceValue="Path">{app["Path"]}</iOSValue>\n')
                 except: file.write('<iOSValue sourceValue="Path"></iOSValue>\n')
-                file.write(f'<iOSValue sourceValue="ApplicationType">{app['ApplicationType']}</iOSValue>\n')
-                try: file.write(f'<MinimumOS sourceValue="MinimumOS">{app['MinimumOS']}</MinimumOS>\n')
+                file.write(f'<iOSValue sourceValue="ApplicationType">{app["ApplicationType"]}</iOSValue>\n')
+                try: file.write(f'<MinimumOS sourceValue="MinimumOS">{app["MinimumOS"]}</MinimumOS>\n')
                 except: file.write('<MinimumOS sourceValue="MinimumOS"></MinimumOS>\n')
-                try: file.write(f'<FileSharing sourceValue="UIFileSharingEnabled">{app['UIFileSharingEnabled']}</FileSharing>\n')
+                try: file.write(f'<FileSharing sourceValue="UIFileSharingEnabled">{app["UIFileSharingEnabled"]}</FileSharing>\n')
                 except: file.write('<FileSharing sourceValue="UIFileSharingEnabled">0</FileSharing>\n')
-                try: file.write(f'<iOSValue sourceValue="ApplicationDSID">{app['ApplicationDSID']}</iOSValue>\n')
+                try: file.write(f'<iOSValue sourceValue="ApplicationDSID">{app["ApplicationDSID"]}</iOSValue>\n')
                 except: file.write('<iOSValue sourceValue="ApplicationDSID">0</iOSValue>\n')
-                try: file.write(f'<AppSize sourceValue="StaticDiskUsage">{app['StaticDiskUsage']}</AppSize>\n')
+                try: file.write(f'<AppSize sourceValue="StaticDiskUsage">{app["StaticDiskUsage"]}</AppSize>\n')
                 except: file.write('<AppSize sourceValue="StaticDiskUsage">0</AppSize>\n')
-                try: file.write(f'<DataSize sourceValue="DynamicDiskUsage">{app['DynamicDiskUsage']}</DataSize>\n')
+                try: file.write(f'<DataSize sourceValue="DynamicDiskUsage">{app["DynamicDiskUsage"]}</DataSize>\n')
                 except: file.write('<DataSize sourceValue="DynamicDiskUsage">0</DataSize>\n')
                 file.write('<CacheSize>-1</CacheSize>\n')
                 file.write('</Appinfo>\n')
@@ -1887,10 +1895,9 @@ class MyApp(ctk.CTk):
 
         rough_string = ET.tostring(project, 'utf-8')
         reparsed = minidom.parseString(rough_string)
-        xml_str = reparsed.toprettyxml(indent="  ", encoding="UTF-8")
-
-        with open(os.path.join("Report", "report.xml"), "w", encoding="UTF-8") as f:
-            #f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        xml_str = reparsed.toprettyxml(indent="  ", encoding="UTF-8").decode('utf-8')
+        
+        with open(os.path.join("Report", "report.xml"), "w") as f:
             f.write(xml_str)
         change.set(1)
 
@@ -2554,13 +2561,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         prog_text.update()
         progress.update()
         try:
-            if d_class == "Watch":
-                pull(self=AfcService(lockdown),relative_src=entry, dst=dest, fdict=True)
-            else:
-                if l_type == "folder":
-                    pull(self=AfcService(lockdown),relative_src=entry, dst=dest, fdict=True)
-                else:
-                    pull(self=AfcService(lockdown),relative_src=entry, dst=dest, fdict=False)
+            pull(self=AfcService(lockdown),relative_src=entry, dst=dest)
             if l_type != "folder":
                 file_path = os.path.join(dest, entry)                                                              #get the files and folders shared over AFC
                 if l_type != "UFED":
@@ -2581,7 +2582,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         except:
             pass
 
-    if l_type == "folder":
+    if d_class == "Watch":
         with open(f"afc_files_{udid}.json", "w") as file:
             json.dump(filedict, file)
     else:
@@ -2858,7 +2859,7 @@ def dev_data():
     return(device)
 
 # modified pull function from pymobiledevice3 (sets atime to mtime as it's not readable)
-def pull(self, relative_src, dst, fdict=False, callback=None, src_dir=''):
+def pull(self, relative_src, dst, callback=None, src_dir=''):
         global filedict
         src = posixpath.join(src_dir, relative_src)
         if callback is not None:
@@ -2873,8 +2874,8 @@ def pull(self, relative_src, dst, fdict=False, callback=None, src_dir=''):
             else:
                 output_format = "%Y-%m-%dT%H:%M:%S-00:00" 
                 filecontent = self.get_file_contents(str(src))
-                #fdict = True
-                if fdict == True:
+                #if fdict == True:
+                if d_class == "Watch":
                     dbfiles = [".db", ".sqlite", ".realm", ".kgdb"]
                     try:                  
                         mimetype = mimetypes.guess_type(src, strict=True)
@@ -2992,10 +2993,10 @@ def pull(self, relative_src, dst, fdict=False, callback=None, src_dir=''):
 
                 if self.isdir(src_filename):
                     dst_filename.mkdir(exist_ok=True)
-                    pull(self, src_filename, str(dst_path), callback=callback, fdict=fdict)
+                    pull(self, src_filename, str(dst_path), callback=callback,)
                     continue
 
-                pull(self, src_filename, str(dst_path), callback=callback, fdict=fdict)
+                pull(self, src_filename, str(dst_path), callback=callback)
 
 # modified unback commanf from pyiosbackup for better Windows support
 def unback_alt(self, path='.'):
