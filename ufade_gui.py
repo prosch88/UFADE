@@ -261,7 +261,7 @@ class MyApp(ctk.CTk):
         self.skip.grid(row=0, column=1, sticky="w")
         self.menu_buttons = [
             ctk.CTkButton(self.dynamic_frame, text="Save device info", command=lambda: self.switch_menu("DevInfo"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Create UFDR Report", command=lambda: self.switch_menu("Report"), width=200, height=70, font=self.stfont, state="disabled"),
+            ctk.CTkButton(self.dynamic_frame, text="Create UFDR Report", command=lambda: self.switch_menu("Report"), width=200, height=70, font=self.stfont),
         ]
         self.menu_text = ["Save informations about the device, installed apps,\nSIM and companion devices.",
                           "Create a UFDR-Zip container viewable\nin the Cellebrite Reader application"]
@@ -1867,14 +1867,18 @@ class MyApp(ctk.CTk):
         appl_id = str(uuid.uuid4())
         diag_id = str(uuid.uuid4())
         
+        file_id_list = []
+
         tagged_files = ET.SubElement(project, 'taggedFiles')
         for file_info in filedict:
+            id = str(uuid.uuid4())
+            file_id_list.append(id)
             file_elem = ET.SubElement(tagged_files, 'file', {
                 'fs': 'AFC_Media',
                 'fsid': afc_id,
                 'path': filedict[file_info]['metadata']['Local Path'],
                 'size': filedict[file_info]['size'],
-                'id': str(uuid.uuid4()),
+                'id': id,
                 'extractionId': "0",
                 'embedded': "false",
                 'isrelated': "False"
@@ -1891,6 +1895,7 @@ class MyApp(ctk.CTk):
                     item_attributes = {'name': item_name}
                     item_attributes['group'] = "EXIF"
                     ET.SubElement(metadata_metadata, 'item', item_attributes).text = item_value
+
 
 
         rough_string = ET.tostring(project, 'utf-8')
