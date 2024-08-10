@@ -1672,9 +1672,12 @@ class MyApp(ctk.CTk):
 
         try: os.mkdir(os.path.join("Report", "files", "Applications"))
         except: pass
-
+        app_report_list = []
         appfile = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier', 'iTunesMetadata', 'ApplicationDSID', 'ApplicationSINF', 'ApplicationType', 'CFBundleDisplayName', 'CFBundleExecutable', 'CFBundleName', 'CFBundlePackageType', 'CFBundleShortVersionString', 'CFBundleVersion', 'Container', 'GroupContainers', 'MinimumOSVersion', 'Path', 'UIDeviceFamily', 'DynamicDiskUsage', 'StaticDiskUsage', 'UIFileSharingEnabled'])
         for app in appfile:
+            app_report_dict = {}
+            app_report_dict["id"] = str(uuid.uuid4())
+            app_report_dict["name"] = app['CFBundleDisplayName']
             appname = app['CFBundleIdentifier']
             try: os.mkdir(os.path.join("Report", "files", "Applications", appname))
             except: pass
@@ -1701,8 +1704,11 @@ class MyApp(ctk.CTk):
             except: pass
             try: addition['CFBundleShortVersionString'] = app['CFBundleShortVersionString']
             except: pass
-            try: addition['CFBundleVersion'] = app['CFBundleVersion']
-            except: pass
+            try: 
+                addition['CFBundleVersion'] = app['CFBundleVersion']
+                app_report_dict["version"] = app['CFBundleVersion']
+            except: 
+                app_report_dict["version"] = "1"
             try: addition['Container'] = app['Container']
             except: pass
             try: addition['GroupContainers'] = app['GroupContainers']
@@ -1715,6 +1721,8 @@ class MyApp(ctk.CTk):
             except: pass
             try: addition['iTunesMetadata'] = app['iTunesMetadata']
             except: pass
+            app_report_dict["identifier"] = app['CFBundleIdentifier']
+            app_report_list.append(app_report_dict)
             with open(os.path.join("Report", "files", "Applications", appname, "AdditionInfo.plist"), "wb") as file:
                 plistlib.dump(addition, file)
 
@@ -1868,6 +1876,7 @@ class MyApp(ctk.CTk):
         diag_id = str(uuid.uuid4())
         
         file_id_list = []
+        gps_list = []
 
         tagged_files = ET.SubElement(project, 'taggedFiles')
         for file_info in filedict:
@@ -1890,13 +1899,192 @@ class MyApp(ctk.CTk):
             for item_name, item_value in filedict[file_info]['metadata'].items():
                 ET.SubElement(metadata_file, 'item', {'name': item_name}).text = item_value
             metadata_metadata = ET.SubElement(file_elem, 'metadata', {'section': 'MetaData'})
+            ET.SubElement(metadata_metadata, 'item', {'name': "File size"}).text = ""
             if "Exif" in filedict[file_info]:
                 for item_name, item_value in filedict[file_info]["Exif"].items():
                     item_attributes = {'name': item_name}
                     item_attributes['group'] = "EXIF"
                     ET.SubElement(metadata_metadata, 'item', item_attributes).text = item_value
+            if "GPS" in filedict[file_info]:
+                gps_list.append(filedict[file_info])
 
+        apppath = os.path.join("Report", "files", "Applications")
+        for root, dirs, files in os.walk(apppath):
+            for filename in files:
+                entry = os.path.join(root, filename)
+                if pathlib.Path(entry).is_file():
+                    id = str(uuid.uuid4())
+                    file_id_list.append(id)
+                    file_elem = ET.SubElement(tagged_files, 'file', {
+                        'fs': 'Applications',
+                        'fsid': appl_id,
+                        'path': str(pathlib.Path(entry.replace("Report/", "/"))),
+                        'size': str(os.stat(entry).st_size),
+                        'id': id,
+                        'extractionId': "0",
+                        'embedded': "false",
+                        'isrelated': "False"
+                    })
+                    access_info = ET.SubElement(file_elem, 'accessInfo')
+                    ET.SubElement(access_info, 'timestamp', {'name': "CreationTime"}).text = ""
+                    ET.SubElement(access_info, 'timestamp', {'name': "ModifyTime"}).text = ""
+                    ET.SubElement(access_info, 'timestamp', {'name': "AccessTime"}).text = ""
+                    metadata_file = ET.SubElement(file_elem, 'metadata', {'section': 'File'})
+                    ET.SubElement(metadata_file, 'item', {'name': "Local Path"}).text = str(pathlib.Path(entry.replace("Report/", "/")))
+                    ET.SubElement(metadata_file, 'item', {'name': "SHA256"}).text = str(hashlib.sha256(pathlib.Path(entry).read_bytes()).hexdigest())
+                    ET.SubElement(metadata_file, 'item', {'name': "MD5"}).text = str(hashlib.md5(pathlib.Path(entry).read_bytes()).hexdigest())
+                    ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Uncategorized"
+                    metadata_metadata = ET.SubElement(file_elem, 'metadata', {'section': 'MetaData'})
+                    ET.SubElement(metadata_metadata, 'item', {'name': "File size"}).text = ""
 
+                    
+
+        diagpath = os.path.join("Report", "files", "Diagnostics")
+        for root, dirs, files in os.walk(diagpath):
+            for filename in files:
+                entry = os.path.join(root, filename)
+                if pathlib.Path(entry).is_file():
+                    id = str(uuid.uuid4())
+                    file_id_list.append(id)
+                    file_elem = ET.SubElement(tagged_files, 'file', {
+                        'fs': 'Diagnostics',
+                        'fsid': diag_id,
+                        'path': str(pathlib.Path(entry.replace("Report/", "/"))),
+                        'size': str(os.stat(entry).st_size),
+                        'id': id,
+                        'extractionId': "0",
+                        'embedded': "false",
+                        'isrelated': "False"
+                    })
+                    access_info = ET.SubElement(file_elem, 'accessInfo')
+                    ET.SubElement(access_info, 'timestamp', {'name': "CreationTime"}).text = ""
+                    ET.SubElement(access_info, 'timestamp', {'name': "ModifyTime"}).text = ""
+                    ET.SubElement(access_info, 'timestamp', {'name': "AccessTime"}).text = ""
+                    metadata_file = ET.SubElement(file_elem, 'metadata', {'section': 'File'})
+                    ET.SubElement(metadata_file, 'item', {'name': "Local Path"}).text = str(pathlib.Path(entry.replace("Report/", "/")))
+                    ET.SubElement(metadata_file, 'item', {'name': "SHA256"}).text = str(hashlib.sha256(pathlib.Path(entry).read_bytes()).hexdigest())
+                    ET.SubElement(metadata_file, 'item', {'name': "MD5"}).text = str(hashlib.md5(pathlib.Path(entry).read_bytes()).hexdigest())
+                    if ".tar" in entry:
+                        ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Archive"
+                    else:
+                        ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Uncategorized"
+                    metadata_metadata = ET.SubElement(file_elem, 'metadata', {'section': 'MetaData'})
+                    ET.SubElement(metadata_metadata, 'item', {'name': "File size"}).text = ""
+
+        decoded_data = ET.SubElement(project, 'decodedData')
+
+        model_types = [
+            "UserAccount", "Contact", "Chat", "SMS", "MMS", "Email", "Call", 
+            "CalendarEntry", "Note", "BluetoothDevice", "Cookie", "WebBookmark",
+            "VisitedPage", "SearchedItem", "WirelessNetwork", "Password", 
+            "Notification", "CellTower", "Location", "Journey", "InstalledApplication"
+        ]
+        for model_type in model_types:
+            model_type_elem = ET.SubElement(decoded_data, 'modelType', {'type': model_type})
+
+            if model_type == "Location":
+                if gps_list != []:
+                    for file_info in gps_list:
+                        model_elem = ET.SubElement(model_type_elem, 'model', {
+                            'type': 'Location', 
+                            'id': str(uuid.uuid4()),
+                            'deleted_state': 'Intact',
+                            'decoding_confidence': 'High',
+                            'isrelated': 'False',
+                            'source_index': '0',
+                            'extractionId': '0'
+                        })
+
+                        model_field = ET.SubElement(model_elem, 'modelField', {
+                            'name': 'Position',
+                            'type': 'Coordinate''7.06336'
+                        })
+
+                        coord_model = ET.SubElement(model_field, 'model', {
+                            'type': 'Coordinate',
+                            'id': str(uuid.uuid4()),
+                            'deleted_state': 'Intact',
+                            'decoding_confidence': 'High',
+                            'isrelated': 'False',
+                            'source_index': '0',
+                            'extractionId': '0'
+                        })
+
+                        long_field = ET.SubElement(coord_model, 'field', {
+                            'name': 'Longitude',
+                            'type': 'Double'
+                        })
+                        ET.SubElement(long_field, 'value', {'type': 'Double'}).text = str(file_info["GPS"]["Longitude"])
+
+                        lat_field = ET.SubElement(coord_model, 'field', {
+                            'name': 'Latitude',
+                            'type': 'Double'
+                        })
+                        ET.SubElement(lat_field, 'value', {'type': 'Double'}).text = str(file_info["GPS"]["Latitude"])
+
+                        elev_field = ET.SubElement(coord_model, 'field', {
+                            'name': 'Elevation',
+                            'type': 'Double'
+                        })
+                        ET.SubElement(elev_field, 'value', {'type': 'Double'}).text = str(file_info["GPS"]["Elevation"])
+
+                        timestamp_field = ET.SubElement(model_elem, 'field', {'name': 'TimeStamp', 'type': 'TimeStamp'})
+                        ET.SubElement(timestamp_field, 'value', {'type': 'TimeStamp'}).text = str(file_info["accessInfo"]["CreationTime"])
+
+                        name_field = ET.SubElement(model_elem, 'field', {'name': 'Name', 'type': 'String'})
+                        ET.SubElement(name_field, 'value', {'type': 'String'}).text = str(file_info["metadata"]["Local Path"])
+
+                        description_field = ET.SubElement(model_elem, 'field', {'name': 'Description', 'type': 'String'})
+                        ET.SubElement(description_field, 'empty')
+
+                        type_field = ET.SubElement(model_elem, 'field', {'name': 'Type', 'type': 'String'})
+                        ET.SubElement(type_field, 'value', {'type': 'String'}).text = 'IMAGE'
+
+                        precision_field = ET.SubElement(model_elem, 'field', {'name': 'Precision', 'type': 'String'})
+                        ET.SubElement(precision_field, 'value', {'type': 'Double'})
+
+                        confidence_field = ET.SubElement(model_elem, 'field', {'name': 'Confidence', 'type': 'String'})
+                        ET.SubElement(confidence_field, 'empty')
+
+                        category_field = ET.SubElement(model_elem, 'field', {'name': 'Category', 'type': 'String'})
+                        ET.SubElement(category_field, 'value', {'type': 'String'}).text = 'Fotos'
+
+                        origin_field = ET.SubElement(model_elem, 'field', {'name': 'Origin', 'type': 'LocationOrigin'})
+                        ET.SubElement(origin_field, 'value', {'type': 'LocationOrigin'}).text = 'Unknown'
+
+                        jump_targets = ET.SubElement(model_elem, 'jumptargets', {'name': ''})
+                        ET.SubElement(jump_targets, 'targetid', {'ismodel': 'false'}).text = str(uuid.uuid4())
+
+        installed_apps_type = ET.SubElement(decoded_data, 'modelType', {'type': 'InstalledApplication'})  
+
+        for app in app_report_list:
+            model_elem = ET.SubElement(installed_apps_type, 'model', {
+                'type': 'InstalledApplication',
+                'id': app['id'],
+                'deleted_state': 'Intact',
+                'decoding_confidence': 'High',
+                'isrelated': 'False',
+                'source_index': '0',
+                'extractionId': '0'
+            })
+
+            name_field = ET.SubElement(model_elem, 'field', {'name': 'Name', 'type': 'String'})
+            ET.SubElement(name_field, 'value', {'type': 'String'}).text = app['name']
+            version_field = ET.SubElement(model_elem, 'field', {'name': 'Version', 'type': 'String'})
+            ET.SubElement(version_field, 'value', {'type': 'String'}).text = app['version']
+            identifier_field = ET.SubElement(model_elem, 'field', {'name': 'Identifier', 'type': 'String'})
+            ET.SubElement(identifier_field, 'value', {'type': 'String'}).text = app['identifier']
+            install_date_field = ET.SubElement(model_elem, 'field', {'name': 'InstallDate', 'type': 'TimeStamp'})
+            ET.SubElement(install_date_field, 'empty')
+            last_modified_field = ET.SubElement(model_elem, 'field', {'name': 'LastModified', 'type': 'TimeStamp'})
+            ET.SubElement(last_modified_field, 'empty')
+
+        extra_infos = ET.SubElement(project, 'extraInfos')
+
+        for node_id in file_id_list:
+            extra_info = ET.SubElement(extra_infos, 'extraInfo', {'type': 'node', 'id': node_id})
+            source_info = ET.SubElement(extra_info, 'sourceInfo')
+            ET.SubElement(source_info, 'nodeInfo', {'id': node_id, 'tableName': '', 'offset': ''})
 
         rough_string = ET.tostring(project, 'utf-8')
         reparsed = minidom.parseString(rough_string)
@@ -1904,6 +2092,18 @@ class MyApp(ctk.CTk):
         
         with open(os.path.join("Report", "report.xml"), "w") as f:
             f.write(xml_str)
+
+        path="Report"
+        with zipfile.ZipFile(f'{udid}_report.ufdr', 'w') as zip:
+        
+            for root, dirs, files in os.walk(path):
+                for file in files:
+                    filepath = os.path.join(root, file)
+                    with open(filepath, 'rb') as f:
+                        zipinfo = zipfile.ZipInfo(filepath)
+                        if zipinfo.date_time[0] < 1980:
+                            zipinfo.date_time = (1980, 1, 1, 0, 0, 0)
+                        zip.writestr(zipinfo, f.read())
         change.set(1)
 
 # Try to mount a suitable developerdiskimage
@@ -2913,7 +3113,7 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                             tag = "Uncategorized"
                     finally:
                         filedict[str(src)] = {"size": str(self.stat(src)['st_size']), "accessInfo": {"CreationTime": str(self.stat(src)['st_birthtime'].strftime(output_format)), "ModifyTime": str(self.stat(src)['st_mtime'].strftime(output_format)), "AccessTime": ""}, 
-                        "metadata": {"Local Path": os.path.join("files", "AFC", os.path.basename(src)), "SHA256": hashlib.sha256(filecontent).hexdigest(), "MD5": hashlib.md5(filecontent).hexdigest(), "Tags": tag}}
+                        "metadata": {"Local Path": os.path.join("files", "AFC_Media", str(src)), "SHA256": hashlib.sha256(filecontent).hexdigest(), "MD5": hashlib.md5(filecontent).hexdigest(), "Tags": tag}}
                         if tag == "Image":
                             try:
                                 img_bytes = BytesIO()
