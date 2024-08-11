@@ -2094,6 +2094,10 @@ class MyApp(ctk.CTk):
             f.write(xml_str)
 
         path="Report"
+
+        shutil.make_archive(f"{udid}_Report", 'zip', path)
+
+        """
         with zipfile.ZipFile(f'{udid}_report.ufdr', 'w') as zip:
         
             for root, dirs, files in os.walk(path):
@@ -2104,6 +2108,7 @@ class MyApp(ctk.CTk):
                         if zipinfo.date_time[0] < 1980:
                             zipinfo.date_time = (1980, 1, 1, 0, 0, 0)
                         zip.writestr(zipinfo, f.read())
+        """
         change.set(1)
 
 # Try to mount a suitable developerdiskimage
@@ -3076,6 +3081,8 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
             # normal file
             if "default.realm." in src:
                 pass
+            elif "CreateDatabase" in src:
+                pass
             else:
                 output_format = "%Y-%m-%dT%H:%M:%S-00:00" 
                 filecontent = self.get_file_contents(str(src))
@@ -3092,8 +3099,6 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                             tag = "Audio"
                         elif "text" in mimetype[0]:
                             tag = "Text"
-                        elif "application" in mimetype[0]:
-                            tag = "Application"
                         elif any(x in src.lower() for x in dbfiles):
                             tag = "Database"
                         elif any(x in src.lower() for x in dbfiles):
