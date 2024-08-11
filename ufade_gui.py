@@ -1804,7 +1804,7 @@ class MyApp(ctk.CTk):
             'name': f'{dev_name} - UFADE Export',
             'reportVersion': '5.0.0.0',
             'containsGarbage': 'False',
-            'extractionType': 'AdvancedLogical'
+            'extractionType': 'ChatCapture'
             })
 
         source_extractions = ET.SubElement(project, 'sourceExtractions')
@@ -1812,7 +1812,7 @@ class MyApp(ctk.CTk):
             'id': '0',
             'name': 'Logical',
             'isCustomName': 'False',
-            'type': 'AdvancedLogical',
+            'type': 'ChatCapture',
             'deviceName': '',
             'fullName': '',
             'index': '0',
@@ -1913,12 +1913,13 @@ class MyApp(ctk.CTk):
             for filename in files:
                 entry = os.path.join(root, filename)
                 if pathlib.Path(entry).is_file():
+                    rep_path = pathlib.Path(entry).as_posix()
                     id = str(uuid.uuid4())
                     file_id_list.append(id)
                     file_elem = ET.SubElement(tagged_files, 'file', {
                         'fs': 'Applications',
                         'fsid': appl_id,
-                        'path': str(pathlib.Path(entry.replace("Report/", "/"))),
+                        'path': str(pathlib.Path(rep_path.replace("Report/", "/"))),
                         'size': str(os.stat(entry).st_size),
                         'id': id,
                         'extractionId': "0",
@@ -1944,12 +1945,13 @@ class MyApp(ctk.CTk):
             for filename in files:
                 entry = os.path.join(root, filename)
                 if pathlib.Path(entry).is_file():
+                    rep_path = pathlib.Path(entry).as_posix()
                     id = str(uuid.uuid4())
                     file_id_list.append(id)
                     file_elem = ET.SubElement(tagged_files, 'file', {
                         'fs': 'Diagnostics',
                         'fsid': diag_id,
-                        'path': str(pathlib.Path(entry.replace("Report/", "/"))),
+                        'path': str(pathlib.Path(rep_path.replace("Report/", "/"))),
                         'size': str(os.stat(entry).st_size),
                         'id': id,
                         'extractionId': "0",
@@ -2086,29 +2088,32 @@ class MyApp(ctk.CTk):
             source_info = ET.SubElement(extra_info, 'sourceInfo')
             ET.SubElement(source_info, 'nodeInfo', {'id': node_id, 'tableName': '', 'offset': ''})
 
-        rough_string = ET.tostring(project, 'utf-8')
+        rough_string = ET.tostring(project, 'utf-8', method='xml')
         reparsed = minidom.parseString(rough_string)
-        xml_str = reparsed.toprettyxml(indent="  ", encoding="UTF-8").decode('utf-8')
-        
+        xml_str = reparsed.toprettyxml(indent="  ", encoding="UTF-8").decode("utf-8")
+        xml_clean = re.sub(r'[^\x09\x0A\x0D\x20-\x7F]+', ' ', xml_str)
+
         with open(os.path.join("Report", "report.xml"), "w") as f:
-            f.write(xml_str)
+            f.write(xml_clean)
 
         path="Report"
+        #arcname = f"{udid}_Report"
+        #shutil.make_archive(arcname, 'zip', path)
+        #p = pathlib.Path(f"{arcname}.zip")
+        #try: p.rename(p.with_suffix('.ufdr'))
+        #except: pass
 
-        shutil.make_archive(f"{udid}_Report", 'zip', path)
-
-        """
+        len_path = len(os.path.abspath(path)) + 1
         with zipfile.ZipFile(f'{udid}_report.ufdr', 'w') as zip:
         
             for root, dirs, files in os.walk(path):
                 for file in files:
-                    filepath = os.path.join(root, file)
+                    filepath = os.path.abspath(os.path.join(root, file))
+                    relative_path = filepath[len_path:]
                     with open(filepath, 'rb') as f:
                         zipinfo = zipfile.ZipInfo(filepath)
-                        if zipinfo.date_time[0] < 1980:
-                            zipinfo.date_time = (1980, 1, 1, 0, 0, 0)
-                        zip.writestr(zipinfo, f.read())
-        """
+                        zip.write(filepath, relative_path)
+        
         change.set(1)
 
 # Try to mount a suitable developerdiskimage
@@ -3118,7 +3123,7 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                             tag = "Uncategorized"
                     finally:
                         filedict[str(src)] = {"size": str(self.stat(src)['st_size']), "accessInfo": {"CreationTime": str(self.stat(src)['st_birthtime'].strftime(output_format)), "ModifyTime": str(self.stat(src)['st_mtime'].strftime(output_format)), "AccessTime": ""}, 
-                        "metadata": {"Local Path": os.path.join("files", "AFC_Media", str(src)), "SHA256": hashlib.sha256(filecontent).hexdigest(), "MD5": hashlib.md5(filecontent).hexdigest(), "Tags": tag}}
+                        "metadata": {"Local Path": f"files/AFC_Media/{str(src)}", "SHA256": hashlib.sha256(filecontent).hexdigest(), "MD5": hashlib.md5(filecontent).hexdigest(), "Tags": tag}}
                         if tag == "Image":
                             try:
                                 img_bytes = BytesIO()
