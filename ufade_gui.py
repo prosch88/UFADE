@@ -2031,7 +2031,7 @@ class MyApp(ctk.CTk):
                         ET.SubElement(elev_field, 'value', {'type': 'Double'}).text = str(file_info["GPS"]["Elevation"])
 
                         timestamp_field = ET.SubElement(model_elem, 'field', {'name': 'TimeStamp', 'type': 'TimeStamp'})
-                        ET.SubElement(timestamp_field, 'value', {'type': 'TimeStamp'}).text = str(file_info["accessInfo"]["CreationTime"])
+                        ET.SubElement(timestamp_field, 'value', {'type': 'TimeStamp'}).text = str(file_info["Exif"]["ExifEnumDateTimeOriginal"])
 
                         name_field = ET.SubElement(model_elem, 'field', {'name': 'Name', 'type': 'String'})
                         ET.SubElement(name_field, 'value', {'type': 'String'}).text = str(file_info["metadata"]["Local Path"])
