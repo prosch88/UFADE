@@ -1903,7 +1903,10 @@ class MyApp(ctk.CTk):
             if "Exif" in filedict[file_info]:
                 for item_name, item_value in filedict[file_info]["Exif"].items():
                     item_attributes = {'name': item_name}
-                    item_attributes['group'] = "EXIF"
+                    if item_name in ["EXIFCaptureTime", "MetaDataPixelResolution"]:
+                        item_attributes['group'] = "File Metadata"
+                    else:
+                        item_attributes['group'] = "EXIF"
                     ET.SubElement(metadata_metadata, 'item', item_attributes).text = item_value
             if "GPS" in filedict[file_info]:
                 gps_list.append(filedict[file_info])
@@ -3142,8 +3145,8 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                                 except: pass
                                 try: exifdict['ExifEnumPixelYDimension'] = str(etags['Image YResolution'])
                                 except: pass
-                                try: exifdict['ExifEnumOrientation'] = str(etags["Image Orientation"])
-                                except: pass
+                                #try: exifdict['ExifEnumOrientation'] = str(etags["Image Orientation"])
+                                #except: pass
                                 try: exifdict['ExifEnumDateTimeOriginal'] = str(etags["EXIF DateTimeOriginal"])
                                 except: pass
                                 try: exifdict['ExifEnumDateTimeDigitized'] = str(etags["EXIF DateTimeDigitized"])
@@ -3152,11 +3155,11 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                                 except: pass
                                 try: exifdict['ExifEnumModel'] = str(etags["Image Model"])
                                 except: pass
-                                try: exifdict['ExifEnumExposureTime'] = str(etags["EXIF ExposureTime"])
+                                try: exifdict['ExifEnumExposureTime'] = eval(str(etags["EXIF ExposureTime"]))
                                 except: pass
-                                try: exifdict['ExifEnumFocalLength'] = str(etags["EXIF FocalLength"])
+                                try: exifdict['ExifEnumFocalLength'] = eval(str(etags["EXIF FocalLength"]))
                                 except: pass
-                                try: exifdict['ExifEnumFNumber'] = str(etags["EXIF FNumber"])
+                                try: exifdict['ExifEnumFNumber'] = eval(str(etags["EXIF FNumber"]))
                                 except: pass
                                 try: exifdict['EXIFCaptureTime'] = str(etags["EXIF CaptureTime"])
                                 except: pass
