@@ -1804,15 +1804,15 @@ class MyApp(ctk.CTk):
             'name': f'{dev_name} - UFADE Export',
             'reportVersion': '5.0.0.0',
             'containsGarbage': 'False',
-            'extractionType': 'ChatCapture'
+            'extractionType': 'AdvancedLogical'
             })
 
         source_extractions = ET.SubElement(project, 'sourceExtractions')
         ET.SubElement(source_extractions, 'extractionInfo', {
             'id': '0',
             'name': 'Logical',
-            'isCustomName': 'False',
-            'type': 'ChatCapture',
+            'isCustomName': 'True',
+            'type': 'UFADE Report',
             'deviceName': '',
             'fullName': '',
             'index': '0',
@@ -1877,15 +1877,18 @@ class MyApp(ctk.CTk):
         
         file_id_list = []
         gps_list = []
+        gps_file_id_list = []
+        gps_file_index = []
 
         tagged_files = ET.SubElement(project, 'taggedFiles')
+        findex = 0
         for file_info in filedict:
             id = str(uuid.uuid4())
             file_id_list.append(id)
             file_elem = ET.SubElement(tagged_files, 'file', {
                 'fs': 'AFC_Media',
                 'fsid': afc_id,
-                'path': filedict[file_info]['metadata']['Local Path'],
+                'path': filedict[file_info]['metadata']['Local Path'].replace("files/AFC_Media/", ""),
                 'size': filedict[file_info]['size'],
                 'id': id,
                 'extractionId': "0",
@@ -1903,26 +1906,31 @@ class MyApp(ctk.CTk):
             if "Exif" in filedict[file_info]:
                 for item_name, item_value in filedict[file_info]["Exif"].items():
                     item_attributes = {'name': item_name}
-                    if item_name in ["EXIFCaptureTime", "MetaDataPixelResolution"]:
+                    if item_name in ["EXIFCaptureTime", "MetaDataPixelResolution", "EXIFCameraMaker", "EXIFCameraModel", "EXIFOrientation", "MetaDataLatitudeAndLongitude"]:
                         item_attributes['group'] = "File Metadata"
                     else:
                         item_attributes['group'] = "EXIF"
-                    ET.SubElement(metadata_metadata, 'item', item_attributes).text = item_value
+                    ET.SubElement(metadata_metadata, 'item', item_attributes).text = str(item_value)
             if "GPS" in filedict[file_info]:
                 gps_list.append(filedict[file_info])
+                gps_file_id_list.append(id)
+                gps_file_index.append(findex)
+            findex += 1
 
+        textfiles = [".txt", ".doc", ".docx", ".odt"]
+        configfiles = [".plist", ".xml"]
         apppath = os.path.join("Report", "files", "Applications")
         for root, dirs, files in os.walk(apppath):
             for filename in files:
                 entry = os.path.join(root, filename)
                 if pathlib.Path(entry).is_file():
-                    rep_path = pathlib.Path(entry).as_posix()
+                    rep_path = str(pathlib.Path(entry).as_posix()).replace("Report/", "")
                     id = str(uuid.uuid4())
                     file_id_list.append(id)
                     file_elem = ET.SubElement(tagged_files, 'file', {
                         'fs': 'Applications',
                         'fsid': appl_id,
-                        'path': str(pathlib.Path(rep_path.replace("Report/", "/"))),
+                        'path': rep_path.replace("files/Applications/", ""),
                         'size': str(os.stat(entry).st_size),
                         'id': id,
                         'extractionId': "0",
@@ -1934,27 +1942,32 @@ class MyApp(ctk.CTk):
                     ET.SubElement(access_info, 'timestamp', {'name': "ModifyTime"}).text = ""
                     ET.SubElement(access_info, 'timestamp', {'name': "AccessTime"}).text = ""
                     metadata_file = ET.SubElement(file_elem, 'metadata', {'section': 'File'})
-                    ET.SubElement(metadata_file, 'item', {'name': "Local Path"}).text = str(pathlib.Path(entry.replace("Report/", "/")))
+                    ET.SubElement(metadata_file, 'item', {'name': "Local Path"}).text = rep_path
                     ET.SubElement(metadata_file, 'item', {'name': "SHA256"}).text = str(hashlib.sha256(pathlib.Path(entry).read_bytes()).hexdigest())
                     ET.SubElement(metadata_file, 'item', {'name': "MD5"}).text = str(hashlib.md5(pathlib.Path(entry).read_bytes()).hexdigest())
-                    ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Uncategorized"
+                    if ".tar" in entry:
+                        ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Archive"
+                    elif any (x in entry.lower() for x in textfiles):
+                        ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Text"
+                    elif any(x in entry.lower() for x in configfiles):
+                        ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Configuration"
+                    else:
+                        ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Uncategorized"
                     metadata_metadata = ET.SubElement(file_elem, 'metadata', {'section': 'MetaData'})
                     ET.SubElement(metadata_metadata, 'item', {'name': "File size"}).text = ""
-
-                    
 
         diagpath = os.path.join("Report", "files", "Diagnostics")
         for root, dirs, files in os.walk(diagpath):
             for filename in files:
                 entry = os.path.join(root, filename)
                 if pathlib.Path(entry).is_file():
-                    rep_path = pathlib.Path(entry).as_posix()
+                    rep_path = str(pathlib.Path(entry).as_posix()).replace("Report/", "")
                     id = str(uuid.uuid4())
                     file_id_list.append(id)
                     file_elem = ET.SubElement(tagged_files, 'file', {
                         'fs': 'Diagnostics',
                         'fsid': diag_id,
-                        'path': str(pathlib.Path(rep_path.replace("Report/", "/"))),
+                        'path': rep_path.replace("files/Diagnostics/",""),
                         'size': str(os.stat(entry).st_size),
                         'id': id,
                         'extractionId': "0",
@@ -1966,11 +1979,15 @@ class MyApp(ctk.CTk):
                     ET.SubElement(access_info, 'timestamp', {'name': "ModifyTime"}).text = ""
                     ET.SubElement(access_info, 'timestamp', {'name': "AccessTime"}).text = ""
                     metadata_file = ET.SubElement(file_elem, 'metadata', {'section': 'File'})
-                    ET.SubElement(metadata_file, 'item', {'name': "Local Path"}).text = str(pathlib.Path(entry.replace("Report/", "/")))
+                    ET.SubElement(metadata_file, 'item', {'name': "Local Path"}).text = rep_path
                     ET.SubElement(metadata_file, 'item', {'name': "SHA256"}).text = str(hashlib.sha256(pathlib.Path(entry).read_bytes()).hexdigest())
                     ET.SubElement(metadata_file, 'item', {'name': "MD5"}).text = str(hashlib.md5(pathlib.Path(entry).read_bytes()).hexdigest())
                     if ".tar" in entry:
                         ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Archive"
+                    elif any (x in entry.lower() for x in textfiles):
+                        ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Text"
+                    elif any(x in entry.lower() for x in configfiles):
+                        ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Configuration"
                     else:
                         ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Uncategorized"
                     metadata_metadata = ET.SubElement(file_elem, 'metadata', {'section': 'MetaData'})
@@ -1984,27 +2001,26 @@ class MyApp(ctk.CTk):
             "VisitedPage", "SearchedItem", "WirelessNetwork", "Password", 
             "Notification", "CellTower", "Location", "Journey", "InstalledApplication"
         ]
+        index = 0
         for model_type in model_types:
             model_type_elem = ET.SubElement(decoded_data, 'modelType', {'type': model_type})
-
             if model_type == "Location":
                 if gps_list != []:
                     for file_info in gps_list:
+                        gps_id = str(uuid.uuid4())
                         model_elem = ET.SubElement(model_type_elem, 'model', {
                             'type': 'Location', 
-                            'id': str(uuid.uuid4()),
+                            'id': gps_id,
                             'deleted_state': 'Intact',
                             'decoding_confidence': 'High',
                             'isrelated': 'False',
                             'source_index': '0',
                             'extractionId': '0'
                         })
-
                         model_field = ET.SubElement(model_elem, 'modelField', {
                             'name': 'Position',
-                            'type': 'Coordinate''7.06336'
+                            'type': 'Coordinate'
                         })
-
                         coord_model = ET.SubElement(model_field, 'model', {
                             'type': 'Coordinate',
                             'id': str(uuid.uuid4()),
@@ -2014,51 +2030,44 @@ class MyApp(ctk.CTk):
                             'source_index': '0',
                             'extractionId': '0'
                         })
-
                         long_field = ET.SubElement(coord_model, 'field', {
                             'name': 'Longitude',
                             'type': 'Double'
                         })
                         ET.SubElement(long_field, 'value', {'type': 'Double'}).text = str(file_info["GPS"]["Longitude"])
-
                         lat_field = ET.SubElement(coord_model, 'field', {
                             'name': 'Latitude',
                             'type': 'Double'
                         })
                         ET.SubElement(lat_field, 'value', {'type': 'Double'}).text = str(file_info["GPS"]["Latitude"])
-
                         elev_field = ET.SubElement(coord_model, 'field', {
                             'name': 'Elevation',
                             'type': 'Double'
                         })
                         ET.SubElement(elev_field, 'value', {'type': 'Double'}).text = str(file_info["GPS"]["Elevation"])
-
                         timestamp_field = ET.SubElement(model_elem, 'field', {'name': 'TimeStamp', 'type': 'TimeStamp'})
                         ET.SubElement(timestamp_field, 'value', {'type': 'TimeStamp'}).text = str(file_info["Exif"]["ExifEnumDateTimeOriginal"])
-
                         name_field = ET.SubElement(model_elem, 'field', {'name': 'Name', 'type': 'String'})
                         ET.SubElement(name_field, 'value', {'type': 'String'}).text = str(file_info["metadata"]["Local Path"])
-
                         description_field = ET.SubElement(model_elem, 'field', {'name': 'Description', 'type': 'String'})
                         ET.SubElement(description_field, 'empty')
-
                         type_field = ET.SubElement(model_elem, 'field', {'name': 'Type', 'type': 'String'})
                         ET.SubElement(type_field, 'value', {'type': 'String'}).text = 'IMAGE'
-
                         precision_field = ET.SubElement(model_elem, 'field', {'name': 'Precision', 'type': 'String'})
                         ET.SubElement(precision_field, 'value', {'type': 'Double'})
-
                         confidence_field = ET.SubElement(model_elem, 'field', {'name': 'Confidence', 'type': 'String'})
                         ET.SubElement(confidence_field, 'empty')
-
                         category_field = ET.SubElement(model_elem, 'field', {'name': 'Category', 'type': 'String'})
                         ET.SubElement(category_field, 'value', {'type': 'String'}).text = 'Fotos'
-
                         origin_field = ET.SubElement(model_elem, 'field', {'name': 'Origin', 'type': 'LocationOrigin'})
                         ET.SubElement(origin_field, 'value', {'type': 'LocationOrigin'}).text = 'Unknown'
-
                         jump_targets = ET.SubElement(model_elem, 'jumptargets', {'name': ''})
-                        ET.SubElement(jump_targets, 'targetid', {'ismodel': 'false'}).text = str(uuid.uuid4())
+                        ET.SubElement(jump_targets, 'targetid', {'ismodel': 'false'}).text = str(gps_file_id_list[index])
+                        tagged_files = project.find('taggedFiles') 
+                        file_elem = tagged_files[gps_file_index[index]]
+                        jump_targets_element = ET.SubElement(file_elem, 'jumptargets', {'name': ''})
+                        ET.SubElement(jump_targets_element, 'targetid', {'ismodel': 'true'}).text = gps_id
+                        index += 1
 
         installed_apps_type = ET.SubElement(decoded_data, 'modelType', {'type': 'InstalledApplication'})  
 
@@ -3079,11 +3088,8 @@ def dev_data():
 # modified pull function from pymobiledevice3 (sets atime to mtime as it's not readable)
 def pull(self, relative_src, dst, callback=None, src_dir=''):
         global filedict
-        src = posixpath.join(src_dir, relative_src)
-        if callback is not None:
-            callback(src, dst)
 
-        src = self.resolve_path(src)
+        src = self.resolve_path(posixpath.join(src_dir, relative_src))
 
         if not self.isdir(src):
             # normal file
@@ -3093,10 +3099,11 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                 pass
             else:
                 output_format = "%Y-%m-%dT%H:%M:%S-00:00" 
-                filecontent = self.get_file_contents(str(src))
+                filecontent = self.get_file_contents(src)
                 #if fdict == True:
                 if d_class == "Watch":
                     dbfiles = [".db", ".sqlite", ".realm", ".kgdb"]
+                    configfiles = [".plist", ".xml"]
                     try:                  
                         mimetype = mimetypes.guess_type(src, strict=True)
                         if "image" in mimetype[0]:
@@ -3105,12 +3112,12 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                             tag = "Video"
                         elif "audio" in mimetype[0] and not "plj" in mimetype[0]:
                             tag = "Audio"
-                        elif "text" in mimetype[0]:
+                        elif "text" in mimetype[0] and not any(x in src.lower() for x in configfiles):
                             tag = "Text"
                         elif any(x in src.lower() for x in dbfiles):
                             tag = "Database"
-                        elif any(x in src.lower() for x in dbfiles):
-                            tag = "Database"
+                        elif any(x in src.lower() for x in configfiles):
+                            tag = "Configuration"
                         else: 
                             tag = "Uncategorized"
                         #print(src)
@@ -3141,15 +3148,15 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                                 exifb = False
                             exifdict = {}
                             if exifb == True:
-                                try: exifdict['ExifEnumPixelXDimension'] = str(etags['Image XResolution'])
+                                try: exifdict['ExifEnumPixelXDimension'] = str(etags['EXIF ExifImageWidth'])
                                 except: pass
-                                try: exifdict['ExifEnumPixelYDimension'] = str(etags['Image YResolution'])
+                                try: exifdict['ExifEnumPixelYDimension'] = str(etags['EXIF ExifImageLength'])
                                 except: pass
-                                #try: exifdict['ExifEnumOrientation'] = str(etags["Image Orientation"])
-                                #except: pass
-                                try: exifdict['ExifEnumDateTimeOriginal'] = str(etags["EXIF DateTimeOriginal"])
+                                try: exifdict['ExifEnumOrientation'] = str(etags["Image Orientation"])
                                 except: pass
-                                try: exifdict['ExifEnumDateTimeDigitized'] = str(etags["EXIF DateTimeDigitized"])
+                                try: exifdict['ExifEnumDateTimeOriginal'] = datetime.fromisoformat(str(etags["EXIF DateTimeOriginal"]).replace(":","").replace(" ", "T")).strftime("%d.%m.%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
+                                except: pass
+                                try: exifdict['ExifEnumDateTimeDigitized'] = datetime.fromisoformat(str(etags["EXIF DateTimeDigitized"]).replace(":","").replace(" ", "T")).strftime("%d.%m.%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
                                 except: pass
                                 try: exifdict['ExifEnumMake'] = str(etags["Image Make"])
                                 except: pass
@@ -3161,9 +3168,15 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                                 except: pass
                                 try: exifdict['ExifEnumFNumber'] = eval(str(etags["EXIF FNumber"]))
                                 except: pass
-                                try: exifdict['EXIFCaptureTime'] = str(etags["EXIF CaptureTime"])
+                                try: exifdict['EXIFCameraMaker'] = str(etags["Image Make"])
+                                except: pass
+                                try: exifdict['EXIFCameraModel'] = str(etags["Image Model"])
+                                except: pass
+                                try: exifdict['EXIFCaptureTime'] = datetime.fromisoformat(str(etags["EXIF DateTimeOriginal"]).replace(":","").replace(" ", "T")).strftime("%d/%m/%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
                                 except: pass
                                 try: exifdict['MetaDataPixelResolution'] = f"{str(etags['EXIF ExifImageWidth'])}x{str(etags['EXIF ExifImageLength'])}"
+                                except: pass
+                                try: exifdict['EXIFOrientation'] = str(etags["Image Orientation"])
                                 except: pass
                                 if exifdict != {}:
                                     filedict[str(src)]["Exif"] = exifdict
@@ -3190,14 +3203,20 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                                         deci_lon = -deci_lon
                                     gpsdict['Longitude'] = round(deci_lon, 5)
                                     gpsdict['Elevation'] = ele
+                                    try: exifdict['MetaDataLatitudeAndLongitude'] = f"{gpsdict['Longitude']} / {gpsdict['Longitude']}"
+                                    except: pass
                                     filedict[str(src)]["GPS"] = gpsdict
                             
-                mtime = self.stat(src)['st_mtime'].timestamp()
+                try: mtime = self.stat(src)['st_mtime'].timestamp()
+                except: pass
                 if os.path.isdir(dst):
                     dst = os.path.join(dst, os.path.basename(relative_src))
                 with open(dst, 'wb') as f:
                     f.write(filecontent)
-                os.utime(dst, (mtime, mtime))
+                try: os.utime(dst, (mtime, mtime))
+                except: pass
+                if callback is not None:
+                    callback(src, dst)
         else:
             # directory
             dst_path = pathlib.Path(dst) / os.path.basename(relative_src)
