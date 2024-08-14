@@ -3095,6 +3095,8 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
             # normal file
             if "default.realm." in src:
                 pass
+            elif ".realm.management" in src:
+                pass
             elif "CreateDatabase" in src:
                 pass
             else:
