@@ -1918,7 +1918,7 @@ class MyApp(ctk.CTk):
             findex += 1
 
         textfiles = [".txt", ".doc", ".docx", ".odt"]
-        configfiles = [".plist", ".xml"]
+        configfiles = [".plist", ".xml", ".config"]
         apppath = os.path.join("Report", "files", "Applications")
         for root, dirs, files in os.walk(apppath):
             for filename in files:
@@ -1946,7 +1946,7 @@ class MyApp(ctk.CTk):
                     ET.SubElement(metadata_file, 'item', {'name': "SHA256"}).text = str(hashlib.sha256(pathlib.Path(entry).read_bytes()).hexdigest())
                     ET.SubElement(metadata_file, 'item', {'name': "MD5"}).text = str(hashlib.md5(pathlib.Path(entry).read_bytes()).hexdigest())
                     if ".tar" in entry:
-                        ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Archive"
+                        ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Archives"
                     elif any (x in entry.lower() for x in textfiles):
                         ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Text"
                     elif any(x in entry.lower() for x in configfiles):
@@ -1983,7 +1983,7 @@ class MyApp(ctk.CTk):
                     ET.SubElement(metadata_file, 'item', {'name': "SHA256"}).text = str(hashlib.sha256(pathlib.Path(entry).read_bytes()).hexdigest())
                     ET.SubElement(metadata_file, 'item', {'name': "MD5"}).text = str(hashlib.md5(pathlib.Path(entry).read_bytes()).hexdigest())
                     if ".tar" in entry:
-                        ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Archive"
+                        ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Archives"
                     elif any (x in entry.lower() for x in textfiles):
                         ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Text"
                     elif any(x in entry.lower() for x in configfiles):
@@ -3102,6 +3102,7 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                 filecontent = self.get_file_contents(src)
                 #if fdict == True:
                 if d_class == "Watch":
+                    textfiles = [".txt", ".doc", ".docx", ".odt"]
                     dbfiles = [".db", ".sqlite", ".realm", ".kgdb"]
                     configfiles = [".plist", ".xml"]
                     try:                  
@@ -3112,7 +3113,7 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                             tag = "Video"
                         elif "audio" in mimetype[0] and not "plj" in mimetype[0]:
                             tag = "Audio"
-                        elif "text" in mimetype[0] and not any(x in src.lower() for x in configfiles):
+                        elif "text" in mimetype[0]:
                             tag = "Text"
                         elif any(x in src.lower() for x in dbfiles):
                             tag = "Database"
@@ -3127,8 +3128,6 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                         mimetype = ["uncategorized", None]
                         if any(x in src.lower() for x in dbfiles):
                             tag = "Database"
-                        elif ".plist" in src.lower():
-                            tag = "Text"
                         else: 
                             tag = "Uncategorized"
                     finally:
