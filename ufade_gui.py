@@ -636,9 +636,11 @@ class MyApp(ctk.CTk):
             text.configure(text="Pulling the Sysdiagnose archive from the device")
             self.diagsrv.pull(out=f"{udid}_sysdiagnose.tar.gz", entry=sysdiagname,erase=True)
             text.configure(text="Extraction of Sysdiagnose archive completed!")
+            log("Extracted Sysdiagnose file")
             progress.pack_forget()
         except:
             text.configure(text="Extraction of Sysdiagnose canceled!")
+            log("Sysdiagnose extraction canceled")
             self.diaglabel.pack_forget()
             self.abort.pack_forget()
             progress.pack_forget()
@@ -670,9 +672,11 @@ class MyApp(ctk.CTk):
         try:
             OsTraceService(lockdown).collect(out= os.path.join("unified_logs", udid + ".logarchive"), start_time=time)
             text.configure(text="Unified Logs written to " + udid + ".logarchive")
+            log(f"Collected Unified Logs as {udid}.logarchive")
             waitul.set(1)  
         except:
             text.configure(text="Error: \nCoud not collect logs - Maybe the device or its iOS version is too old.")
+            log("Error collecting Unified Logs")
             waitul.set(1)
         try: os.rmdir("unified_logs")
         except: pass
@@ -748,9 +752,11 @@ class MyApp(ctk.CTk):
             okbutton.pack_forget()
             abort.pack_forget()
             text.configure(text="New Backup password: \"12345\" \nStarting Backup.\nUnlock device with PIN/PW")
+            log(f"Provided correct backup password: {pw}")
             pw_found.set(1)
         except:
             text.configure(text="Wrong password.\nProvide the correct backup password:\n(UFADE sets this to \"12345\")")
+            log("Provided incorrect backup password: {pw} or device error (MDM)")
             okbutton.configure(state="normal")
             return()
 
@@ -774,6 +780,7 @@ class MyApp(ctk.CTk):
             try: 
                 Mobilebackup2Service(lockdown).change_password(old=pw)
                 text.configure(text="Password found: " + pw)
+                log(f"Found correct backup password: {pw} via bruteforce")
                 pw_found.set(1)
                 break
             except:
@@ -787,6 +794,7 @@ class MyApp(ctk.CTk):
 
 # Main iTunes Backup function for other methods
     def perf_iTunes_bu(self, mode):
+        log("Started iTunes Backup")
         m = mode
         global notify
         self.pw_found = ctk.IntVar(self,0)
@@ -845,6 +853,7 @@ class MyApp(ctk.CTk):
                     if self.choose.get() == True:
                         try:
                             with open(os.path.join(os.path.dirname(__file__), "bu_pw.txt")) as pwds:
+                                    log("Starting Backup password bruteforce with provided dictionary")
                                     pw_list = pwds.read().splitlines()
                                     pw_count = len(pw_list)
                                     pw_list_true = True
@@ -859,6 +868,7 @@ class MyApp(ctk.CTk):
                                 pw_list = pwds.read().splitlines()
                                 pw_count = len(pw_list)
                                 pw_list_true = True
+                            log(f"Starting Backup password bruteforce with file: {pw_file}")
                         except:
                             self.text.configure(text="Error loading file!")
                             self.after(200, ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=10))
@@ -929,6 +939,7 @@ class MyApp(ctk.CTk):
 
 # Decrypting / "unbacking" the Backup
     def decrypt_itunes(self, b, backupfiles, tar, progress, prog_text, line_list, line_cnt, d_nr, change):
+        log("Starting Backup decryption")
         for file in line_list:
             fileout = file
             if platform.uname().system == 'Windows':
@@ -949,6 +960,7 @@ class MyApp(ctk.CTk):
 
 # Fallback decrption function for older devices
     def decrypt_old_itunes(self, tar, change):
+        log("Using fallback decryption method")
         bu = Backup.from_path(backup_path=udid, password="12345")
         unback_alt(bu, os.path.join(".tar_tmp", "itunes_bu"))
         tar.add(".tar_tmp/itunes_bu", arcname="iTunes_Backup/", recursive=True)
@@ -956,6 +968,7 @@ class MyApp(ctk.CTk):
 
 # Only decrypt Whatsaap (TESS)
     def decrypt_whatsapp(self, change, wachange):
+        log("Started Whatsapp extraction")
         finish = False
         if wachange.get() in [1,3]:
             app = "Whatsapp"
@@ -974,6 +987,7 @@ class MyApp(ctk.CTk):
             finish = True
         except:
             self.text.configure(text=f"An error occured while extracting {app}. Try again.")
+            log(f"Error while extracting {app} data")
             pass
         if wachange.get() == 3:
             wachange.set(2)
@@ -981,7 +995,8 @@ class MyApp(ctk.CTk):
         else:
             pass
         if finish == True:
-            self.after(100, lambda: self.text.configure(text="Whatsapp files extracted.")) 
+            self.after(100, lambda: self.text.configure(text="Whatsapp files extracted."))
+            log("Whatsapp extraction completed") 
         change.set(1)
 
     def decrypt_whatsapp_alt(self,change, wachange):
@@ -1073,6 +1088,7 @@ class MyApp(ctk.CTk):
 # Actually perform the advanced logical backup
     def perf_logical_plus(self, t):
         l_type = t
+        log(f"Starting logical+ backup (type={l_type})")
         try: os.mkdir(".tar_tmp")                                                                                               #create temp folder for files to zip/tar
         except: pass
 
@@ -1270,6 +1286,7 @@ class MyApp(ctk.CTk):
         beep_timer.cancel()   
 
         self.text.configure(text="Logical+ Backup completed!")
+        log("Logical+ Backup completed!")
         self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
 
 #Gather devinfo for plist
@@ -1377,6 +1394,7 @@ class MyApp(ctk.CTk):
 
             text.configure(text="Performing Filesystem Backup")
             text.update()
+            log("FFS extraction started")
             self.prog_text = ctk.CTkLabel(self.dynamic_frame, text="0%", width=585, height=20, font=self.stfont, anchor="w", justify="left")
             self.prog_text.pack()
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
@@ -1403,6 +1421,7 @@ class MyApp(ctk.CTk):
             self.progress.pack_forget()
             self.received_text.pack_forget()
             text.configure(text="Filesystem Backup complete.")
+            log("FFS extraction completed")
             self.change.set(1)
         except:
             text.configure(text="Error connecting to SSH. The device has to be in jailbroken state and SSH has to be installed.")
@@ -1670,6 +1689,8 @@ class MyApp(ctk.CTk):
         with open(os.path.join("Report", "files", "Diagnostics", "~DiagnosticRelay", "MobileGestalt", "All.plist"), "wb") as file:
             plistlib.dump(mg, file)
 
+        apple_id = ""
+        purchasedict = {}
         try: os.mkdir(os.path.join("Report", "files", "Applications"))
         except: pass
         app_report_list = []
@@ -1683,6 +1704,10 @@ class MyApp(ctk.CTk):
             except: pass
             try: 
                 itunesplist = app['iTunesMetadata']
+                readitunes = plistlib.loads(itunesplist)
+                if apple_id == "":
+                    apple_id = readitunes['com.apple.iTunesStore.downloadInfo']['accountInfo']['AppleID']
+                purchasedict[app["CFBundleIdentifier"]] = readitunes['com.apple.iTunesStore.downloadInfo']['purchaseDate']
                 with open(os.path.join("Report", "files", "Applications", appname, "iTunesMetadata.plist"), "wb") as file:
                     file.write(itunesplist)
             except:
@@ -1782,8 +1807,8 @@ class MyApp(ctk.CTk):
             sign = "+"
         else:
             sign = "-"
-        output_format = "%d/%m/%Y %H:%M:%S" 
-        begin = str(now.strftime(output_format)) + " (" + sign + str(int(utc_offset_hours)) + ")"
+        output_format = "%d.%m.%Y %H:%M:%S" 
+        begin = str(now.strftime(output_format)) + " (UTC " + sign + str(int(utc_offset_hours)) + ")"
 
         #End Time for UFD-Report
         end = datetime.now()
@@ -1793,9 +1818,8 @@ class MyApp(ctk.CTk):
         if utc_offset_hours >= 0:
             sign = "+"
         else:
-            sign = "-"
-        output_format = "%d/%m/%Y %H:%M:%S" 
-        e_end = str(end.strftime(output_format)) + " (" + sign + str(int(utc_offset_hours)) + ")"
+            sign = "-" 
+        e_end = str(end.strftime(output_format)) + " (UTC " + sign + str(int(utc_offset_hours)) + ")"
 
         reportid = str(str(uuid.uuid4()))
         project = ET.Element('project', {
@@ -1810,9 +1834,9 @@ class MyApp(ctk.CTk):
         source_extractions = ET.SubElement(project, 'sourceExtractions')
         ET.SubElement(source_extractions, 'extractionInfo', {
             'id': '0',
-            'name': 'Logical',
+            'name': 'UFADE Report',
             'isCustomName': 'True',
-            'type': 'UFADE Report',
+            'type': 'AdvancedLogical',
             'deviceName': '',
             'fullName': '',
             'index': '0',
@@ -1862,14 +1886,51 @@ class MyApp(ctk.CTk):
             'sourceExtraction': '0'
         }).text = e_end
 
+        ET.SubElement(metadata, 'item', {
+            'name': 'DeviceInfoSelectedManufacturer',
+            'sourceExtraction': '0'
+        }).text = 'Apple'
+
+        ET.SubElement(metadata, 'item', {
+            'name': 'DeviceInfoSelectedDeviceName',
+            'sourceExtraction': '0'
+        }).text = str(dev_name)
+
+        ET.SubElement(metadata, 'item', {
+            'name': 'DeviceInfoConnectionType',
+            'sourceExtraction': '0'
+        }).text = 'Generic iBus Adapter'
+
+        ET.SubElement(metadata, 'item', {
+            'name': 'ProjectStateExtractionId',
+            'sourceExtraction': '0'
+        }).text = str(udid)
+
         metadata_device_info = ET.SubElement(project, 'metadata', {'section': 'Device Info'})
-        me_dev_info = {'Detected Manufacturer': 'Apple', 'Serial Number': snr, 'Device Name': name, 'WiFi Address': w_mac, 'Model Number': hardware + ", Model:" + mnr, 'Bluetooth Address': b_mac, 'Product Type': dev_name, 'Time Zone': d_tz, 'Unique Identifier': udid}
+        #me_dev_info = {'Serial Number': snr, 'Device Name': name, 'WiFi Address': w_mac, 'Model Number': hardware + ", Model:" + mnr, 'Bluetooth Address': b_mac, 'Device': dev_name, 'Time Zone': d_tz, 'Unique Identifier': udid}
+        me_dev_info = {'Device Name': name, 'Device': dev_name, 'Model Number': f'{hardware} , Model: {mnr}', 'MAC (WiFi Address)': w_mac, 'MAC (Bluetooth Address)': b_mac, 'Unique Identifier': udid, 'Unique Chip ID': ecid, 'Serial Number': snr, 'Disk Capacity': f'{disk}0 GB', 'Software: ': f'WatchOS {version}', 'Buildnumber': build , 'Time Zone': d_tz,}
+        if imei != " ":
+            me_dev_info['IMEI'] = imei
+        else:
+            pass
+        if apple_id != "":
+            me_dev_info['Apple ID'] = apple_id
+        else:
+            pass
+        i = 0
         for key, value in me_dev_info.items():
+             if i < 9:
+                 group = 'Hardware'
+             else:
+                 group = 'Software'
+             i += 1            
              ET.SubElement(metadata_device_info, 'item', {
                 'id': str(uuid.uuid4()),
                 'name': key,
+                'group': group,
                 'sourceExtraction': '0'
             }).text = value
+
 
         afc_id = str(uuid.uuid4())
         appl_id = str(uuid.uuid4())
@@ -1897,7 +1958,7 @@ class MyApp(ctk.CTk):
             })
             access_info = ET.SubElement(file_elem, 'accessInfo')
             for timestamp_name, timestamp_value in filedict[file_info]['accessInfo'].items():
-                ET.SubElement(access_info, 'timestamp', {'name': timestamp_name}).text = timestamp_value
+                ET.SubElement(access_info, 'timestamp', {'name': timestamp_name, 'format': 'TimeStampKnown', 'formattedTimestamp': timestamp_value}).text = timestamp_value
             metadata_file = ET.SubElement(file_elem, 'metadata', {'section': 'File'})
             for item_name, item_value in filedict[file_info]['metadata'].items():
                 ET.SubElement(metadata_file, 'item', {'name': item_name}).text = item_value
@@ -2088,6 +2149,11 @@ class MyApp(ctk.CTk):
             ET.SubElement(version_field, 'value', {'type': 'String'}).text = app['version']
             identifier_field = ET.SubElement(model_elem, 'field', {'name': 'Identifier', 'type': 'String'})
             ET.SubElement(identifier_field, 'value', {'type': 'String'}).text = app['identifier']
+
+            if app['identifier'] in purchasedict.keys():
+                purchase_date_field = ET.SubElement(model_elem, 'field', {'name': 'PurchaseDate', 'type': 'TimeStamp'})
+                ET.SubElement(purchase_date_field, 'value', {'type': 'TimeStamp', 'format': 'TimeStampKnown', 'formattedTimestamp':  purchasedict[app['identifier']]}).text = purchasedict[app['identifier']]
+
             install_date_field = ET.SubElement(model_elem, 'field', {'name': 'InstallDate', 'type': 'TimeStamp'})
             ET.SubElement(install_date_field, 'empty')
             last_modified_field = ET.SubElement(model_elem, 'field', {'name': 'LastModified', 'type': 'TimeStamp'})
@@ -2116,7 +2182,7 @@ class MyApp(ctk.CTk):
         #except: pass
 
         len_path = len(os.path.abspath(path)) + 1
-        with zipfile.ZipFile(f'{udid}_report.ufdr', 'w') as zip:
+        with zipfile.ZipFile(f'{dev_name}_{datetime.now().strftime("%Y_%m_%d")}_report.ufdr', 'w') as zip:
         
             for root, dirs, files in os.walk(path):
                 for file in files:
@@ -2528,6 +2594,7 @@ class MyApp(ctk.CTk):
             file.write(png)
         with open(os.path.join("screenshots", hashname), "w") as hash_file:
             hash_file.write(hash_sha256)
+        log(f"Created screenshot {filename} with hash {hash_sha256}")
         namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
 
     def chat_shotloop(self, dvt):
@@ -2608,6 +2675,7 @@ class MyApp(ctk.CTk):
             hash_sha256 = hashlib.sha256(png).hexdigest()
             with open(os.path.join("screenshots", app_name, chat_name, hashname), "w") as hash_file:
                 hash_file.write(hash_sha256)
+            log(f"Created screenshot {filename} with hash {hash_sha256}")
             namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
             self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, png=png, text=text)
         else:
@@ -2682,6 +2750,7 @@ class MyApp(ctk.CTk):
         self.progress.pack_forget()
         self.folder_text.pack_forget()
         self.text.configure(text="Creation of filesystem-list complete.")
+        log("Created filesystem list")
         self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("DevMenu")).pack(pady=40))
 
 # Call the fileloop and write the output to a file
@@ -2814,12 +2883,14 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
             json.dump(filedict, file)
     else:
         pass
+    log("Extracted AFC-Media files")
     change.set(1)   
     return(archive)    
 
 
 # Pull crash logs
 def crash_report(crash_dir, change, progress, prog_text):
+    log("Starting crash log extraction")
     crash_count = 0
     crash_list = []
     for entry in CrashReportsManager(lockdown).ls(""):
@@ -2839,6 +2910,7 @@ def crash_report(crash_dir, change, progress, prog_text):
         prog_text.configure(text=f"{int(cpro*100)}%")
         progress.update()
         prog_text.update()
+    log("Crash log extraction complete.")
     change.set(1)
 
 
@@ -2899,7 +2971,8 @@ def save_info():
             sharing = 'no'
         file.write("\n" + '{:{l}}'.format(app, l=l) + "\t [" + sharing + "]")
 
-    file.close()    
+    file.close()
+    log("Wrote device info to text")    
 
 def check_device():
     try:
@@ -3093,129 +3166,136 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
 
         if not self.isdir(src):
             # normal file
+            """
             if "default.realm." in src:
                 pass
             elif ".realm.management" in src:
                 pass
             elif "CreateDatabase" in src:
                 pass
+
             else:
-                output_format = "%Y-%m-%dT%H:%M:%S-00:00" 
-                filecontent = self.get_file_contents(src)
-                #if fdict == True:
-                if d_class == "Watch":
-                    textfiles = [".txt", ".doc", ".docx", ".odt"]
-                    dbfiles = [".db", ".sqlite", ".realm", ".kgdb"]
-                    configfiles = [".plist", ".xml"]
-                    try:                  
-                        mimetype = mimetypes.guess_type(src, strict=True)
-                        if "image" in mimetype[0]:
-                            tag = "Image"
-                        elif "video" in mimetype[0]:
-                            tag = "Video"
-                        elif "audio" in mimetype[0] and not "plj" in mimetype[0]:
-                            tag = "Audio"
-                        elif "text" in mimetype[0]:
-                            tag = "Text"
-                        elif any(x in src.lower() for x in dbfiles):
-                            tag = "Database"
-                        elif any(x in src.lower() for x in configfiles):
-                            tag = "Configuration"
-                        else: 
-                            tag = "Uncategorized"
-                        #print(src)
-                        #print(mimetype)
-                        #print(tag)
-                    except:
-                        mimetype = ["uncategorized", None]
-                        if any(x in src.lower() for x in dbfiles):
-                            tag = "Database"
-                        else: 
-                            tag = "Uncategorized"
-                    finally:
-                        filedict[str(src)] = {"size": str(self.stat(src)['st_size']), "accessInfo": {"CreationTime": str(self.stat(src)['st_birthtime'].strftime(output_format)), "ModifyTime": str(self.stat(src)['st_mtime'].strftime(output_format)), "AccessTime": ""}, 
-                        "metadata": {"Local Path": f"files/AFC_Media/{str(src)}", "SHA256": hashlib.sha256(filecontent).hexdigest(), "MD5": hashlib.md5(filecontent).hexdigest(), "Tags": tag}}
-                        if tag == "Image":
-                            try:
-                                img_bytes = BytesIO()
-                                img_bytes.write(filecontent)
-                                etags = {}
-                                etags = exifread.process_file(img_bytes, details=False)
-                                if isinstance(etags, dict):
-                                    exifb = True
-                                else:
-                                    exifb = False
-                            except:
+            """
+            output_format = "%Y-%m-%dT%H:%M:%S+00:00" 
+            filecontent = self.get_file_contents(src)
+            #if fdict == True:
+            if d_class == "Watch":
+                textfiles = [".txt", ".doc", ".docx", ".odt"]
+                dbfiles = [".db", ".sqlite", ".realm", ".kgdb"]
+                configfiles = [".plist", ".xml"]
+                try:                  
+                    mimetype = mimetypes.guess_type(src, strict=True)
+                    if "image" in mimetype[0]:
+                        tag = "Image"
+                    elif "video" in mimetype[0]:
+                        tag = "Video"
+                    elif "audio" in mimetype[0] and not "plj" in mimetype[0]:
+                        tag = "Audio"
+                    elif "text" in mimetype[0]:
+                        tag = "Text"
+                    elif any(x in src.lower() for x in dbfiles):
+                        tag = "Database"
+                    elif any(x in src.lower() for x in configfiles):
+                        tag = "Configuration"
+                    else: 
+                        tag = "Uncategorized"
+                    #print(src)
+                    #print(mimetype)
+                    #print(tag)
+                except:
+                    mimetype = ["uncategorized", None]
+                    if any(x in src.lower() for x in dbfiles):
+                        tag = "Database"
+                    else: 
+                        tag = "Uncategorized"
+                finally:
+                    filedict[str(src)] = {"size": str(self.stat(src)['st_size']), "accessInfo": {"CreationTime": f"{self.stat(src)['st_birthtime'].strftime(output_format)}", "ModifyTime": f"{self.stat(src)['st_mtime'].strftime(output_format)}", "AccessTime": ""}, 
+                    "metadata": {"Local Path": f"files/AFC_Media/{str(src)}", "SHA256": hashlib.sha256(filecontent).hexdigest(), "MD5": hashlib.md5(filecontent).hexdigest(), "Tags": tag}}
+                    if tag == "Image":
+                        try:
+                            img_bytes = BytesIO()
+                            img_bytes.write(filecontent)
+                            etags = {}
+                            etags = exifread.process_file(img_bytes, details=False)
+                            if isinstance(etags, dict):
+                                exifb = True
+                            else:
                                 exifb = False
-                            exifdict = {}
-                            if exifb == True:
-                                try: exifdict['ExifEnumPixelXDimension'] = str(etags['EXIF ExifImageWidth'])
+                        except:
+                            exifb = False
+                        exifdict = {}
+                        if exifb == True:
+                            try: exifdict['ExifEnumPixelXDimension'] = str(etags['EXIF ExifImageWidth'])
+                            except: pass
+                            try: exifdict['ExifEnumPixelYDimension'] = str(etags['EXIF ExifImageLength'])
+                            except: pass
+                            try: exifdict['ExifEnumOrientation'] = str(etags["Image Orientation"])
+                            except: pass
+                            try: exifdict['ExifEnumDateTimeOriginal'] = datetime.fromisoformat(str(etags["EXIF DateTimeOriginal"]).replace(":","").replace(" ", "T")).strftime("%d.%m.%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
+                            except: pass
+                            try: exifdict['ExifEnumDateTimeDigitized'] = datetime.fromisoformat(str(etags["EXIF DateTimeDigitized"]).replace(":","").replace(" ", "T")).strftime("%d.%m.%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
+                            except: pass
+                            try: exifdict['ExifEnumMake'] = str(etags["Image Make"])
+                            except: pass
+                            try: exifdict['ExifEnumModel'] = str(etags["Image Model"])
+                            except: pass
+                            try: exifdict['ExifEnumExposureTime'] = eval(str(etags["EXIF ExposureTime"]))
+                            except: pass
+                            try: exifdict['ExifEnumFocalLength'] = eval(str(etags["EXIF FocalLength"]))
+                            except: pass
+                            try: exifdict['ExifEnumFNumber'] = eval(str(etags["EXIF FNumber"]))
+                            except: pass
+                            try: exifdict['EXIFCameraMaker'] = str(etags["Image Make"])
+                            except: pass
+                            try: exifdict['EXIFCameraModel'] = str(etags["Image Model"])
+                            except: pass
+                            try: exifdict['EXIFCaptureTime'] = str(etags["EXIF DateTimeOriginal"])
+                            #try: exifdict['EXIFCaptureTime'] = str(datetime.strptime(etags["EXIF DateTimeOriginal"], '%Y:%m:%d %H:%M:%S').strftime("%d.%m.%Y %H:%M:%S")) 
+                            except: pass
+                            try: exifdict['MetaDataPixelResolution'] = f"{str(etags['EXIF ExifImageWidth'])}x{str(etags['EXIF ExifImageLength'])}"
+                            except: pass
+                            try: exifdict['EXIFOrientation'] = str(etags["Image Orientation"])
+                            except: pass
+                            if exifdict != {}:
+                                filedict[str(src)]["Exif"] = exifdict
+                            if 'GPS GPSLatitude' in etags.keys():
+                                gpsdict = {}
+                                lat = eval(str(etags['GPS GPSLatitude']))
+                                try: latref = etags['GPS GPSLatitudeRef']
+                                except: latref = "0"
+                                lon = eval(str(etags['GPS GPSLongitude']))
+                                try: lonref = etags['GPS GPSLongitudeRef']
+                                except: lonref = "0"
+                                ele = eval(str(etags['GPS GPSAltitude']))
+                                try: eleref = etags['GPS GPSAltitudeRef']
+                                except: eleref = 0
+                                if eleref == 1:
+                                    ele = -ele
+                                ele = int(ele)
+                                deci_lat = lat[0] + lat[1] / 60 + lat[2] / 3600
+                                if latref == "S" or latref =='W' :
+                                    deci_lat = -deci_lat
+                                gpsdict['Latitude'] = round(deci_lat, 5)
+                                deci_lon = lon[0] + lon[1] / 60 + lon[2] / 3600
+                                if lonref == "S" or lonref =='W' :
+                                    deci_lon = -deci_lon
+                                gpsdict['Longitude'] = round(deci_lon, 5)
+                                gpsdict['Elevation'] = ele
+                                try: exifdict['MetaDataLatitudeAndLongitude'] = f"{gpsdict['Longitude']} / {gpsdict['Longitude']}"
                                 except: pass
-                                try: exifdict['ExifEnumPixelYDimension'] = str(etags['EXIF ExifImageLength'])
-                                except: pass
-                                try: exifdict['ExifEnumOrientation'] = str(etags["Image Orientation"])
-                                except: pass
-                                try: exifdict['ExifEnumDateTimeOriginal'] = datetime.fromisoformat(str(etags["EXIF DateTimeOriginal"]).replace(":","").replace(" ", "T")).strftime("%d.%m.%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
-                                except: pass
-                                try: exifdict['ExifEnumDateTimeDigitized'] = datetime.fromisoformat(str(etags["EXIF DateTimeDigitized"]).replace(":","").replace(" ", "T")).strftime("%d.%m.%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
-                                except: pass
-                                try: exifdict['ExifEnumMake'] = str(etags["Image Make"])
-                                except: pass
-                                try: exifdict['ExifEnumModel'] = str(etags["Image Model"])
-                                except: pass
-                                try: exifdict['ExifEnumExposureTime'] = eval(str(etags["EXIF ExposureTime"]))
-                                except: pass
-                                try: exifdict['ExifEnumFocalLength'] = eval(str(etags["EXIF FocalLength"]))
-                                except: pass
-                                try: exifdict['ExifEnumFNumber'] = eval(str(etags["EXIF FNumber"]))
-                                except: pass
-                                try: exifdict['EXIFCameraMaker'] = str(etags["Image Make"])
-                                except: pass
-                                try: exifdict['EXIFCameraModel'] = str(etags["Image Model"])
-                                except: pass
-                                try: exifdict['EXIFCaptureTime'] = datetime.fromisoformat(str(etags["EXIF DateTimeOriginal"]).replace(":","").replace(" ", "T")).strftime("%d/%m/%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
-                                except: pass
-                                try: exifdict['MetaDataPixelResolution'] = f"{str(etags['EXIF ExifImageWidth'])}x{str(etags['EXIF ExifImageLength'])}"
-                                except: pass
-                                try: exifdict['EXIFOrientation'] = str(etags["Image Orientation"])
-                                except: pass
-                                if exifdict != {}:
-                                    filedict[str(src)]["Exif"] = exifdict
-                                if 'GPS GPSLatitude' in etags.keys():
-                                    gpsdict = {}
-                                    lat = eval(str(etags['GPS GPSLatitude']))
-                                    try: latref = etags['GPS GPSLatitudeRef']
-                                    except: latref = "0"
-                                    lon = eval(str(etags['GPS GPSLongitude']))
-                                    try: lonref = etags['GPS GPSLongitudeRef']
-                                    except: lonref = "0"
-                                    ele = eval(str(etags['GPS GPSAltitude']))
-                                    try: eleref = etags['GPS GPSAltitudeRef']
-                                    except: eleref = 0
-                                    if eleref == 1:
-                                        ele = -ele
-                                    ele = int(ele)
-                                    deci_lat = lat[0] + lat[1] / 60 + lat[2] / 3600
-                                    if latref == "S" or latref =='W' :
-                                        deci_lat = -deci_lat
-                                    gpsdict['Latitude'] = round(deci_lat, 5)
-                                    deci_lon = lon[0] + lon[1] / 60 + lon[2] / 3600
-                                    if lonref == "S" or lonref =='W' :
-                                        deci_lon = -deci_lon
-                                    gpsdict['Longitude'] = round(deci_lon, 5)
-                                    gpsdict['Elevation'] = ele
-                                    try: exifdict['MetaDataLatitudeAndLongitude'] = f"{gpsdict['Longitude']} / {gpsdict['Longitude']}"
-                                    except: pass
-                                    filedict[str(src)]["GPS"] = gpsdict
+                                filedict[str(src)]["GPS"] = gpsdict
                             
                 try: mtime = self.stat(src)['st_mtime'].timestamp()
                 except: pass
                 if os.path.isdir(dst):
                     dst = os.path.join(dst, os.path.basename(relative_src))
-                with open(dst, 'wb') as f:
-                    f.write(filecontent)
-                try: os.utime(dst, (mtime, mtime))
-                except: pass
+                try:
+                    with open(dst, 'wb') as f:
+                        f.write(filecontent)
+                    try: os.utime(dst, (mtime, mtime))
+                    except: pass
+                except:
+                    log(f"Error reading file: {src}")
                 if callback is not None:
                     callback(src, dst)
         else:
@@ -3235,6 +3315,12 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                     continue
 
                 pull(self, src_filename, str(dst_path), callback=callback)
+
+#UFADE "logging"
+def log(text):
+    with open(f"ufade_log_{udid}.log", 'a') as logfile:
+        logtime = str(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        logfile.write(f"{logtime}: {text}\n")
 
 # modified unback commanf from pyiosbackup for better Windows support
 def unback_alt(self, path='.'):
@@ -3273,6 +3359,7 @@ lockdown = check_device()
 try:
     language = lockdown.language
     ispaired = True
+    log(f"Paired with device: {udid}")
 except:
     ispaired = False
 
