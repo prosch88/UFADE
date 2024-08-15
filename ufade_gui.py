@@ -2134,7 +2134,7 @@ class MyApp(ctk.CTk):
                         timestamp_field = ET.SubElement(model_elem, 'field', {'name': 'TimeStamp', 'type': 'TimeStamp'})
                         ET.SubElement(timestamp_field, 'value', {'type': 'TimeStamp'}).text = str(file_info["Exif"]["ExifEnumDateTimeOriginal"])
                         name_field = ET.SubElement(model_elem, 'field', {'name': 'Name', 'type': 'String'})
-                        ET.SubElement(name_field, 'value', {'type': 'String'}).text = str(file_info["metadata"]["Local Path"])
+                        ET.SubElement(name_field, 'value', {'type': 'String'}).text = str(os.path.basename(file_info["metadata"]["Local Path"]))
                         description_field = ET.SubElement(model_elem, 'field', {'name': 'Description', 'type': 'String'})
                         ET.SubElement(description_field, 'empty')
                         type_field = ET.SubElement(model_elem, 'field', {'name': 'Type', 'type': 'String'})
@@ -3192,7 +3192,11 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
             output_format = "%Y-%m-%dT%H:%M:%S+00:00"
             try: 
                 filecontent = self.get_file_contents(src)
-                #if fdict == True:
+                readable = 1
+            except:
+                log(f"Error reading file: {src}")
+                readable = 0
+            if readable == 1:
                 if d_class == "Watch":
                     textfiles = [".txt", ".doc", ".docx", ".odt"]
                     dbfiles = [".db", ".sqlite", ".realm", ".kgdb"]
@@ -3298,24 +3302,25 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                                     try: exifdict['MetaDataLatitudeAndLongitude'] = f"{gpsdict['Longitude']} / {gpsdict['Longitude']}"
                                     except: pass
                                     filedict[str(src)]["GPS"] = gpsdict
-                else:                
-                    try: mtime = self.stat(src)['st_mtime'].timestamp()
-                    except: pass
-                    if os.path.isdir(dst):
-                        dst = os.path.join(dst, os.path.basename(relative_src))
-                        
-                    with open(dst, 'wb') as f:
-                        f.write(filecontent)
-                    try:
-                        if mtime < datetime.fromisoformat('1980-01-01').timestamp():
-                            mtime = datetime.fromisoformat('1980-01-01').timestamp() 
-                        os.utime(dst, (mtime, mtime))
-                    except: 
-                        pass
-                    if callback is not None:
-                        callback(src, dst)
-            except:
-                log(f"Error reading file: {src}")
+                else:
+                    pass                
+                try: mtime = self.stat(src)['st_mtime'].timestamp()
+                except: pass
+                if os.path.isdir(dst):
+                    dst = os.path.join(dst, os.path.basename(relative_src))
+                    
+                with open(dst, 'wb') as f:
+                    f.write(filecontent)
+                try:
+                    if mtime < datetime.fromisoformat('1980-01-01').timestamp():
+                        mtime = datetime.fromisoformat('1980-01-01').timestamp() 
+                    os.utime(dst, (mtime, mtime))
+                except: 
+                    pass
+                if callback is not None:
+                    callback(src, dst)
+            else:
+                pass
                     
         else:
             # directory
