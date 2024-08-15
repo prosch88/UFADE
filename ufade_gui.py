@@ -2168,11 +2168,10 @@ class MyApp(ctk.CTk):
 
         rough_string = ET.tostring(project, 'utf-8', method='xml')
         reparsed = minidom.parseString(rough_string)
-        xml_str = reparsed.toprettyxml(indent="  ", encoding="UTF-8").decode("utf-8")
-        xml_clean = re.sub(r'[^\x09\x0A\x0D\x20-\x7F]+', ' ', xml_str)
+        xml_str = reparsed.toprettyxml(indent="  ", encoding="ascii").decode("utf-8")
 
         with open(os.path.join("Report", "report.xml"), "w") as f:
-            f.write(xml_clean)
+            f.write(xml_str)
 
         path="Report"
         #arcname = f"{udid}_Report"
