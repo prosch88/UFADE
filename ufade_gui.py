@@ -950,12 +950,15 @@ class MyApp(ctk.CTk):
             prog_text.configure(text=f"{int(dpro)}%")
             progress.update()
             prog_text.update()
-            b.getFileDecryptedCopy(relativePath=file, targetName=fileout, targetFolder=os.path.join(".tar_tmp", "itunes_bu"))               #actually decrypt the backup-files
-            file_path = os.path.join('.tar_tmp', 'itunes_bu', fileout)
-            tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
-                backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
-            try: os.remove(file_path)                                                                                   #remove the file after adding
-            except: pass
+            try:
+                b.getFileDecryptedCopy(relativePath=file, targetName=fileout, targetFolder=os.path.join(".tar_tmp", "itunes_bu"))               #actually decrypt the backup-files
+                file_path = os.path.join('.tar_tmp', 'itunes_bu', fileout)
+                tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
+                    backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
+                try: os.remove(file_path)                                                                                   #remove the file after adding
+                except: pass
+            except:
+                log(f"Error while decrypting file:{file}")
         change.set(1) 
 
 # Fallback decrption function for older devices
@@ -1556,7 +1559,7 @@ class MyApp(ctk.CTk):
     def show_report(self):
         ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
         ctk.CTkLabel(self.dynamic_frame, text="Generate UFDR Report", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
-        self.text = ctk.CTkLabel(self.dynamic_frame, text="Provide the case information:", width=585, height=60, font=self.stfont, anchor="w", justify="left")
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Provide the case information:", width=585, height=30, font=self.stfont, anchor="w", justify="left")
         self.change = ctk.IntVar(self, 0)
         self.text.pack(anchor="center", pady=25)
         self.casebox = ctk.CTkEntry(self.dynamic_frame, width=360, height=20, corner_radius=0, placeholder_text="case number")
@@ -1568,9 +1571,9 @@ class MyApp(ctk.CTk):
         self.exambox = ctk.CTkEntry(self.dynamic_frame, width=360, height=20, corner_radius=0, placeholder_text="examiner")
         self.exambox.pack(pady=5, padx=30) 
         self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.change.set(1))
-        self.okbutton.pack(pady=20, padx=100)
+        self.okbutton.pack(pady=30, padx=100)
         self.wait_variable(self.change)
-        self.text.configure(text="Performing AFC Extraction of Mediafiles")
+        self.text.configure(text="Performing AFC Extraction of Mediafiles", height=60)
         self.casebox.pack_forget()
         self.namebox.pack_forget()
         self.evidbox.pack_forget()
@@ -2204,7 +2207,6 @@ class MyApp(ctk.CTk):
 
         len_path = len(os.path.abspath(path)) + 1
         with zipfile.ZipFile(f'{dev_name}_{datetime.now().strftime("%Y_%m_%d")}_report.ufdr', 'w') as zip:
-        
             for root, dirs, files in os.walk(path):
                 for file in files:
                     filepath = os.path.abspath(os.path.join(root, file))
@@ -2212,7 +2214,7 @@ class MyApp(ctk.CTk):
                     with open(filepath, 'rb') as f:
                         zipinfo = zipfile.ZipInfo(filepath)
                         zip.write(filepath, relative_path)
-        
+        shutil.rmtree(path)
         change.set(1)
 
 # Try to mount a suitable developerdiskimage
@@ -3187,132 +3189,134 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
 
         if not self.isdir(src):
             # normal file
-            output_format = "%Y-%m-%dT%H:%M:%S+00:00" 
-            filecontent = self.get_file_contents(src)
-            #if fdict == True:
-            if d_class == "Watch":
-                textfiles = [".txt", ".doc", ".docx", ".odt"]
-                dbfiles = [".db", ".sqlite", ".realm", ".kgdb"]
-                configfiles = [".plist", ".xml"]
-                try:                  
-                    mimetype = mimetypes.guess_type(src, strict=True)
-                    if "image" in mimetype[0]:
-                        tag = "Image"
-                    elif "video" in mimetype[0]:
-                        tag = "Video"
-                    elif "audio" in mimetype[0] and not "plj" in mimetype[0]:
-                        tag = "Audio"
-                    elif "text" in mimetype[0]:
-                        tag = "Text"
-                    elif any(x in src.lower() for x in dbfiles):
-                        tag = "Database"
-                    elif any(x in src.lower() for x in configfiles):
-                        tag = "Configuration"
-                    else: 
-                        tag = "Uncategorized"
-                    #print(src)
-                    #print(mimetype)
-                    #print(tag)
-                except:
-                    mimetype = ["uncategorized", None]
-                    if any(x in src.lower() for x in dbfiles):
-                        tag = "Database"
-                    else: 
-                        tag = "Uncategorized"
-                finally:
-                    filedict[str(src)] = {"size": str(self.stat(src)['st_size']), "accessInfo": {"CreationTime": f"{self.stat(src)['st_birthtime'].strftime(output_format)}", "ModifyTime": f"{self.stat(src)['st_mtime'].strftime(output_format)}", "AccessTime": ""}, 
-                    "metadata": {"Local Path": f"files/AFC_Media/{str(src)}", "SHA256": hashlib.sha256(filecontent).hexdigest(), "MD5": hashlib.md5(filecontent).hexdigest(), "Tags": tag}}
-                    if tag == "Image":
-                        try:
-                            img_bytes = BytesIO()
-                            img_bytes.write(filecontent)
-                            etags = {}
-                            etags = exifread.process_file(img_bytes, details=False)
-                            if isinstance(etags, dict):
-                                exifb = True
-                            else:
+            output_format = "%Y-%m-%dT%H:%M:%S+00:00"
+            try: 
+                filecontent = self.get_file_contents(src)
+                #if fdict == True:
+                if d_class == "Watch":
+                    textfiles = [".txt", ".doc", ".docx", ".odt"]
+                    dbfiles = [".db", ".sqlite", ".realm", ".kgdb"]
+                    configfiles = [".plist", ".xml"]
+                    try:                  
+                        mimetype = mimetypes.guess_type(src, strict=True)
+                        if "image" in mimetype[0]:
+                            tag = "Image"
+                        elif "video" in mimetype[0]:
+                            tag = "Video"
+                        elif "audio" in mimetype[0] and not "plj" in mimetype[0]:
+                            tag = "Audio"
+                        elif "text" in mimetype[0]:
+                            tag = "Text"
+                        elif any(x in src.lower() for x in dbfiles):
+                            tag = "Database"
+                        elif any(x in src.lower() for x in configfiles):
+                            tag = "Configuration"
+                        else: 
+                            tag = "Uncategorized"
+                        #print(src)
+                        #print(mimetype)
+                        #print(tag)
+                    except:
+                        mimetype = ["uncategorized", None]
+                        if any(x in src.lower() for x in dbfiles):
+                            tag = "Database"
+                        else: 
+                            tag = "Uncategorized"
+                    finally:
+                        filedict[str(src)] = {"size": str(self.stat(src)['st_size']), "accessInfo": {"CreationTime": f"{self.stat(src)['st_birthtime'].strftime(output_format)}", "ModifyTime": f"{self.stat(src)['st_mtime'].strftime(output_format)}", "AccessTime": ""}, 
+                        "metadata": {"Local Path": f"files/AFC_Media/{str(src)}", "SHA256": hashlib.sha256(filecontent).hexdigest(), "MD5": hashlib.md5(filecontent).hexdigest(), "Tags": tag}}
+                        if tag == "Image":
+                            try:
+                                img_bytes = BytesIO()
+                                img_bytes.write(filecontent)
+                                etags = {}
+                                etags = exifread.process_file(img_bytes, details=False)
+                                if isinstance(etags, dict):
+                                    exifb = True
+                                else:
+                                    exifb = False
+                            except:
                                 exifb = False
-                        except:
-                            exifb = False
-                        exifdict = {}
-                        if exifb == True:
-                            try: exifdict['ExifEnumPixelXDimension'] = str(etags['EXIF ExifImageWidth'])
-                            except: pass
-                            try: exifdict['ExifEnumPixelYDimension'] = str(etags['EXIF ExifImageLength'])
-                            except: pass
-                            try: exifdict['ExifEnumOrientation'] = str(etags["Image Orientation"])
-                            except: pass
-                            try: exifdict['ExifEnumDateTimeOriginal'] = datetime.fromisoformat(str(etags["EXIF DateTimeOriginal"]).replace(":","").replace(" ", "T")).strftime("%d.%m.%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
-                            except: pass
-                            try: exifdict['ExifEnumDateTimeDigitized'] = datetime.fromisoformat(str(etags["EXIF DateTimeDigitized"]).replace(":","").replace(" ", "T")).strftime("%d.%m.%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
-                            except: pass
-                            try: exifdict['ExifEnumMake'] = str(etags["Image Make"])
-                            except: pass
-                            try: exifdict['ExifEnumModel'] = str(etags["Image Model"])
-                            except: pass
-                            try: exifdict['ExifEnumExposureTime'] = eval(str(etags["EXIF ExposureTime"]))
-                            except: pass
-                            try: exifdict['ExifEnumFocalLength'] = eval(str(etags["EXIF FocalLength"]))
-                            except: pass
-                            try: exifdict['ExifEnumFNumber'] = eval(str(etags["EXIF FNumber"]))
-                            except: pass
-                            try: exifdict['EXIFCameraMaker'] = str(etags["Image Make"])
-                            except: pass
-                            try: exifdict['EXIFCameraModel'] = str(etags["Image Model"])
-                            except: pass
-                            try: exifdict['EXIFCaptureTime'] = str(etags["EXIF DateTimeOriginal"])
-                            #try: exifdict['EXIFCaptureTime'] = str(datetime.strptime(etags["EXIF DateTimeOriginal"], '%Y:%m:%d %H:%M:%S').strftime("%d.%m.%Y %H:%M:%S")) 
-                            except: pass
-                            try: exifdict['MetaDataPixelResolution'] = f"{str(etags['EXIF ExifImageWidth'])}x{str(etags['EXIF ExifImageLength'])}"
-                            except: pass
-                            try: exifdict['EXIFOrientation'] = str(etags["Image Orientation"])
-                            except: pass
-                            if exifdict != {}:
-                                filedict[str(src)]["Exif"] = exifdict
-                            if 'GPS GPSLatitude' in etags.keys():
-                                gpsdict = {}
-                                lat = eval(str(etags['GPS GPSLatitude']))
-                                try: latref = etags['GPS GPSLatitudeRef']
-                                except: latref = "0"
-                                lon = eval(str(etags['GPS GPSLongitude']))
-                                try: lonref = etags['GPS GPSLongitudeRef']
-                                except: lonref = "0"
-                                ele = eval(str(etags['GPS GPSAltitude']))
-                                try: eleref = etags['GPS GPSAltitudeRef']
-                                except: eleref = 0
-                                if eleref == 1:
-                                    ele = -ele
-                                ele = int(ele)
-                                deci_lat = lat[0] + lat[1] / 60 + lat[2] / 3600
-                                if latref == "S" or latref =='W' :
-                                    deci_lat = -deci_lat
-                                gpsdict['Latitude'] = round(deci_lat, 5)
-                                deci_lon = lon[0] + lon[1] / 60 + lon[2] / 3600
-                                if lonref == "S" or lonref =='W' :
-                                    deci_lon = -deci_lon
-                                gpsdict['Longitude'] = round(deci_lon, 5)
-                                gpsdict['Elevation'] = ele
-                                try: exifdict['MetaDataLatitudeAndLongitude'] = f"{gpsdict['Longitude']} / {gpsdict['Longitude']}"
+                            exifdict = {}
+                            if exifb == True:
+                                try: exifdict['ExifEnumPixelXDimension'] = str(etags['EXIF ExifImageWidth'])
                                 except: pass
-                                filedict[str(src)]["GPS"] = gpsdict
-                                
+                                try: exifdict['ExifEnumPixelYDimension'] = str(etags['EXIF ExifImageLength'])
+                                except: pass
+                                try: exifdict['ExifEnumOrientation'] = str(etags["Image Orientation"])
+                                except: pass
+                                try: exifdict['ExifEnumDateTimeOriginal'] = datetime.fromisoformat(str(etags["EXIF DateTimeOriginal"]).replace(":","").replace(" ", "T")).strftime("%d.%m.%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
+                                except: pass
+                                try: exifdict['ExifEnumDateTimeDigitized'] = datetime.fromisoformat(str(etags["EXIF DateTimeDigitized"]).replace(":","").replace(" ", "T")).strftime("%d.%m.%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
+                                except: pass
+                                try: exifdict['ExifEnumMake'] = str(etags["Image Make"])
+                                except: pass
+                                try: exifdict['ExifEnumModel'] = str(etags["Image Model"])
+                                except: pass
+                                try: exifdict['ExifEnumExposureTime'] = eval(str(etags["EXIF ExposureTime"]))
+                                except: pass
+                                try: exifdict['ExifEnumFocalLength'] = eval(str(etags["EXIF FocalLength"]))
+                                except: pass
+                                try: exifdict['ExifEnumFNumber'] = eval(str(etags["EXIF FNumber"]))
+                                except: pass
+                                try: exifdict['EXIFCameraMaker'] = str(etags["Image Make"])
+                                except: pass
+                                try: exifdict['EXIFCameraModel'] = str(etags["Image Model"])
+                                except: pass
+                                try: exifdict['EXIFCaptureTime'] = str(etags["EXIF DateTimeOriginal"])
+                                #try: exifdict['EXIFCaptureTime'] = str(datetime.strptime(etags["EXIF DateTimeOriginal"], '%Y:%m:%d %H:%M:%S').strftime("%d.%m.%Y %H:%M:%S")) 
+                                except: pass
+                                try: exifdict['MetaDataPixelResolution'] = f"{str(etags['EXIF ExifImageWidth'])}x{str(etags['EXIF ExifImageLength'])}"
+                                except: pass
+                                try: exifdict['EXIFOrientation'] = str(etags["Image Orientation"])
+                                except: pass
+                                if exifdict != {}:
+                                    filedict[str(src)]["Exif"] = exifdict
+                                if 'GPS GPSLatitude' in etags.keys():
+                                    gpsdict = {}
+                                    lat = eval(str(etags['GPS GPSLatitude']))
+                                    try: latref = etags['GPS GPSLatitudeRef']
+                                    except: latref = "0"
+                                    lon = eval(str(etags['GPS GPSLongitude']))
+                                    try: lonref = etags['GPS GPSLongitudeRef']
+                                    except: lonref = "0"
+                                    ele = eval(str(etags['GPS GPSAltitude']))
+                                    try: eleref = etags['GPS GPSAltitudeRef']
+                                    except: eleref = 0
+                                    if eleref == 1:
+                                        ele = -ele
+                                    ele = int(ele)
+                                    deci_lat = lat[0] + lat[1] / 60 + lat[2] / 3600
+                                    if latref == "S" or latref =='W' :
+                                        deci_lat = -deci_lat
+                                    gpsdict['Latitude'] = round(deci_lat, 5)
+                                    deci_lon = lon[0] + lon[1] / 60 + lon[2] / 3600
+                                    if lonref == "S" or lonref =='W' :
+                                        deci_lon = -deci_lon
+                                    gpsdict['Longitude'] = round(deci_lon, 5)
+                                    gpsdict['Elevation'] = ele
+                                    try: exifdict['MetaDataLatitudeAndLongitude'] = f"{gpsdict['Longitude']} / {gpsdict['Longitude']}"
+                                    except: pass
+                                    filedict[str(src)]["GPS"] = gpsdict
+                else:                
                     try: mtime = self.stat(src)['st_mtime'].timestamp()
                     except: pass
                     if os.path.isdir(dst):
                         dst = os.path.join(dst, os.path.basename(relative_src))
+                        
+                    with open(dst, 'wb') as f:
+                        f.write(filecontent)
                     try:
-                        with open(dst, 'wb') as f:
-                            f.write(filecontent)
-                        try:
-                            if mtime < datetime.fromisoformat('1980-01-01').timestamp():
-                                mtime = datetime.fromisoformat('1980-01-01').timestamp() 
-                            os.utime(dst, (mtime, mtime))
-                        except: 
-                            pass
-                    except:
-                        log(f"Error reading file: {src}")
+                        if mtime < datetime.fromisoformat('1980-01-01').timestamp():
+                            mtime = datetime.fromisoformat('1980-01-01').timestamp() 
+                        os.utime(dst, (mtime, mtime))
+                    except: 
+                        pass
                     if callback is not None:
                         callback(src, dst)
+            except:
+                log(f"Error reading file: {src}")
+                    
         else:
             # directory
             dst_path = pathlib.Path(dst) / os.path.basename(relative_src)
