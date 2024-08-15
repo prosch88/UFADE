@@ -500,12 +500,15 @@ def perf_logical_plus(t):
                 d_nr += 1
                 dpro = int(100*(d_nr/line_cnt)) 
                 d.gauge_update(dpro)
-                b.getFileDecryptedCopy(relativePath=file, targetName=file, targetFolder=".tar_tmp/itunes_bu")               #actually decrypt the backup-files
-                file_path = os.path.join('.tar_tmp/itunes_bu', file)
-                tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
-                    backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
-                try: os.remove(file_path)                                                                                   #remove the file after adding
-                except: pass    
+                try:
+                    b.getFileDecryptedCopy(relativePath=file, targetName=file, targetFolder=".tar_tmp/itunes_bu")               #actually decrypt the backup-files
+                    file_path = os.path.join('.tar_tmp/itunes_bu', file)
+                    tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
+                        backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
+                    try: os.remove(file_path)                                                                                   #remove the file after adding
+                    except: pass    
+                except:
+                    pass
             d.gauge_stop()
         except:                                                                                                             #use pyiosbackup as fallback for older devices (atm iOSbackup is behaving more reliable for newer iOS Versions)
             d.infobox("Decrypting iTunes Backup - this may take a while.")
