@@ -1939,7 +1939,7 @@ class MyApp(ctk.CTk):
         else:
             pass
         if apple_id != "":
-            me_dev_info['Apple ID'] = apple_id
+            me_dev_info['Apple-ID'] = apple_id
         else:
             pass
         i = 0
