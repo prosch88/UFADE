@@ -2193,7 +2193,8 @@ class MyApp(ctk.CTk):
 
         rough_string = ET.tostring(project, 'utf-8', method='xml')
         reparsed = minidom.parseString(rough_string)
-        xml_str = reparsed.toprettyxml(indent="  ", encoding="ascii").decode("utf-8")
+        xml_str = reparsed.toprettyxml(indent="  ", encoding="ascii")
+        xml_str = xml_str.replace(b'\n', b'\r\n').decode("utf-8")
 
         with open(os.path.join("Report", "report.xml"), "w") as f:
             f.write(xml_str)
