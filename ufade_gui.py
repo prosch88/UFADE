@@ -1556,9 +1556,31 @@ class MyApp(ctk.CTk):
     def show_report(self):
         ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
         ctk.CTkLabel(self.dynamic_frame, text="Generate UFDR Report", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
-        self.text = ctk.CTkLabel(self.dynamic_frame, text="Performing AFC Extraction of Mediafiles", width=585, height=60, font=self.stfont, anchor="w", justify="left")
-        self.text.pack(anchor="center", pady=25)
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Provide the case information:", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.change = ctk.IntVar(self, 0)
+        self.text.pack(anchor="center", pady=25)
+        self.casebox = ctk.CTkEntry(self.dynamic_frame, width=360, height=20, corner_radius=0, placeholder_text="case number")
+        self.casebox.pack(pady=5, padx=30)
+        self.namebox = ctk.CTkEntry(self.dynamic_frame, width=360, height=20, corner_radius=0, placeholder_text="case name")
+        self.namebox.pack(pady=5, padx=30)
+        self.evidbox = ctk.CTkEntry(self.dynamic_frame, width=360, height=20, corner_radius=0, placeholder_text="evidence number")
+        self.evidbox.pack(pady=5, padx=30)  
+        self.exambox = ctk.CTkEntry(self.dynamic_frame, width=360, height=20, corner_radius=0, placeholder_text="examiner")
+        self.exambox.pack(pady=5, padx=30) 
+        self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.change.set(1))
+        self.okbutton.pack(pady=20, padx=100)
+        self.wait_variable(self.change)
+        self.text.configure(text="Performing AFC Extraction of Mediafiles")
+        self.casebox.pack_forget()
+        self.namebox.pack_forget()
+        self.evidbox.pack_forget()
+        self.exambox.pack_forget()
+        self.okbutton.pack_forget()
+        self.change.set(0)
+        case_number = self.casebox.get()
+        case_name = self.namebox.get()
+        evidence_number = self.evidbox.get()
+        examiner = self.exambox.get()
         now = datetime.now()
         try: os.mkdir("Report")
         except: pass
@@ -1595,7 +1617,7 @@ class MyApp(ctk.CTk):
         self.text.configure(text="Generating report files. This may take some time")
         self.change.set(0)
         self.text.configure(text="Pulling Crash Logs from the device.")
-        self.report = threading.Thread(target=lambda: self.watch_report(text=self.text, change=self.change, progress=self.progress, prog_text=self.prog_text, now=now))
+        self.report = threading.Thread(target=lambda: self.watch_report(text=self.text, change=self.change, progress=self.progress, prog_text=self.prog_text, now=now, case_number=case_number, case_name=case_name, evidence_number=evidence_number, examiner=examiner))
         self.report.start()
         self.wait_variable(self.change)
         self.text.configure(text="Report generation complete")
@@ -3165,16 +3187,6 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
 
         if not self.isdir(src):
             # normal file
-            """
-            if "default.realm." in src:
-                pass
-            elif ".realm.management" in src:
-                pass
-            elif "CreateDatabase" in src:
-                pass
-
-            else:
-            """
             output_format = "%Y-%m-%dT%H:%M:%S+00:00" 
             filecontent = self.get_file_contents(src)
             #if fdict == True:
@@ -3283,20 +3295,24 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                                 try: exifdict['MetaDataLatitudeAndLongitude'] = f"{gpsdict['Longitude']} / {gpsdict['Longitude']}"
                                 except: pass
                                 filedict[str(src)]["GPS"] = gpsdict
-                            
-                try: mtime = self.stat(src)['st_mtime'].timestamp()
-                except: pass
-                if os.path.isdir(dst):
-                    dst = os.path.join(dst, os.path.basename(relative_src))
-                try:
-                    with open(dst, 'wb') as f:
-                        f.write(filecontent)
-                    try: os.utime(dst, (mtime, mtime))
+                                
+                    try: mtime = self.stat(src)['st_mtime'].timestamp()
                     except: pass
-                except:
-                    log(f"Error reading file: {src}")
-                if callback is not None:
-                    callback(src, dst)
+                    if os.path.isdir(dst):
+                        dst = os.path.join(dst, os.path.basename(relative_src))
+                    try:
+                        with open(dst, 'wb') as f:
+                            f.write(filecontent)
+                        try:
+                            if mtime < datetime.fromisoformat('1980-01-01').timestamp():
+                                mtime = datetime.fromisoformat('1980-01-01').timestamp() 
+                            os.utime(dst, (mtime, mtime))
+                        except: 
+                            pass
+                    except:
+                        log(f"Error reading file: {src}")
+                    if callback is not None:
+                        callback(src, dst)
         else:
             # directory
             dst_path = pathlib.Path(dst) / os.path.basename(relative_src)
