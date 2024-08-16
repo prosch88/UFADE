@@ -1942,6 +1942,14 @@ class MyApp(ctk.CTk):
             me_dev_info['Apple-ID'] = apple_id
         else:
             pass
+        try: 
+            number = lockdown.get_value(key="PhoneNumber")
+            if number == None:
+                number = ""
+        except: 
+            number = ""
+        if number != "":
+            me_dev_info['Last Number'] = number
         i = 0
         for key, value in me_dev_info.items():
              if i < 9:
