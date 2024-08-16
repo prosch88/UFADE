@@ -2224,6 +2224,7 @@ class MyApp(ctk.CTk):
                         zipinfo = zipfile.ZipInfo(filepath)
                         zip.write(filepath, relative_path)
         shutil.rmtree(path)
+        log("Created UFDR Report")
         change.set(1)
 
 # Try to mount a suitable developerdiskimage
