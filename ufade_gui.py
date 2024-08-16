@@ -1933,7 +1933,7 @@ class MyApp(ctk.CTk):
 
         metadata_device_info = ET.SubElement(project, 'metadata', {'section': 'Device Info'})
         #me_dev_info = {'Serial Number': snr, 'Device Name': name, 'WiFi Address': w_mac, 'Model Number': hardware + ", Model:" + mnr, 'Bluetooth Address': b_mac, 'Device': dev_name, 'Time Zone': d_tz, 'Unique Identifier': udid}
-        me_dev_info = {'Device Name': name, 'Device': dev_name, 'Model Number': f'{hardware} , Model: {mnr}', 'MAC (WiFi Address)': w_mac, 'MAC (Bluetooth Address)': b_mac, 'Unique Identifier': udid, 'Unique Chip ID': ecid, 'Serial Number': snr, 'Disk Capacity': f'{disk}0 GB', 'Software: ': f'WatchOS {version}', 'Buildnumber': build , 'Time Zone': d_tz,}
+        me_dev_info = {'Device Name': name, 'Device': dev_name, 'Model Number': f'{hardware} , Model: {mnr}', 'MAC (WiFi Address)': w_mac, 'MAC (Bluetooth Address)': b_mac, 'Unique Identifier': udid, 'Unique Chip ID': ecid, 'Serial Number': snr, 'Disk Capacity': f'{disk}0 GB', 'Software': f'WatchOS {version}', 'Buildnumber': build , 'Time Zone': d_tz,}
         if imei != " ":
             me_dev_info['IMEI'] = imei
         else:
