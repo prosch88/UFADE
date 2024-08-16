@@ -703,8 +703,12 @@ class MyApp(ctk.CTk):
 
 # Try to deactivate encryption after the Backup is complete
     def deactivate_encryption(self, change, text=None):
+        global bu_pass
         try:
-            Mobilebackup2Service(lockdown).change_password(old=bu_pass)
+            if bu_pass != "12345":
+                Mobilebackup2Service(lockdown).change_password(old="12345", new=bu_pass)
+            else:
+                Mobilebackup2Service(lockdown).change_password(old="12345") 
             change.set(1)
         except:
             change.set(2)
@@ -749,10 +753,11 @@ class MyApp(ctk.CTk):
             okbutton.configure(state="disabled")
             text.configure(text="Checking password...")
             Mobilebackup2Service(lockdown).change_password(old=pw, new="12345")                     #Try to deactivate backup encryption with the given password
+            bu_pass = pw
             passwordbox.pack_forget()
             okbutton.pack_forget()
             abort.pack_forget()
-            text.configure(text=f"Backup password: {bu_pass} \nStarting Backup.\nUnlock device with PIN/PW")
+            text.configure(text=f"Backup password: 12345 \nStarting Backup.\nUnlock device with PIN/PW")
             log(f"Provided correct backup password: {pw}")
             pw_found.set(1)
         except:
@@ -782,6 +787,7 @@ class MyApp(ctk.CTk):
             try: 
                 Mobilebackup2Service(lockdown).change_password(old=pw, new="12345")
                 text.configure(text="Password found: " + pw)
+                bu_pass = pw
                 log(f"Found correct backup password: {pw} via bruteforce")
                 pw_found.set(1)
                 break
@@ -931,7 +937,7 @@ class MyApp(ctk.CTk):
         global b
         global backupfiles
         try:
-            b = iOSbackup(udid=udid, cleartextpassword=bu_pass, derivedkey=None, backuproot="./")                           #Load Backup with Password
+            b = iOSbackup(udid=udid, cleartextpassword="12345", derivedkey=None, backuproot="./")                           #Load Backup with Password
             key = b.getDecryptionKey()                                                                                      #Get decryption Key
             b = iOSbackup(udid=udid, derivedkey=key, backuproot="./")                                                       #Load Backup again with Key
             backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])
@@ -966,7 +972,7 @@ class MyApp(ctk.CTk):
 # Fallback decrption function for older devices
     def decrypt_old_itunes(self, tar, change):
         log("Using fallback decryption method")
-        bu = Backup.from_path(backup_path=udid, password=bu_pass)
+        bu = Backup.from_path(backup_path=udid, password="12345")
         unback_alt(bu, os.path.join(".tar_tmp", "itunes_bu"))
         tar.add(".tar_tmp/itunes_bu", arcname="iTunes_Backup/", recursive=True)
         change.set(1)
@@ -1017,7 +1023,7 @@ class MyApp(ctk.CTk):
         try: os.mkdir(folder)
         except: pass
         try:
-            bu = Backup.from_path(backup_path=udid, password=bu_pass)
+            bu = Backup.from_path(backup_path=udid, password="12345")
             dest_dir = pathlib.Path(folder)
             for file in bu.iter_files():
                 if file.domain == domain:
@@ -1278,7 +1284,7 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.change)
             with open("Apple_" + hardware.upper() + " " + dev_name + ".ufd", "w") as ufdf:
                 ufdf.write("[DeviceInfo]\nIMEI1=" + imei + "\nIMEI2=" + imei2 + "\nModel=" + product + "\nOS=" + version + "\nVendor=Apple\n\n[Dumps]\nFileDump=Apple_" + hardware.upper() + " " +
-                dev_name + ".zip\n\n[ExtractionStatus]\nExtractionStatus=Success\n\n[FileDump]\nType=ZIPfolder\nZIPLogicalPath=iPhoneDump\n\n[General]\nAcquisitionTool=UFADE\nBackupPassword=" + bu_pass + "\nConnectionType=Cable No. 210 or Original Cable\nDate=" + begin + "\nDevice=" + d_class.upper() + "\nEndTime=" + e_end + "\nExtractionNameFromXML=File System\nExtractionType=AdvancedLogical\nFullName=" +
+                dev_name + ".zip\n\n[ExtractionStatus]\nExtractionStatus=Success\n\n[FileDump]\nType=ZIPfolder\nZIPLogicalPath=iPhoneDump\n\n[General]\nAcquisitionTool=UFADE\nBackupPassword=" + "12345" + "\nConnectionType=Cable No. 210 or Original Cable\nDate=" + begin + "\nDevice=" + d_class.upper() + "\nEndTime=" + e_end + "\nExtractionNameFromXML=File System\nExtractionType=AdvancedLogical\nFullName=" +
                 hardware.upper() + " " + dev_name + "\nGUID=" + udid + "\nInternalBuild=\nIsEncrypted=True\nIsEncryptedBySystem=True\nMachineName=\nModel=" + hardware.upper() + " " + dev_name + "\nUfdVer=1.2\nUnitId=\nUserName=\nVendor=Apple\nVersion=other\n\n[SHA256]\n" + zipname + "=" + z_hash.upper() + "")
             self.progress.pack_forget()
 
