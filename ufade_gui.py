@@ -748,8 +748,7 @@ class MyApp(ctk.CTk):
         try:
             okbutton.configure(state="disabled")
             text.configure(text="Checking password...")
-            Mobilebackup2Service(lockdown).change_password(old=pw, new=pw)                     #Try to deactivate backup encryption with the given password
-            bu_pass = pw
+            Mobilebackup2Service(lockdown).change_password(old=pw, new="12345")                     #Try to deactivate backup encryption with the given password
             passwordbox.pack_forget()
             okbutton.pack_forget()
             abort.pack_forget()
@@ -781,8 +780,7 @@ class MyApp(ctk.CTk):
             progress.update()
             prog_text.update()                   
             try: 
-                Mobilebackup2Service(lockdown).change_password(old=pw, new=pw)
-                bu_pass = pw
+                Mobilebackup2Service(lockdown).change_password(old=pw, new="12345")
                 text.configure(text="Password found: " + pw)
                 log(f"Found correct backup password: {pw} via bruteforce")
                 pw_found.set(1)
