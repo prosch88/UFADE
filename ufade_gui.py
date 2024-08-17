@@ -1959,6 +1959,21 @@ class MyApp(ctk.CTk):
             number = ""
         if number != "":
             me_dev_info['Last Number'] = number
+        try:
+            all = lockdown.all_values.get("CarrierBundleInfoArray")
+            if all == None:
+                all = ""
+        except: 
+            all = ""
+        if all != "":
+            for entry in all:
+                try: 
+                    me_dev_info['ICCID'] = entry["IntegratedCircuitCardIdentity"]
+                    me_dev_info['IMSI'] = entry["InternationalMobileSubscriberIdentity"]
+                    me_dev_info['MCC'] = entry["MCC"]
+                    me_dev_info['MNC'] = entry["MNC"]
+                except:
+                    pass
         i = 0
         for key, value in me_dev_info.items():
              if i < 9:
