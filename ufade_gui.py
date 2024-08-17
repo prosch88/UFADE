@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # UFADE - Universal Forensic Apple Device Extractor (c) C.Peter 2024
 # Licensed under GPLv3 License
+import sys
+import os
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w")
 import customtkinter as ctk
 from PIL import ImageTk, Image, ExifTags
 from tkinter import StringVar
@@ -53,12 +59,6 @@ import tarfile
 import zipfile
 import threading
 import platform
-import sys
-import os
-if sys.stdout is None:
-    sys.stdout = open(os.devnull, "w")
-if sys.stderr is None:
-    sys.stderr = open(os.devnull, "w")
 import time
 import tempfile
 import re
