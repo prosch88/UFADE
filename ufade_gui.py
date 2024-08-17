@@ -90,7 +90,7 @@ class MyApp(ctk.CTk):
         self.left_frame = ctk.CTkFrame(self, width=340, corner_radius=0, fg_color="#2c353e", bg_color="#2c353e")
         self.left_frame.grid(row=0, column=0, sticky="ns", )
 
-        self.right_frame = ctk.CTkFrame(self)
+        self.right_frame = ctk.CTkFrame(self, width=760)
         self.right_frame.grid(row=0, column=1, sticky="nsew")
         self.grid_columnconfigure(1, weight=1)
 
