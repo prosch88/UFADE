@@ -1974,18 +1974,24 @@ class MyApp(ctk.CTk):
                     me_dev_info['MNC'] = entry["MNC"]
                 except:
                     pass
-        i = 0
+        #i = 0
         for key, value in me_dev_info.items():
-             if i < 9:
-                 group = 'Hardware'
-             else:
-                 group = 'Software'
-             i += 1            
-             ET.SubElement(metadata_device_info, 'item', {
-                'id': str(uuid.uuid4()),
-                'name': key,
-                'group': group,
-                'sourceExtraction': '0'
+             #if i < 9:
+             #    group = 'Hardware'
+             #else:
+             #    group = 'Software'
+             #i += 1 
+            if key in ['Device Name', 'Device', 'Model Number', 'MAC (WiFi Address)', 'MAC (Bluetooth Address)', 'Unique Identifier', 'Unique Chip ID', 'Serial Number', 'Disk Capacity']:
+                group = 'Hardware'
+            elif key in ['Software', 'Buildnumber', 'Time Zone', 'Apple-ID']:
+                group = 'Software'
+            elif key in ['Last Number', 'ICCID', 'IMSI', 'MCC', 'MNC']:
+                group = 'SIM'
+            ET.SubElement(metadata_device_info, 'item', {
+            'id': str(uuid.uuid4()),
+            'name': key,
+            'group': group,
+            'sourceExtraction': '0'
             }).text = value
 
 
