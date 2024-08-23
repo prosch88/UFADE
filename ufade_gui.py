@@ -3100,15 +3100,15 @@ def dev_data():
             global disk1 
             disk1 = lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity")/1000000000
             global disk 
-            disk = str(round(disk1,2))
+            disk = f'{round(disk1,2):.2f}'
             global free1 
             free1 = lockdown.get_value("com.apple.disk_usage","AmountDataAvailable")/1000000000
             global free 
-            free = str(round(free1,2))
+            free = f'{round(free1,2):.2f}'
             global used1 
             used1 = disk1 - free1
             global used 
-            used = str(round(used1,2))
+            used = f'{round(used1,2):.2f}'
             global graph_progress 
             graph_progress = "" + "▓" * int(26/100*(100/disk1*used1)) + "░" * int(26/100*(100/disk1*free1)) + ""
             global language
@@ -3158,7 +3158,7 @@ def dev_data():
                 "\n" + '{:13}'.format("Wifi MAC: ") + "\t" + w_mac +
                 "\n" + '{:13}'.format("BT MAC: ") + "\t" + b_mac +
                 "\n" + '{:13}'.format("Disk Use: ") + "\t" + graph_progress +
-                "\n" + '{:13}'.format("Capacity: ") + "\t" + disk + "0 GB" +
+                "\n" + '{:13}'.format("Capacity: ") + "\t" + disk + " GB" +
                 "\n" + '{:13}'.format("Used: ") + "\t" + used + " GB" +
                 "\n" + '{:13}'.format("Free: ") + "\t" + free + " GB" +
                 "\n" + '{:13}'.format("UDID: ") + "\t" + udid_s +
@@ -3204,19 +3204,22 @@ def dev_data():
     #Get installed Apps
     if lockdown != None and ispaired != False:
         global apps 
-        apps = installation_proxy.InstallationProxyService(lockdown).get_apps("User")
         global app_id_list 
-        app_id_list = []
-        for app in apps.keys():
-            app_id_list.append(app)
-        global doc_list
-        doc_list = []
-        for app in apps:
-            try: 
-                apps.get(app)['UIFileSharingEnabled']
-                doc_list.append("yes")
-            except:
-                doc_list.append("no")
+        try:
+            apps = installation_proxy.InstallationProxyService(lockdown).get_apps("User")
+            app_id_list = []
+            for app in apps.keys():
+                app_id_list.append(app)
+            global doc_list
+            doc_list = []
+            for app in apps:
+                try: 
+                    apps.get(app)['UIFileSharingEnabled']
+                    doc_list.append("yes")
+                except:
+                    doc_list.append("no")
+        except:
+            app_id_list = []
     else:
         pass
     return(device)
