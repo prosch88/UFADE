@@ -464,7 +464,7 @@ class MyApp(ctk.CTk):
             os.mkdir(user_input)
             os.chdir(user_input)
             dir = os.getcwd()
-        if d_class == "Watch":
+        if d_class == "Watch" or d_class == "AppleTV":
             self.show_watch_menu()
         else:
             self.show_main_menu()
@@ -504,7 +504,7 @@ class MyApp(ctk.CTk):
             text = text + "- app information"
         self.text = ctk.CTkLabel(self.dynamic_frame, width=420, height=200, font=self.stfont, text=text, anchor="w", justify="left")
         self.text.pack(pady=50)
-        if d_class == "Watch":
+        if d_class == "Watch" or d_class == "AppleTV":
             ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
         else:
             ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=10)        
@@ -536,12 +536,12 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.waitul)
             self.progress.stop()
             self.progress.pack_forget()
-            if d_class == "Watch":
+            if d_class == "Watch" or d_class == "AppleTV":
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
             else:
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=10)
         else:
-            if d_class == "Watch":
+            if d_class == "Watch" or d_class == "AppleTV":
                 self.show_watch_menu()
             else:
                 self.show_main_menu()
@@ -567,7 +567,7 @@ class MyApp(ctk.CTk):
         self.prog_text.pack_forget()
         if flow == False:
             self.text.configure(text="Extraction of crash reports completed!")
-            if d_class == "Watch":
+            if d_class == "Watch" or d_class == "AppleTV":
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
             else:
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=10)
@@ -593,6 +593,8 @@ class MyApp(ctk.CTk):
             self.text.pack_forget()
             if d_class == "Watch":
                 self.text.configure(text="To trigger the creation of the Sysdiagnose files,\npress: Power/Side + Digital Crown for 0.215 seconds.")
+            elif d_class == "AppleTV":
+                self.text.configure(text="To trigger the creation of the Sysdiagnose files,\npress: Play/Pause + Volume Down for 6 seconds on the remote.")
             else:
                 self.text.configure(text="To trigger the creation of the Sysdiagnose files,\npress: Power/Side + VolUp + VolDown for 0.215 seconds.")
             self.text.pack(pady=10)
@@ -600,6 +602,8 @@ class MyApp(ctk.CTk):
                 self.diag_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "diag_watch.png")), size=(600, 300))
             elif d_class == "iPad":
                 self.diag_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "diag_ipad.png")), size=(600, 300))
+            elif d_class == "AppleTV":
+                self.diag_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "diag_tv.png")), size=(600, 300))
             else:
                 self.diag_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "diag.png")), size=(600, 300))
             self.diaglabel = ctk.CTkLabel(self.dynamic_frame, image=self.diag_image, text=" ", width=600, height=300, font=self.stfont, anchor="w", justify="left")
@@ -609,12 +613,12 @@ class MyApp(ctk.CTk):
             self.diag = threading.Thread(target=lambda: self.sysdiag(self.text, self.progress, self.waitsys))
             self.diag.start()
             self.wait_variable(self.waitsys)
-            if d_class == "Watch":
+            if d_class == "Watch" or d_class == "AppleTV":
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
             else:
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=10)     
         else:
-            if d_class == "Watch":
+            if d_class == "Watch" or d_class == "AppleTV":
                 self.show_watch_menu()
             else:
                 self.switch_menu("AdvMenu")
@@ -1559,7 +1563,7 @@ class MyApp(ctk.CTk):
         self.text.configure(text="AFC Extraction complete.")
         self.prog_text.pack_forget()
         self.progress.pack_forget()
-        if d_class == "Watch":
+        if d_class == "Watch" or d_class == "AppleTV":
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("WatchMenu")).pack(pady=40))  
         else:
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=40)) 
@@ -1667,44 +1671,47 @@ class MyApp(ctk.CTk):
         with open(os.path.join("Report", "files", "Diagnostics", "devvalues.plist"), "wb") as file:
             plistlib.dump(de_va_di, file)
 
-        allappsinfo = installation_proxy.InstallationProxyService(lockdown).get_apps()
-        with open(os.path.join("Report", "files", "Diagnostics", "allappsinfo.plist"), "wb") as file:
-            plistlib.dump(allappsinfo, file)
+        try:
+            allappsinfo = installation_proxy.InstallationProxyService(lockdown).get_apps()
+            with open(os.path.join("Report", "files", "Diagnostics", "allappsinfo.plist"), "wb") as file:
+                plistlib.dump(allappsinfo, file)
 
-        allappsitunes = {}
-        itunes = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier', 'iTunesMetadata'])
-        for app in itunes:
-            allappsitunes[app['CFBundleIdentifier']] = app
-        with open(os.path.join("Report", "files", "Diagnostics", "allappsitunes.plist"), "wb") as file:
-            plistlib.dump(allappsitunes, file)
+            allappsitunes = {}
+            itunes = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier', 'iTunesMetadata'])
+            for app in itunes:
+                allappsitunes[app['CFBundleIdentifier']] = app
+            with open(os.path.join("Report", "files", "Diagnostics", "allappsitunes.plist"), "wb") as file:
+                plistlib.dump(allappsitunes, file)
 
-        allappsicons = {}
-        icons = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier','CFBundleIcon', 'CFBundleName'])
-        for app in icons:
-            icon = {}
-            try:
-                icon['CFBundleIcon'] = app['CFBundleIcon']
-                icon['CFBundleName'] = app['CFBundleName']
-            except:
-                icon['CFBundleIcon'] = bytes(0)
-                icon['CFBundleName'] = app['CFBundleName']
-            allappsicons[app['CFBundleIdentifier']] = icon
-        with open(os.path.join("Report", "files", "Diagnostics", "allappsicons.plist"), "wb") as file:
-            plistlib.dump(allappsicons, file)
+            allappsicons = {}
+            icons = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier','CFBundleIcon', 'CFBundleName'])
+            for app in icons:
+                icon = {}
+                try:
+                    icon['CFBundleIcon'] = app['CFBundleIcon']
+                    icon['CFBundleName'] = app['CFBundleName']
+                except:
+                    icon['CFBundleIcon'] = bytes(0)
+                    icon['CFBundleName'] = app['CFBundleName']
+                allappsicons[app['CFBundleIdentifier']] = icon
+            with open(os.path.join("Report", "files", "Diagnostics", "allappsicons.plist"), "wb") as file:
+                plistlib.dump(allappsicons, file)
 
-        allappsusage = {}
-        usages = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier','DynamicDiskUsage', 'StaticDiskUsage'])
-        for app in usages:
-            usage = {}
-            try:
-                usage['CFBundleIdentifier'] = app['CFBundleIdentifier']
-                usage['DynamicDiskUsage'] = app['DynamicDiskUsage']
-                usage['StaticDiskUsage'] = app['StaticDiskUsage']
-            except:
-                usage['CFBundleIdentifier'] = app['CFBundleIdentifier']
-            allappsusage[app['CFBundleIdentifier']] = usage
-        with open(os.path.join("Report", "files", "Diagnostics", "allappsusage.plist"), "wb") as file:
-            plistlib.dump(allappsusage, file)
+            allappsusage = {}
+            usages = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier','DynamicDiskUsage', 'StaticDiskUsage'])
+            for app in usages:
+                usage = {}
+                try:
+                    usage['CFBundleIdentifier'] = app['CFBundleIdentifier']
+                    usage['DynamicDiskUsage'] = app['DynamicDiskUsage']
+                    usage['StaticDiskUsage'] = app['StaticDiskUsage']
+                except:
+                    usage['CFBundleIdentifier'] = app['CFBundleIdentifier']
+                allappsusage[app['CFBundleIdentifier']] = usage
+            with open(os.path.join("Report", "files", "Diagnostics", "allappsusage.plist"), "wb") as file:
+                plistlib.dump(allappsusage, file)
+        except:
+            pass
 
         try: os.mkdir(os.path.join("Report", "files", "Diagnostics", "~DiagnosticRelay"))
         except: pass
@@ -1728,7 +1735,11 @@ class MyApp(ctk.CTk):
         try: os.mkdir(os.path.join("Report", "files", "Applications"))
         except: pass
         app_report_list = []
-        appfile = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier', 'iTunesMetadata', 'ApplicationDSID', 'ApplicationSINF', 'ApplicationType', 'CFBundleDisplayName', 'CFBundleExecutable', 'CFBundleName', 'CFBundlePackageType', 'CFBundleShortVersionString', 'CFBundleVersion', 'Container', 'GroupContainers', 'MinimumOSVersion', 'Path', 'UIDeviceFamily', 'DynamicDiskUsage', 'StaticDiskUsage', 'UIFileSharingEnabled'])
+        try:
+            appfile = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier', 'iTunesMetadata', 'ApplicationDSID', 'ApplicationSINF', 'ApplicationType', 'CFBundleDisplayName', 'CFBundleExecutable', 'CFBundleName', 'CFBundlePackageType', 'CFBundleShortVersionString', 'CFBundleVersion', 'Container', 'GroupContainers', 'MinimumOSVersion', 'Path', 'UIDeviceFamily', 'DynamicDiskUsage', 'StaticDiskUsage', 'UIFileSharingEnabled'])
+        except:
+            appfile = []
+            
         for app in appfile:
             app_report_dict = {}
             app_report_dict["id"] = str(uuid.uuid4())
@@ -2941,7 +2952,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         except:
             pass
 
-    if d_class == "Watch":
+    if d_class == "Watch" or d_class == "AppleTV":
         with open(f"afc_files_{udid}.json", "w") as file:
             json.dump(filedict, file)
     else:
@@ -2965,7 +2976,8 @@ def crash_report(crash_dir, change, progress, prog_text):
     for entry in crash_list:
         c_nr += 1
         try: 
-            AfcService(lockdown, service_name="com.apple.crashreportcopymobile").pull(relative_src=entry, dst=crash_dir, src_dir="")
+            pull(self=AfcService(lockdown, service_name="com.apple.crashreportcopymobile"),relative_src=entry, dst=crash_dir)
+            #AfcService(lockdown, service_name="com.apple.crashreportcopymobile").pull(relative_src=entry, dst=crash_dir, src_dir="")
         except: 
             pass
         cpro = c_nr/crash_count
@@ -3240,7 +3252,7 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                 log(f"Error reading file: {src}")
                 readable = 0
             if readable == 1:
-                if d_class == "Watch":
+                if d_class == "Watch" or d_class == "AppleTV":
                     textfiles = [".txt", ".doc", ".docx", ".odt"]
                     dbfiles = [".db", ".sqlite", ".realm", ".kgdb"]
                     configfiles = [".plist", ".xml"]
