@@ -1425,6 +1425,8 @@ class MyApp(ctk.CTk):
                     tar_data = stdout.channel.recv(65536)
                     transferred += len(tar_data)
                     ffs_pro = transferred / remote_folder_size
+                    if ffs_pro >= 0.99:
+                        ffs_pro = 0.99
                     self.prog_text.configure(text=f"{int(ffs_pro*100)}%")
                     self.progress.set(ffs_pro)
                     self.received_text.configure(text=f"{transferred / (1024 * 1024):.2f} MB received.")
