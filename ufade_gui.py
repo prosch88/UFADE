@@ -3086,25 +3086,35 @@ def pair_device(paired):
 def dev_data():
     if lockdown != None:
         global d_class 
-        d_class= lockdown.get_value("","DeviceClass")
+        try: d_class= lockdown.get_value("","DeviceClass")
+        except: d_class = ""
         global dev_name
-        dev_name = lockdown.display_name
+        try: dev_name = lockdown.display_name
+        except: dev_name = ""
         global hardware
-        hardware = lockdown.hardware_model
+        try: hardware = lockdown.hardware_model
+        except: hardware = ""
         global product
-        product = lockdown.product_type
+        try: product = lockdown.product_type
+        except: product = ""
         global udid
-        udid = lockdown.udid
+        try: udid = lockdown.udid
+        except: udid = ""
         global ecid
-        ecid = str(lockdown.ecid)
-        global version
-        version = lockdown.product_version
+        try: ecid = str(lockdown.ecid)
+        except: ecid = ""
+        global dversion
+        try: dversion = lockdown.product_version
+        except: dversion = ""
         global w_mac 
-        w_mac = lockdown.wifi_mac_address
+        try: w_mac = lockdown.wifi_mac_address
+        except: w_mac = ""
         global name
-        name =  lockdown.get_value("","DeviceName")
+        try: name =  lockdown.get_value("","DeviceName")
+        except: name = ""
         global build
-        build = lockdown.get_value("","BuildVersion")
+        try: build = lockdown.get_value("","BuildVersion")
+        except: build = ""
         if ispaired == True:
             global imei
             global imei2
@@ -3160,14 +3170,17 @@ def dev_data():
                 name_s = ' '.join(wordnames[:-2]) + "\n" + '{:13}'.format(" ") + "\t" + ' '.join(wordnames[-2:])
         else:
             name_s = name
-        if len(dev_name) > 26:
-            wordnames = dev_name.split()
-            if len(' '.join(wordnames[:-1])) < 27:
-                dev_name_s = ' '.join(wordnames[:-1]) + "\n" + '{:13}'.format(" ") + "\t" + wordnames[-1]
+        if dev_name != None:
+            if len(dev_name) > 26:
+                wordnames = dev_name.split()
+                if len(' '.join(wordnames[:-1])) < 27:
+                    dev_name_s = ' '.join(wordnames[:-1]) + "\n" + '{:13}'.format(" ") + "\t" + wordnames[-1]
+                else:
+                    dev_name_s = ' '.join(wordnames[:-2]) + "\n" + '{:13}'.format(" ") + "\t" + ' '.join(wordnames[-2:])
             else:
-                dev_name_s = ' '.join(wordnames[:-2]) + "\n" + '{:13}'.format(" ") + "\t" + ' '.join(wordnames[-2:])
+                dev_name_s = dev_name
         else:
-            dev_name_s = dev_name
+            dev_name_s = ""
 
         if ispaired == True:
             device = ("Device paired ✔ \n\n" +
@@ -3175,7 +3188,7 @@ def dev_data():
                 "\n" + '{:13}'.format("Dev-Name: ") + "\t" + name_s +
                 "\n" + '{:13}'.format("Hardware: ") + "\t" + hardware + ", " + mnr +
                 "\n" + '{:13}'.format("Product: ") + "\t" + product +
-                "\n" + '{:13}'.format("Software: ") + "\t" + version +
+                "\n" + '{:13}'.format("Software: ") + "\t" + dversion +
                 "\n" + '{:13}'.format("Build-Nr: ") + "\t" + build +
                 "\n" + '{:13}'.format("Language: ") + "\t" + language +
                 "\n" + '{:13}'.format("Serialnr: ") + "\t" + snr +
@@ -3192,11 +3205,11 @@ def dev_data():
                 "\n" + '{:13}'.format("IMEI 2: ") + "\t" + imei2)
         else:
             device = ("Device unpaired ✗ \n\n" +
-            '{:13}'.format("Model-Nr: ") + "\t" + dev_name +
+            '{:13}'.format("Model-Nr: ") + "\t" + dev_name_s +
                 "\n" + '{:13}'.format("Dev-Name: ") + "\t" + name_s +
                 "\n" + '{:13}'.format("Hardware: ") + "\t" + hardware +
                 "\n" + '{:13}'.format("Product: ") + "\t" + product +
-                "\n" + '{:13}'.format("Software: ") + "\t" + version +
+                "\n" + '{:13}'.format("Software: ") + "\t" + dversion +
                 "\n" + '{:13}'.format("Build-Nr: ") + "\t" + build +
                 "\n" + '{:13}'.format("Wifi MAC: ") + "\t" + w_mac +
                 "\n" + '{:13}'.format("UDID: ") + "\t" + udid_s +
