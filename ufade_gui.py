@@ -3005,7 +3005,7 @@ def crash_report(crash_dir, change, progress, prog_text):
 def save_info():
     file = open("device_" + udid + ".txt", "w")
     file.write("## DEVICE ##\n\n" + "Model-Nr:   " + dev_name + "\nDev-Name:   " + name + "\nHardware:   " + hardware + ", " + mnr + "\nProduct:    " + product +
-        "\nSoftware:   " + version + "\nBuild-Nr:   " + build + "\nLanguage:   " + language + "\nSerialnr:   " + snr + "\nMLB-snr:    " + mlbsnr +
+        "\nSoftware:   " + dversion + "\nBuild-Nr:   " + build + "\nLanguage:   " + language + "\nSerialnr:   " + snr + "\nMLB-snr:    " + mlbsnr +
         "\nWifi MAC:   " + w_mac + "\nBT-MAC:     " + b_mac + "\nCapacity:   " + disk + "0 GB" + "\nFree Space: " + free + " GB" +
         "\nUDID :      " + udid + "\nECID :      " + ecid + "\nIMEI :      " + imei + "\nIMEI2:      " + imei2)    
     
@@ -3170,17 +3170,14 @@ def dev_data():
                 name_s = ' '.join(wordnames[:-2]) + "\n" + '{:13}'.format(" ") + "\t" + ' '.join(wordnames[-2:])
         else:
             name_s = name
-        if dev_name != None:
-            if len(dev_name) > 26:
-                wordnames = dev_name.split()
-                if len(' '.join(wordnames[:-1])) < 27:
-                    dev_name_s = ' '.join(wordnames[:-1]) + "\n" + '{:13}'.format(" ") + "\t" + wordnames[-1]
-                else:
-                    dev_name_s = ' '.join(wordnames[:-2]) + "\n" + '{:13}'.format(" ") + "\t" + ' '.join(wordnames[-2:])
+        if len(dev_name) > 26:
+            wordnames = dev_name.split()
+            if len(' '.join(wordnames[:-1])) < 27:
+                dev_name_s = ' '.join(wordnames[:-1]) + "\n" + '{:13}'.format(" ") + "\t" + wordnames[-1]
             else:
-                dev_name_s = dev_name
+                dev_name_s = ' '.join(wordnames[:-2]) + "\n" + '{:13}'.format(" ") + "\t" + ' '.join(wordnames[-2:])
         else:
-            dev_name_s = ""
+            dev_name_s = dev_name
 
         if ispaired == True:
             device = ("Device paired ✔ \n\n" +
