@@ -2334,7 +2334,7 @@ class MyApp(ctk.CTk):
                     return
         except:
             pass
-        if int(version.split(".")[0]) < 17:
+        if int(dversion.split(".")[0]) < 17:
             try: 
                 self.after(100)
                 text.configure(text=" ", anchor="nw", justify="left")
@@ -2453,14 +2453,14 @@ class MyApp(ctk.CTk):
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
             return
 
-        #if int(version.split(".")[0]) >= 17:
+        #if int(dversion.split(".")[0]) >= 17:
         #    self.text.configure(text="Devices with iOS 17 and up aren't currently supported in this Version of UFADE.\nTry the CLI Version instead")
         #    self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
         #    return
         #else:
         #    pass
 
-        if int(version.split(".")[0]) >= 17:
+        if int(dversion.split(".")[0]) >= 17:
             self.chk_tun = threading.Thread(target=lambda: self.check_tun(self.change))
             self.chk_tun.start()
             self.wait_variable(self.change)
@@ -2491,14 +2491,14 @@ class MyApp(ctk.CTk):
 
         if developer == True:
             try:
-                if int(version.split(".")[0]) >= 17:
+                if int(dversion.split(".")[0]) >= 17:
                     lockdown = get_tunneld_devices()[0]
                 else:
                     lockdown = create_using_usbmux()
                 dvt = DvtSecureSocketProxyService(lockdown)
                 dvt.__enter__()
             except:
-                if int(version.split(".")[0]) >= 17:
+                if int(dversion.split(".")[0]) >= 17:
                     try: PersonalizedImageMounter(lockdown).umount()
                     except: pass
                 else:
@@ -2519,7 +2519,7 @@ class MyApp(ctk.CTk):
             self.start_developer.start()
             self.wait_variable(self.change)
             if developer == True:
-                if int(version.split(".")[0]) >= 17:
+                if int(dversion.split(".")[0]) >= 17:
                     try:
                         lockdown = get_tunneld_devices()[0]
                     except:
@@ -2863,7 +2863,7 @@ class MyApp(ctk.CTk):
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Trying to unmount the image.", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
         self.change = ctk.IntVar(self, 0)
-        if int(version.split(".")[0]) < 14:
+        if int(dversion.split(".")[0]) < 14:
             self.text.configure(text="Unmount not possible on devices with iOS < 14.0.\nReboot the device to unmount the image. ")
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("DevMenu")).pack(pady=40))
             return
@@ -2885,7 +2885,7 @@ def unmount_abort_timer():
 
 def unmount_developer(text, change):
     try:
-        if int(version.split(".")[0]) >= 17:
+        if int(dversion.split(".")[0]) >= 17:
             PersonalizedImageMounter(lockdown).umount()
         else:
             DeveloperDiskImageMounter(lockdown).umount()
