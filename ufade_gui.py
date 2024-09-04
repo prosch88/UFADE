@@ -34,6 +34,7 @@ from pymobiledevice3.services.pcapd import PcapdService
 from pymobiledevice3.osu.os_utils import get_os_utils
 from pymobiledevice3.remote.module_imports import MAX_IDLE_TIMEOUT, start_tunnel, verify_tunnel_imports
 from pymobiledevice3.tunneld import TUNNELD_DEFAULT_ADDRESS, TunnelProtocol, TunneldRunner, get_tunneld_devices, get_rsds
+from pymobiledevice3.cli.remote import cli_tunneld
 from pymobiledevice3.services.os_trace import OsTraceService
 from paramiko import SSHClient, AutoAddPolicy, Transport
 from datetime import datetime, timedelta, timezone, date
@@ -2614,10 +2615,19 @@ class MyApp(ctk.CTk):
     def macos_dev17(self, change):
         try:
             if getattr(sys, 'frozen', False):
-                if not get_os_utils().is_admin:
+                try:
+                    cli_tunneld(["-d"])
+                    #script = f'do shell script "{os.path.join(sys._MEIPASS, "pymobiledevice3", "__init__.py")} remote tunneld -d" with administrator privileges'
+                    #run(["osascript", "-e", script])
+                    while True:
+                        try:
+                            tun = get_tunneld_devices()
+                        except:
+                            tun = []
+                        if tun != []:
+                            break
+                except:
                     raise exceptions.AccessDeniedError()
-                else:
-                    tunnel_win()
             else:    
                 run(["osascript", "-e", 'do shell script \"python3 -m pymobiledevice3 remote tunneld -d\" with administrator privileges'])
             change.set(1)
