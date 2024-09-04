@@ -2803,7 +2803,7 @@ class MyApp(ctk.CTk):
                         screensh = ctk.CTkImage(dark_image=shot, size=(wsize, hsize))
                         imglabel.configure(image=screensh)
                         
-                        with open(os.path.join("screenshots", app_name, chat_name, filename) + ".png", "wb") as file:
+                        with open(os.path.join("screenshots", app_name, chat_name, filename), "wb") as file:
                             file.write(png)
                         hash_sha256 = hashlib.sha256(png).hexdigest()
                         with open(os.path.join("screenshots", app_name, chat_name, hashname), "w") as hash_file:
