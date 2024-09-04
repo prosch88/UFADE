@@ -439,7 +439,10 @@ class MyApp(ctk.CTk):
         for widget in self.dynamic_frame.winfo_children():
             widget.destroy()
         global dir
-        dir = os.getcwd()
+        if getattr(sys, 'frozen', False):
+            dir = os.path.join(os.path.expanduser('~'), "ufade_out")
+        else:
+            dir = os.getcwd()
         ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
         ctk.CTkLabel(self.dynamic_frame, text="Choose Output Directory:", height=30, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.browsebutton = ctk.CTkButton(self.dynamic_frame, text="Browse", font=self.stfont, command=lambda: self.browse_cwd(self.outputbox), width=60, fg_color="#2d2d35")
@@ -2620,16 +2623,6 @@ class MyApp(ctk.CTk):
                     script_path = create_mac_tunnel_script()
                     print(script_path)
                     run(["osascript", "-e", f'do shell script \"{sys.executable} tunnel\" with administrator privileges'])
-                    #run(["osascript", "-e", f'do shell script \"{python_executable} {script_path}\" with administrator privileges'])
-                    """ 
-                    while True:
-                        try:
-                            tun = get_tunneld_devices()
-                        except:
-                            tun = []
-                        if tun != []:
-                            break
-                    """
                 except:
                     raise exceptions.AccessDeniedError()
             else:    
@@ -3491,13 +3484,18 @@ device = dev_data()
 bu_pass = "12345"
 developer = False
 filedict = {}
-
+tunnel = False
 try:
     if sys.argv[1] == "tunnel":
+        tunnel = True
         cli_tunneld(["-d"])
     else:
         pass
 except:
+    pass
+if tunnel == True:
+    sys.exit(0)
+else:
     pass
 
 # Start the app
