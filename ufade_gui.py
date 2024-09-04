@@ -2616,9 +2616,12 @@ class MyApp(ctk.CTk):
         try:
             if getattr(sys, 'frozen', False):
                 try:
-                    cli_tunneld(["-d"])
-                    #script = f'do shell script "{os.path.join(sys._MEIPASS, "pymobiledevice3", "__init__.py")} remote tunneld -d" with administrator privileges'
-                    #run(["osascript", "-e", script])
+                    print("try")
+                    script_path = create_mac_tunnel_script()
+                    print(script_path)
+                    run(["osascript", "-e", f'do shell script \"{sys.executable} tunnel\" with administrator privileges'])
+                    #run(["osascript", "-e", f'do shell script \"{python_executable} {script_path}\" with administrator privileges'])
+                    """ 
                     while True:
                         try:
                             tun = get_tunneld_devices()
@@ -2626,6 +2629,7 @@ class MyApp(ctk.CTk):
                             tun = []
                         if tun != []:
                             break
+                    """
                 except:
                     raise exceptions.AccessDeniedError()
             else:    
@@ -3467,6 +3471,14 @@ def create_linux_shell_script():
     os.chmod(script_file.name, 0o755)
     return script_file.name
 
+def create_mac_tunnel_script():
+    script_content = f"from pymobiledevice3.cli.remote import cli_tunneld\n\ncli_tunneld([\"-d\"])"
+    script_file = tempfile.NamedTemporaryFile(delete=False, suffix=".sh")
+    script_file.write(script_content.encode('utf-8'))
+    script_file.close()
+    os.chmod(script_file.name, 0o755)
+    return script_file.name
+
 lockdown = check_device()
 try:
     language = lockdown.language
@@ -3480,6 +3492,13 @@ bu_pass = "12345"
 developer = False
 filedict = {}
 
+try:
+    if sys.argv[1] == "tunnel":
+        cli_tunneld(["-d"])
+    else:
+        pass
+except:
+    pass
 
 # Start the app
 if __name__ == "__main__":
