@@ -3482,14 +3482,6 @@ def create_linux_shell_script():
     os.chmod(script_file.name, 0o755)
     return script_file.name
 
-def create_mac_tunnel_script():
-    script_content = f"from pymobiledevice3.cli.remote import cli_tunneld\n\ncli_tunneld([\"-d\"])"
-    script_file = tempfile.NamedTemporaryFile(delete=False, suffix=".sh")
-    script_file.write(script_content.encode('utf-8'))
-    script_file.close()
-    os.chmod(script_file.name, 0o755)
-    return script_file.name
-
 tunnel = False
 try:
     if sys.argv[1] == "tunnel":
