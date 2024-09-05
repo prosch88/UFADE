@@ -3094,34 +3094,46 @@ def dev_data():
     if lockdown != None:
         global d_class 
         try: d_class= lockdown.get_value("","DeviceClass")
-        except: d_class = ""
+        except: d_class = " "
         global dev_name
-        try: dev_name = lockdown.display_name
-        except: dev_name = ""
+        try: 
+            dev_name = lockdown.display_name
+            if dev_name == None:
+                dev_name = "- / -"
+        except: 
+            dev_name = " "
         global hardware
-        try: hardware = lockdown.hardware_model
-        except: hardware = ""
+        try: 
+            hardware = lockdown.hardware_model
+            if hardware == None:
+                hardware = "- / -"
+        except: 
+            hardware = " "
         global product
-        try: product = lockdown.product_type
-        except: product = ""
+        try: 
+            product = lockdown.product_type
+            if product == None:
+                product = "- / -"
+        except: 
+            product = " "
         global udid
         try: udid = lockdown.udid
-        except: udid = ""
+        except: udid = " "
         global ecid
         try: ecid = str(lockdown.ecid)
-        except: ecid = ""
+        except: ecid = " "
         global dversion
         try: dversion = lockdown.product_version
-        except: dversion = ""
+        except: dversion = " "
         global w_mac 
         try: w_mac = lockdown.wifi_mac_address
-        except: w_mac = ""
+        except: w_mac = " "
         global name
         try: name =  lockdown.get_value("","DeviceName")
-        except: name = ""
+        except: name = " "
         global build
         try: build = lockdown.get_value("","BuildVersion")
-        except: build = ""
+        except: build = " "
         if ispaired == True:
             global imei
             global imei2
@@ -3130,15 +3142,20 @@ def dev_data():
             try: imei2 = lockdown.get_value("","InternationalMobileEquipmentIdentity2")
             except: imei2 = " "
             global snr 
-            snr = lockdown.get_value("","SerialNumber")
+            try: snr = lockdown.get_value("","SerialNumber")
+            except: snr = " "
             global mlbsnr 
-            mlbsnr = lockdown.get_value("","MLBSerialNumber")
+            try: mlbsnr = lockdown.get_value("","MLBSerialNumber")
+            except: mlbsnr = " "
             global d_tz 
-            d_tz = lockdown.get_value("","TimeZone")
+            try: d_tz = lockdown.get_value("","TimeZone")
+            except: d_tz = " "
             global b_mac
-            b_mac = lockdown.get_value("","BluetoothAddress")
+            try: b_mac = lockdown.get_value("","BluetoothAddress")
+            except: b_mac = " "
             global mnr
-            mnr = lockdown.get_value("", "ModelNumber")
+            try: mnr = lockdown.get_value("", "ModelNumber")
+            except: mnr = " "
             global disk1 
             disk1 = lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity")/1000000000
             global disk 
@@ -3154,7 +3171,8 @@ def dev_data():
             global graph_progress 
             graph_progress = "" + "▓" * int(26/100*(100/disk1*used1)) + "░" * int(26/100*(100/disk1*free1)) + ""
             global language
-            language = lockdown.language
+            try: language = lockdown.language
+            except: language = " "
             global comp
             if d_class != "Watch":
                 try: comp = CompanionProxyService(lockdown).list()
@@ -3472,18 +3490,6 @@ def create_mac_tunnel_script():
     os.chmod(script_file.name, 0o755)
     return script_file.name
 
-lockdown = check_device()
-try:
-    language = lockdown.language
-    ispaired = True
-    log(f"Paired with device: {udid}")
-except:
-    ispaired = False
-
-device = dev_data()
-bu_pass = "12345"
-developer = False
-filedict = {}
 tunnel = False
 try:
     if sys.argv[1] == "tunnel":
@@ -3497,6 +3503,20 @@ if tunnel == True:
     sys.exit(0)
 else:
     pass
+
+lockdown = check_device()
+try:
+    language = lockdown.language
+    ispaired = True
+    log(f"Paired with device: {udid}")
+except:
+    ispaired = False
+
+device = dev_data()
+bu_pass = "12345"
+developer = False
+filedict = {}
+
 
 # Start the app
 if __name__ == "__main__":
