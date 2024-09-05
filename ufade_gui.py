@@ -76,7 +76,7 @@ class MyApp(ctk.CTk):
         self.stop_event = threading.Event()
 
         # Define Window
-        self.title("Universal Forensic Apple Device Extractor 0.9.1")
+        self.title("Universal Forensic Apple Device Extractor 0.9.2")
         self.geometry("1100x600")
         self.resizable(False, False)
         self.iconpath = ImageTk.PhotoImage(file=os.path.join(os.path.dirname(__file__), "assets" , "ufade.png" ))
