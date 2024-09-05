@@ -2344,7 +2344,7 @@ class MyApp(ctk.CTk):
                 text.configure(text=" ", anchor="nw", justify="left")
                 text.update()
                 self.after(1000)
-                info = ("Looking for version " + version)
+                info = ("Looking for version " + dversion)
                 text.configure(text=info)
                 self.after(1000)
                 lockdown = create_using_usbmux()
@@ -2353,7 +2353,7 @@ class MyApp(ctk.CTk):
                 change.set(1)
                 return("developer")   
             except:
-                info = info + "\nVersion " + version + " not found"
+                info = info + "\nVersion " + dversion + " not found"
                 text.configure(text=info)
                 self.after(1000)
                 v = version.split(".")
