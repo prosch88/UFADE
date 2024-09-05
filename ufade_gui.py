@@ -1959,7 +1959,7 @@ class MyApp(ctk.CTk):
 
         metadata_device_info = ET.SubElement(project, 'metadata', {'section': 'Device Info'})
         #me_dev_info = {'Serial Number': snr, 'Device Name': name, 'WiFi Address': w_mac, 'Model Number': hardware + ", Model:" + mnr, 'Bluetooth Address': b_mac, 'Device': dev_name, 'Time Zone': d_tz, 'Unique Identifier': udid}
-        me_dev_info = {'Device Name': name, 'Device': dev_name, 'Model Number': f'{hardware} , Model: {mnr}', 'MAC (WiFi Address)': w_mac, 'MAC (Bluetooth Address)': b_mac, 'Unique Identifier': udid, 'Unique Chip ID': ecid, 'Serial Number': snr, 'Disk Capacity': f'{disk}0 GB', 'Software': f'WatchOS {version}', 'Buildnumber': build , 'Time Zone': d_tz,}
+        me_dev_info = {'Device Name': name, 'Device': dev_name, 'Model Number': f'{hardware} , Model: {mnr}', 'MAC (WiFi Address)': w_mac, 'MAC (Bluetooth Address)': b_mac, 'Unique Identifier': udid, 'Unique Chip ID': ecid, 'Serial Number': snr, 'Disk Capacity': f'{disk}0 GB', 'Software': f'WatchOS {dversion}', 'Buildnumber': build , 'Time Zone': d_tz,}
         if imei != " ":
             me_dev_info['IMEI'] = imei
         else:
@@ -2348,7 +2348,7 @@ class MyApp(ctk.CTk):
                 text.configure(text=info)
                 self.after(1000)
                 lockdown = create_using_usbmux()
-                DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", version, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", version, "DeveloperDiskImage.dmg.signature"))
+                DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", dversion, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", dversion, "DeveloperDiskImage.dmg.signature"))
                 developer = True
                 change.set(1)
                 return("developer")   
@@ -2356,7 +2356,7 @@ class MyApp(ctk.CTk):
                 info = info + "\nVersion " + dversion + " not found"
                 text.configure(text=info)
                 self.after(1000)
-                v = version.split(".")
+                v = dversion.split(".")
                 v_check = np.array(d_images[int(v[0])])
                 v_diff = np.absolute(v_check - int(v[1]))
                 index = v_diff.argmin()
