@@ -3035,7 +3035,8 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False):
     crash_list = []
     for entry in CrashReportsManager(lockdown).ls(""):
         crash_list.append(entry)
-        crash_count += 1           
+        crash_count += 1    
+    print(crash_list)       
     try: os.mkdir(crash_dir)
     except: pass
     c_nr = 0
@@ -3045,17 +3046,17 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False):
             pull(self=AfcService(lockdown, service_name="com.apple.crashreportcopymobile"),relative_src=entry, dst=crash_dir)
             #AfcService(lockdown, service_name="com.apple.crashreportcopymobile").pull(relative_src=entry, dst=crash_dir, src_dir="")
             if czip == True:
-                    file_path = os.path.join(crash_dir, entry) 
-                    if os.path.isfile(file_path):
-                        zip.write(file_path, entry)                            #add the file/folder to the ZIP
-                    elif os.path.isdir(file_path):  
-                        for root, dirs, files in os.walk(file_path):
-                            for file in files:
-                                source_file = os.path.join(root, file)
-                                filename = os.path.relpath(source_file, dest)
-                                zip.write(source_file, filename)
-                    try: os.remove(file_path)
-                    except: shutil.rmtree(file_path)
+                file_path = os.path.join(crash_dir, entry) 
+                if os.path.isfile(file_path):
+                    zip.write(file_path, entry)                            #add the file/folder to the ZIP
+                elif os.path.isdir(file_path):  
+                    for root, dirs, files in os.walk(crash_dir):
+                        for file in files:
+                            source_file = os.path.join(root, file)
+                            filename = os.path.relpath(source_file, crash_dir)
+                            zip.write(source_file, arcname=filename)
+                try: os.remove(file_path)
+                except: shutil.rmtree(file_path)
             else:
                 pass
         except: 
