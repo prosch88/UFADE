@@ -3049,7 +3049,7 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False):
                     if os.path.isfile(file_path):
                         zip.write(file_path, entry)                            #add the file/folder to the ZIP
                     elif os.path.isdir(file_path):  
-                        for root, dirs, files in os.walk(dest):
+                        for root, dirs, files in os.walk(file_path):
                             for file in files:
                                 source_file = os.path.join(root, file)
                                 filename = os.path.relpath(source_file, dest)
