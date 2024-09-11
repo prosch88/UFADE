@@ -195,7 +195,9 @@ class MyApp(ctk.CTk):
         elif menu_name == "tess":
             self.backup_tess()     
         elif menu_name == "sniff":
-            self.show_sniffer()      
+            self.show_sniffer()
+        elif menu_name == "enc_off":
+            self.show_deactivate_encryption()
         elif menu_name == "CollectUL":
             self.show_collect_ul()
         elif menu_name == "CrashReport":
@@ -343,21 +345,23 @@ class MyApp(ctk.CTk):
         self.skip = ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=20, font=self.stfont)
         self.skip.grid(row=0, column=1, sticky="w")
         self.menu_buttons = [
-            ctk.CTkButton(self.dynamic_frame, text="Extract crash reports", command=lambda: self.switch_menu("CrashReport"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Initiate Sysdiagnose", command=lambda: self.switch_menu("SysDiag"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="WhatsApp export\n(PuMA)", command=lambda: self.switch_menu("tess"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Sniff device traffic", command=lambda: self.switch_menu("sniff"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Extract AFC Media files", command=lambda: self.switch_menu("Media"), width=200, height=70, font=self.stfont)
+            ctk.CTkButton(self.dynamic_frame, text="Extract crash reports", command=lambda: self.switch_menu("CrashReport"), width=200, height=50, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Initiate Sysdiagnose", command=lambda: self.switch_menu("SysDiag"), width=200, height=50, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="WhatsApp export\n(PuMA)", command=lambda: self.switch_menu("tess"), width=200, height=50, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Sniff device traffic", command=lambda: self.switch_menu("sniff"), width=200, height=50, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Extract AFC Media files", command=lambda: self.switch_menu("Media"), width=200, height=50, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Remove UFADE Backup\nPassword", command=lambda: self.switch_menu("enc_off"), width=200, height=50, font=self.stfont)
         ]
         self.menu_text = ["Pull the crash report folder from the device.",
                           "Create a Sysdiagnose archive on the device and\npull it to the disk afterwards.", 
                           "Perform an iTunes-style backup and extract Whatsapp\nfiles for PuMA (LE-tool).", 
                           "Captures the device network traffic as a pcap file.",
-                          "Pull the \"Media\"-folder from the device\n(pictures, videos, recordings)"
+                          "Pull the \"Media\"-folder from the device\n(pictures, videos, recordings)",
+                          "Try to remove the encryption password set by UFADE"
                           ]
         self.menu_textbox = []
         for btn in self.menu_buttons:
-            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=70, font=self.stfont, anchor="w", justify="left"))
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=50, font=self.stfont, anchor="w", justify="left"))
 
         r=1
         i=0
@@ -511,8 +515,23 @@ class MyApp(ctk.CTk):
         if d_class == "Watch" or d_class == "AppleTV":
             ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
         else:
-            ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=10)        
-        
+            ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=10)
+
+# Try to deactivate the UFADE encryption password
+    def show_deactivate_encryption(self):
+        ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
+        ctk.CTkLabel(self.dynamic_frame, text="Deactivate Encryption Password", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Trying to deactivate the encryption password.\nProvide PIN/Password if prompted.", width=585, height=60, font=self.stfont, anchor="w", justify="left")   
+        self.text.pack(pady=25)
+        self.change = ctk.IntVar(self, 0)
+        remove_enc = threading.Thread(target=lambda: self.deactivate_encryption(change=self.change))
+        remove_enc.start()
+        self.wait_variable(self.change)
+        if self.change.get() == 1:
+            self.text.configure(text="Password removed.")
+        else:
+            self.text.configure(text="Something went wrong. Try again.")
+        ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=10)
 
 # Unified Logs Collecting screen
     def show_collect_ul(self):
@@ -551,8 +570,10 @@ class MyApp(ctk.CTk):
                 self.show_main_menu()
 
 # Crash Report extraction as single function or as part of a flow
-    def show_crash_report(self, dir="Crash Report", flow=False):
+    def show_crash_report(self, dir="Crash_Report", flow=False):
         save_info()
+        if flow == False:
+            dir = f"Crash_Logs_{udid}_{str(datetime.now().strftime("%Y_%m_%d"))}"
         ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
         ctk.CTkLabel(self.dynamic_frame, text="Extract Crash Reports", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Extracting crash reports from device.\nThis may take some time.", width=585, height=60, font=self.stfont, anchor="w", justify="left")
@@ -563,7 +584,10 @@ class MyApp(ctk.CTk):
         self.progress.set(0)
         self.progress.pack()
         self.change = ctk.IntVar(self, 0)
-        self.crash = threading.Thread(target=lambda: crash_report(crash_dir=dir, change=self.change, progress=self.progress, prog_text=self.prog_text))
+        if flow != False:
+            self.crash = threading.Thread(target=lambda: crash_report(crash_dir=dir, change=self.change, progress=self.progress, prog_text=self.prog_text))
+        else:
+            self.crash = threading.Thread(target=lambda: crash_report(crash_dir=dir, change=self.change, progress=self.progress, prog_text=self.prog_text, czip=True))
         self.crash.start()
         self.wait_variable(self.change)
         self.progress.stop()
@@ -676,11 +700,11 @@ class MyApp(ctk.CTk):
     def collect_ul(self, time, text, waitul):
         try: os.mkdir("unified_logs")
         except: pass
-
+        uname = f"{udid}_{datetime.now().strftime("%Y_%m_%d")}.logarchive"
         try:
-            OsTraceService(lockdown).collect(out= os.path.join("unified_logs", udid + ".logarchive"), start_time=time)
-            text.configure(text="Unified Logs written to " + udid + ".logarchive")
-            log(f"Collected Unified Logs as {udid}.logarchive")
+            OsTraceService(lockdown).collect(out= os.path.join("unified_logs", uname), start_time=time)
+            text.configure(text=f"Unified Logs written to {uname}")
+            log(f"Collected Unified Logs as {uname}")
             waitul.set(1)  
         except:
             text.configure(text="Error: \nCoud not collect logs - Maybe the device or its iOS version is too old.")
@@ -1553,7 +1577,7 @@ class MyApp(ctk.CTk):
         ctk.CTkLabel(self.dynamic_frame, text="Extract AFC-Media files", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Performing AFC Extraction of Mediafiles", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
-        folder = f"Media_{udid}"
+        folder = f"Media_{udid}_{str(datetime.now().strftime("%Y_%m_%d"))}"
         try: os.mkdir(folder)
         except: pass
         self.change = ctk.IntVar(self, 0)
@@ -1563,7 +1587,7 @@ class MyApp(ctk.CTk):
         self.progress.set(0)
         self.prog_text.configure(text="0%")
         self.progress.pack()
-        self.tar_media = threading.Thread(target=lambda: media_export(l_type="folder", dest=folder, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
+        self.tar_media = threading.Thread(target=lambda: media_export(l_type="folder", dest=folder, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change, fzip=True))
         self.tar_media.start()
         self.wait_variable(self.change)
         self.text.configure(text="AFC Extraction complete.")
@@ -1957,9 +1981,13 @@ class MyApp(ctk.CTk):
             'sourceExtraction': '0'
         }).text = str(udid)
 
+        if d_class == "Watch": 
+            os_type = "WatchOS"
+        elif d_class == "AppleTV":
+            os_type = "tvOS"
         metadata_device_info = ET.SubElement(project, 'metadata', {'section': 'Device Info'})
         #me_dev_info = {'Serial Number': snr, 'Device Name': name, 'WiFi Address': w_mac, 'Model Number': hardware + ", Model:" + mnr, 'Bluetooth Address': b_mac, 'Device': dev_name, 'Time Zone': d_tz, 'Unique Identifier': udid}
-        me_dev_info = {'Device Name': name, 'Device': dev_name, 'Model Number': f'{hardware} , Model: {mnr}', 'MAC (WiFi Address)': w_mac, 'MAC (Bluetooth Address)': b_mac, 'Unique Identifier': udid, 'Unique Chip ID': ecid, 'Serial Number': snr, 'Disk Capacity': f'{disk}0 GB', 'Software': f'WatchOS {dversion}', 'Buildnumber': build , 'Time Zone': d_tz,}
+        me_dev_info = {'Device Name': name, 'Device': dev_name, 'Model Number': f'{hardware} , Model: {mnr}', 'MAC (WiFi Address)': w_mac, 'MAC (Bluetooth Address)': b_mac, 'Unique Identifier': udid, 'Unique Chip ID': ecid, 'Serial Number': snr, 'Disk Capacity': f'{disk}0 GB', 'Software': f'{os_type} {dversion}', 'Buildnumber': build , 'Time Zone': d_tz,}
         if imei != " ":
             me_dev_info['IMEI'] = imei
         else:
@@ -2249,8 +2277,6 @@ class MyApp(ctk.CTk):
         rough_string = ET.tostring(project, 'utf-8', method='xml')
         reparsed = minidom.parseString(rough_string)
         xml_str = reparsed.toprettyxml(indent="  ", encoding="ascii")
-        xml_str = xml_str.replace(b'\n', b'\r\n').decode("utf-8")
-
         with open(os.path.join("Report", "report.xml"), "w") as f:
             f.write(xml_str)
 
@@ -2929,10 +2955,12 @@ def fileloop(dvt, start, lista, fcount, cnt, folder_text, progress, prog_text):
         return(pathlist)
 
 # Pull Media-files
-def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, progress=None, change=None):
+def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, progress=None, change=None, fzip=False):
     media_list = []
     tar = archive
     zip = archive
+    if fzip == True:
+        zip = zipfile.ZipFile(f'Media_{udid}_{datetime.now().strftime("%Y_%m_%d")}.zip', 'w')
     text.configure(text="Performing AFC Extraction of Mediafiles")
     text.update()
     for line in AfcService(lockdown).listdir("/"):
@@ -2968,7 +2996,20 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
                 try: os.remove(file_path)
                 except: shutil.rmtree(file_path)
             else:
-                pass
+                if fzip == True:
+                    file_path = os.path.join(dest, entry) 
+                    if os.path.isfile(file_path):
+                        zip.write(file_path, arcname=os.path.join("private/var/Media/", entry))                            #add the file/folder to the ZIP
+                    elif os.path.isdir(file_path):  
+                        for root, dirs, files in os.walk(dest):
+                            for file in files:
+                                source_file = os.path.join(root, file)
+                                filename = os.path.relpath(source_file, dest)
+                                zip.write(source_file, arcname=os.path.join("private/var/Media/", filename))
+                    try: os.remove(file_path)
+                    except: shutil.rmtree(file_path)
+                else:
+                    pass
         except:
             pass
 
@@ -2977,14 +3018,19 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
             json.dump(filedict, file)
     else:
         pass
+    if fzip == True:
+        zip.close()
+        shutil.rmtree(dest)
     log("Extracted AFC-Media files")
     change.set(1)   
     return(archive)    
 
 
 # Pull crash logs
-def crash_report(crash_dir, change, progress, prog_text):
+def crash_report(crash_dir, change, progress, prog_text, czip=False):
     log("Starting crash log extraction")
+    if czip == True:
+        zip = zipfile.ZipFile(f'Crash_Logs_{udid}_{datetime.now().strftime("%Y_%m_%d")}.zip', 'w')
     crash_count = 0
     crash_list = []
     for entry in CrashReportsManager(lockdown).ls(""):
@@ -2998,6 +3044,20 @@ def crash_report(crash_dir, change, progress, prog_text):
         try: 
             pull(self=AfcService(lockdown, service_name="com.apple.crashreportcopymobile"),relative_src=entry, dst=crash_dir)
             #AfcService(lockdown, service_name="com.apple.crashreportcopymobile").pull(relative_src=entry, dst=crash_dir, src_dir="")
+            if czip == True:
+                    file_path = os.path.join(crash_dir, entry) 
+                    if os.path.isfile(file_path):
+                        zip.write(file_path, entry)                            #add the file/folder to the ZIP
+                    elif os.path.isdir(file_path):  
+                        for root, dirs, files in os.walk(dest):
+                            for file in files:
+                                source_file = os.path.join(root, file)
+                                filename = os.path.relpath(source_file, dest)
+                                zip.write(source_file, filename)
+                    try: os.remove(file_path)
+                    except: shutil.rmtree(file_path)
+            else:
+                pass
         except: 
             pass
         cpro = c_nr/crash_count
@@ -3005,6 +3065,9 @@ def crash_report(crash_dir, change, progress, prog_text):
         prog_text.configure(text=f"{int(cpro*100)}%")
         progress.update()
         prog_text.update()
+    if czip == True:
+        zip.close()
+        shutil.rmtree(crash_dir)
     log("Crash log extraction complete.")
     change.set(1)
 
