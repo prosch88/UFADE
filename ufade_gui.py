@@ -3035,8 +3035,7 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False):
     crash_list = []
     for entry in CrashReportsManager(lockdown).ls(""):
         crash_list.append(entry)
-        crash_count += 1    
-    print(crash_list)       
+        crash_count += 1        
     try: os.mkdir(crash_dir)
     except: pass
     c_nr = 0
