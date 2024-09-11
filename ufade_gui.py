@@ -573,7 +573,7 @@ class MyApp(ctk.CTk):
     def show_crash_report(self, dir="Crash_Report", flow=False):
         save_info()
         if flow == False:
-            dir = f"Crash_Logs_{udid}_{str(datetime.now().strftime("%Y_%m_%d"))}"
+            dir = f'Crash_Logs_{udid}_{str(datetime.now().strftime("%Y_%m_%d"))}'
         ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
         ctk.CTkLabel(self.dynamic_frame, text="Extract Crash Reports", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Extracting crash reports from device.\nThis may take some time.", width=585, height=60, font=self.stfont, anchor="w", justify="left")
@@ -700,7 +700,7 @@ class MyApp(ctk.CTk):
     def collect_ul(self, time, text, waitul):
         try: os.mkdir("unified_logs")
         except: pass
-        uname = f"{udid}_{datetime.now().strftime("%Y_%m_%d")}.logarchive"
+        uname = f'{udid}_{datetime.now().strftime("%Y_%m_%d")}.logarchive'
         try:
             OsTraceService(lockdown).collect(out= os.path.join("unified_logs", uname), start_time=time)
             text.configure(text=f"Unified Logs written to {uname}")
@@ -1577,7 +1577,7 @@ class MyApp(ctk.CTk):
         ctk.CTkLabel(self.dynamic_frame, text="Extract AFC-Media files", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Performing AFC Extraction of Mediafiles", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
-        folder = f"Media_{udid}_{str(datetime.now().strftime("%Y_%m_%d"))}"
+        folder = f'Media_{udid}_{str(datetime.now().strftime("%Y_%m_%d"))}'
         try: os.mkdir(folder)
         except: pass
         self.change = ctk.IntVar(self, 0)
