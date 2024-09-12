@@ -2961,7 +2961,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
     tar = archive
     zip = archive
     if fzip == True:
-        zip = zipfile.ZipFile(f'Media_{udid}_{datetime.now().strftime("%Y_%m_%d")}.zip', 'w')
+        zip = zipfile.ZipFile(f'Media_{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.zip', 'w')
     text.configure(text="Performing AFC Extraction of Mediafiles")
     text.update()
     for line in AfcService(lockdown).listdir("/"):
