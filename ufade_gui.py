@@ -2215,9 +2215,12 @@ class MyApp(ctk.CTk):
                             'type': 'Double'
                         })
                         ET.SubElement(elev_field, 'value', {'type': 'Double'}).text = str(file_info["GPS"]["Elevation"])
-                        timestamp_field = ET.SubElement(model_elem, 'field', {'name': 'TimeStamp', 'type': 'TimeStamp'})
-                        ET.SubElement(timestamp_field, 'value', {'type': 'TimeStamp'}).text = str(file_info["Exif"]["ExifEnumDateTimeOriginal"])
-                        name_field = ET.SubElement(model_elem, 'field', {'name': 'Name', 'type': 'String'})
+                        try:
+                            timestamp_field = ET.SubElement(model_elem, 'field', {'name': 'TimeStamp', 'type': 'TimeStamp'})
+                            ET.SubElement(timestamp_field, 'value', {'type': 'TimeStamp'}).text = str(file_info["Exif"]["ExifEnumDateTimeOriginal"])
+                        except:
+                            pass
+                        name_field = ET.SubElement(model_elem, 'field', {'name': 'Name', 'type': 'String'})               
                         ET.SubElement(name_field, 'value', {'type': 'String'}).text = str(os.path.basename(file_info["metadata"]["Local Path"]))
                         description_field = ET.SubElement(model_elem, 'field', {'name': 'Description', 'type': 'String'})
                         ET.SubElement(description_field, 'empty')
