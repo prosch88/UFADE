@@ -2281,7 +2281,7 @@ class MyApp(ctk.CTk):
         rough_string = ET.tostring(project, 'utf-8', method='xml')
         reparsed = minidom.parseString(rough_string)
         xml_str = reparsed.toprettyxml(indent="  ", encoding="ascii")
-        with open(os.path.join("Report", "report.xml"), "w") as f:
+        with open(os.path.join("Report", "report.xml"), "wb") as f:
             f.write(xml_str)
 
         path="Report"
