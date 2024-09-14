@@ -3191,7 +3191,9 @@ def dev_data():
         try: 
             product = lockdown.product_type
             if product == None:
-                product = d_class
+                product = lockdown.get_value("","ProductType")
+                if product == None:
+                    product = d_class
         except: 
             product = d_class
         global udid
