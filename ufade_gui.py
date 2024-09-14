@@ -3078,7 +3078,7 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False):
 
 def save_info():
     file = open("device_" + udid + ".txt", "w")
-    file.write("## DEVICE ##\n\n" + "Model-Nr:   " + dev_name + "\nDev-Name:   " + name + "\nHardware:   " + hardware + ", " + mnr + "\nProduct:    " + product +
+    file.write("## DEVICE ##\n\n" + "Model-Nr:   " + dev_name + "\nDev-Name:   " + name + "\nHardware:   " + hardware_mnr + "\nProduct:    " + product +
         "\nSoftware:   " + dversion + "\nBuild-Nr:   " + build + "\nLanguage:   " + language + "\nSerialnr:   " + snr + "\nMLB-snr:    " + mlbsnr +
         "\nWifi MAC:   " + w_mac + "\nBT-MAC:     " + b_mac + "\nCapacity:   " + disk + "0 GB" + "\nFree Space: " + free + " GB" +
         "\nUDID :      " + udid + "\nECID :      " + ecid + "\nIMEI :      " + imei + "\nIMEI2:      " + imei2)    
@@ -3166,23 +3166,34 @@ def dev_data():
         try: 
             dev_name = lockdown.display_name
             if dev_name == None:
-                dev_name = "- / -"
+                if d_class == "Watch":
+                    dev_name = "Apple Watch"
+                elif d_class == "AppleTV":
+                    dev_name = "Apple TV"
+                elif d_class == "iPod":
+                    dev_name = "iPod Touch"
+                elif d_class == "iPad":
+                    dev_name = "iPad"
+                elif d_class == "iPhone":
+                    dev_name = "iPhone"
+                else:
+                    dev_name = "Apple device"
         except: 
-            dev_name = " "
+            dev_name = "Apple device"
         global hardware
         try: 
             hardware = lockdown.hardware_model
             if hardware == None:
-                hardware = "- / -"
+                hardware = " "
         except: 
             hardware = " "
         global product
         try: 
             product = lockdown.product_type
             if product == None:
-                product = "- / -"
+                product = d_class
         except: 
-            product = " "
+            product = d_class
         global udid
         try: udid = lockdown.udid
         except: udid = " "
@@ -3223,6 +3234,11 @@ def dev_data():
             global mnr
             try: mnr = lockdown.get_value("", "ModelNumber")
             except: mnr = " "
+            global hardware_mnr
+            if hardware == " ":
+                hardware_mnr = mnr
+            else:
+                hardware_mnr = f"{hardware}, {mnr}"
             global disk1 
             disk1 = lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity")/1000000000
             global disk 
@@ -3275,7 +3291,7 @@ def dev_data():
             device = ("Device paired ✔ \n\n" +
                 '{:13}'.format("Model-Nr: ") + "\t" + dev_name_s +
                 "\n" + '{:13}'.format("Dev-Name: ") + "\t" + name_s +
-                "\n" + '{:13}'.format("Hardware: ") + "\t" + hardware + ", " + mnr +
+                "\n" + '{:13}'.format("Hardware: ") + "\t" + hardware_mnr +
                 "\n" + '{:13}'.format("Product: ") + "\t" + product +
                 "\n" + '{:13}'.format("Software: ") + "\t" + dversion +
                 "\n" + '{:13}'.format("Build-Nr: ") + "\t" + build +
