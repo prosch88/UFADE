@@ -1162,7 +1162,7 @@ class MyApp(ctk.CTk):
                         line_list.append(line)
                 d_nr = 0
                 self.change.set(0)                                                                     
-                tar = tarfile.open(udid + "_logical_plus.tar", "w:")
+                tar = tarfile.open(f'{udid}_logical_plus_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "w:")
                 zip = None
                 decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, tar, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change))
                 decrypt.start()
@@ -1186,8 +1186,8 @@ class MyApp(ctk.CTk):
             
             
         else:
-            zipname = "Apple_" + hardware.upper() + " " + dev_name + ".zip"                                                     #create ZIP-File for CLB PA (TAR-handling isn't as good here)
-            zip = zipfile.ZipFile(zipname, "w")
+            zipname = f'Apple_{hardware.upper()}_{dev_name}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     #create ZIP-File for CLB PA (TAR-handling isn't as good here)
+            zip = zipfile.ZipFile(f'{zipname}.zip', "w")
             tar = None
             self.after(100, lambda: self.text.configure(text="Processing Backup - this may take a while."))
             self.prog_text = ctk.CTkLabel(self.dynamic_frame, text=" ", width=585, height=20, font=self.stfont, anchor="w", justify="left")
@@ -1314,7 +1314,7 @@ class MyApp(ctk.CTk):
             self.hashf = threading.Thread(target=lambda: self.hash_ufd(change=self.change, zipname=zipname))
             self.hashf.start()
             self.wait_variable(self.change)
-            with open("Apple_" + hardware.upper() + " " + dev_name + ".ufd", "w") as ufdf:
+            with open(f'{zipname}.ufd', "w") as ufdf:
                 ufdf.write("[DeviceInfo]\nIMEI1=" + imei + "\nIMEI2=" + imei2 + "\nModel=" + product + "\nOS=" + dversion + "\nVendor=Apple\n\n[Dumps]\nFileDump=Apple_" + hardware.upper() + " " +
                 dev_name + ".zip\n\n[ExtractionStatus]\nExtractionStatus=Success\n\n[FileDump]\nType=ZIPfolder\nZIPLogicalPath=iPhoneDump\n\n[General]\nAcquisitionTool=UFADE\nBackupPassword=" + "12345" + "\nConnectionType=Cable No. 210 or Original Cable\nDate=" + begin + "\nDevice=" + d_class.upper() + "\nEndTime=" + e_end + "\nExtractionNameFromXML=File System\nExtractionType=AdvancedLogical\nFullName=" +
                 hardware.upper() + " " + dev_name + "\nGUID=" + udid + "\nInternalBuild=\nIsEncrypted=True\nIsEncryptedBySystem=True\nMachineName=\nModel=" + hardware.upper() + " " + dev_name + "\nUfdVer=1.2\nUnitId=\nUserName=\nVendor=Apple\nVersion=other\n\n[SHA256]\n" + zipname + "=" + z_hash.upper() + "")
@@ -1388,7 +1388,7 @@ class MyApp(ctk.CTk):
             if self.wachange.get() == 0:
                 return()
             self.label1.pack_forget()
-            self.label2.pack_forget()
+            self.label2.pack_forget().zip
             if "net.whatsapp.WhatsApp" in app_id_list and "net.whatsapp.WhatsAppSMB" in app_id_list:  
                 self.text.pack_forget()
                 self.wa_button.pack_forget()
