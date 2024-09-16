@@ -76,7 +76,7 @@ class MyApp(ctk.CTk):
         self.stop_event = threading.Event()
 
         # Define Window
-        self.title("Universal Forensic Apple Device Extractor 0.9.2")
+        self.title("Universal Forensic Apple Device Extractor 0.9.3")
         self.geometry("1100x600")
         self.resizable(False, False)
         self.iconpath = ImageTk.PhotoImage(file=os.path.join(os.path.dirname(__file__), "assets" , "ufade.png" ))
@@ -2304,6 +2304,14 @@ class MyApp(ctk.CTk):
         log("Created UFDR Report")
         change.set(1)
 
+#AMFI Developer:
+    def amfi_developer(self, text):
+        try:
+            AmfiService(lockdown).enable_developer_mode(enable_post_restart=True)
+        except exceptions.DeviceHasPasscodeSetError:
+            AmfiService(lockdown).create_amfi_show_override_path_file()
+            text.configure(text="The developer mode has to be activated manually.\n\nNavigate to: Settings > Privacy & Security > Developer Mode (bottom) \n\nand activate the new option. Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\nAfter this, press \"OK\".")
+
 # Try to mount a suitable developerdiskimage
     def mount_developer(self, change, text):
         global developer
@@ -2328,7 +2336,7 @@ class MyApp(ctk.CTk):
                 pass
             else:
                 self.choose = ctk.BooleanVar(self, False)
-                text.configure(text="The device has to be rebooted in order to activate the developer mode.\n(Deactivate the PIN/PW before you proceed)\n\nDo you want to restart the device?")
+                text.configure(text="The device has to be rebooted in order to activate the developer mode.\n\nDo you want to restart the device?")
                 self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
                 self.yesb.pack(side="left", pady=(0,350), padx=140)
                 self.nob = ctk.CTkButton(self.dynamic_frame, text="NO", font=self.stfont, command=lambda: self.choose.set(False))
@@ -2339,7 +2347,8 @@ class MyApp(ctk.CTk):
                     self.nob.pack_forget()
                     text.configure(text="Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\nAfter this, press \"OK\".")
                     try:
-                        amfi_dev = threading.Thread(target=lambda: AmfiService(lockdown).enable_developer_mode(enable_post_restart=True))
+                        #amfi_dev = threading.Thread(target=lambda: AmfiService(lockdown).enable_developer_mode(enable_post_restart=True))
+                        amfi_dev = threading.Thread(target=lambda: self.amfi_developer(text))
                         amfi_dev.start()
                         self.choose.set(False)
                         self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.choose.set(True))
