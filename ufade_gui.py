@@ -956,6 +956,7 @@ class MyApp(ctk.CTk):
                 self.wait_variable(self.change)
                 beep_timer.cancel()
                 if m == "iTunes":
+                    shutil.move(udid, f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}')
                     self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
             else:
                 pass
