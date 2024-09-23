@@ -84,7 +84,10 @@ class MyApp(ctk.CTk):
         self.title("Universal Forensic Apple Device Extractor 0.9.3")
         self.geometry("1100x600")
         self.resizable(False, False)
-        self.iconpath = ImageTk.PhotoImage(file=os.path.join(os.path.dirname(__file__), "assets" , "ufade.png" ))
+        if platform.uname().system == "Darwin":
+            self.iconpath = ImageTk.PhotoImage(file=os.path.join(os.path.dirname(__file__), "assets" , "ufade.icns" ))
+        else:
+            self.iconpath = ImageTk.PhotoImage(file=os.path.join(os.path.dirname(__file__), "assets" , "ufade.png" ))
         self.wm_iconbitmap()
         self.iconphoto(False, self.iconpath)
 
@@ -2745,8 +2748,6 @@ class MyApp(ctk.CTk):
             if getattr(sys, 'frozen', False):
                 try:
                     print("try")
-                    script_path = create_mac_tunnel_script()
-                    print(script_path)
                     run(["osascript", "-e", f'do shell script \"{sys.executable} tunnel\" with administrator privileges'])
                 except:
                     raise exceptions.AccessDeniedError()
