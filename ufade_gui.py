@@ -571,7 +571,7 @@ class MyApp(ctk.CTk):
             import crossfiledialog
             p12_file = crossfiledialog.open_file(filter="*.p12")
         else:
-            p12_file = ctk.filedialog.askopenfilename(filetypes=[("PCKS#12 files", ".p12")])
+            p12_file = ctk.filedialog.askopenfilename(filetypes=[("PKCS12 files", ".p12")])
         self.okbutton.configure(state="enabled")
         p12box.configure(state="normal")    
         p12box.delete(0, "end")
