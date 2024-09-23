@@ -36,6 +36,11 @@ from pymobiledevice3.remote.module_imports import MAX_IDLE_TIMEOUT, start_tunnel
 from pymobiledevice3.tunneld import TUNNELD_DEFAULT_ADDRESS, TunnelProtocol, TunneldRunner, get_tunneld_devices, get_rsds
 from pymobiledevice3.cli.remote import cli_tunneld
 from pymobiledevice3.services.os_trace import OsTraceService
+from cryptography.hazmat.primitives.serialization.pkcs12 import load_pkcs12
+from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat, load_pem_public_key
+from cryptography.hazmat.primitives.serialization.pkcs7 import PKCS7SignatureBuilder
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import hashes, serialization 
 from paramiko import SSHClient, AutoAddPolicy, Transport
 from datetime import datetime, timedelta, timezone, date
 from subprocess import Popen, PIPE, check_call, run
@@ -417,8 +422,8 @@ class MyApp(ctk.CTk):
         self.text = ctk.CTkLabel(self.dynamic_frame, width=400, height=250, font=self.stfont, anchor="w", justify="left")
         self.text.configure(text="Device not paired!\n\n" +
                           "Make sure the device is connected and confirm \nthe \"trust\" message on the device screen.\n\n" +
-                          "On a Windows-system, make sure \"Apple Devices\" \nor \"iTunes\" is installed.")
-        self.text.pack(pady=50)
+                          "Provide a supervision profile if needed.")
+        self.text.pack(pady=30)
         global lockdown
         global ispaired
         try:
@@ -428,6 +433,7 @@ class MyApp(ctk.CTk):
             ispaired = False
         if ispaired == False:
             ctk.CTkButton(self.dynamic_frame, text="Pair", command=self.pair_button).pack(pady=10)
+            ctk.CTkButton(self.dynamic_frame, text="Pair Supervised", command=self.show_supervised).pack(pady=10)
         else:
             lockdown = check_device()
             device = dev_data()
@@ -437,6 +443,60 @@ class MyApp(ctk.CTk):
             self.info_text.insert("0.0", device)
             self.info_text.configure(state="disabled")
             self.show_cwd()
+            
+# A device is connected but supervised
+    def show_supervised(self):
+        for widget in self.dynamic_frame.winfo_children():
+            widget.destroy()
+        self.after(10)
+        global lockdown
+        global ispaired
+        ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
+        self.text = ctk.CTkLabel(self.dynamic_frame, width=400, height=40, font=self.stfont, anchor="w", justify="left")
+        self.text.configure(text="\n\n\n\n\n\nProvide the supervision certificate (P12/PKCS12) and the password.")
+        self.text.pack(pady=10)
+
+        self.browsebutton = ctk.CTkButton(self.dynamic_frame, text="Browse", font=self.stfont, command=lambda: self.browse_p12(self.p12box), width=40, fg_color="#2d2d35")
+        self.browsebutton.pack(side="bottom", pady=(0,410), padx=(0,525))
+        self.p12box = ctk.CTkEntry(self.dynamic_frame, width=340, height=20, corner_radius=0, placeholder_text=".p12 file")
+        self.p12box.bind(sequence="<Return>", command=lambda x: self.pair_supervised(self.text, self.p12box.get(), self.p12passbox.get()))
+        #self.p12box.insert(0, string=dir)
+        self.p12box.pack(side="left", pady=(90,0), padx=(75,0))  
+        self.p12passbox = ctk.CTkEntry(self.dynamic_frame, width=120, height=20, corner_radius=0, placeholder_text="Password")
+        self.p12passbox.bind(sequence="<Return>", command=lambda x: self.pair_supervised(self.text, self.p12box.get(), self.p12passbox.get()))
+        #self.p12box.insert(0, string=dir)
+        self.p12passbox.pack(side="left", pady=(90,0), padx=(10,0)) 
+        self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.pair_supervised(self.text, self.p12box.get(), self.p12passbox.get()))
+        self.okbutton.pack(side="left", pady=(90,0), padx=(10,120))
+
+# Pair the supervised device
+    def pair_supervised(self, text, p12_file, password):
+        global ispaired
+        global lockdown
+        self.browsebutton.pack_forget()
+        self.p12box.pack_forget()
+        self.p12passbox.pack_forget()
+        self.okbutton.pack_forget()
+        self.after(50)
+        text.configure(text="\n\n\n\n\n\nChecking certificate and password.")
+        if pathlib.Path(p12_file).is_file():
+            cert = keybag_from_p12(p12_file, password)
+            if cert != "error":
+                ispaired = False
+                while ispaired == False:
+                    try: 
+                        lockdown.pair_supervised(cert)
+                        ispaired = True
+                    except:
+                        pass
+                self.show_nodevice()
+            else:
+                text.configure(text="\n\n\n\n\n\nError loading certificate. Wrong password?")
+                ctk.CTkButton(self.dynamic_frame, text="OK", command=self.show_nodevice).pack(pady=50)
+        else:
+            text.configure(text="\n\n\n\n\n\nNo file selected!")
+            ctk.CTkButton(self.dynamic_frame, text="OK", command=self.show_nodevice).pack(pady=50)
+
 
 # Select the working directory
     def show_cwd(self):
@@ -496,6 +556,24 @@ class MyApp(ctk.CTk):
         outputbox.configure(state="normal")    
         outputbox.delete(0, "end")
         outputbox.insert(0, string=dir)
+
+# Filebrowser for p12 file
+    def browse_p12(self, p12box):
+        global p12_file
+        self.okbutton.configure(state="disabled")
+        p12box.configure(state="disabled")
+        if platform.uname().system == 'Linux':
+            import crossfiledialog
+            p12_file = crossfiledialog.open_file(filter="*.p12")
+        else:
+            dir = ctk.filedialog.askopenfilename(filetypes="*.p12")
+        self.okbutton.configure(state="enabled")
+        p12box.configure(state="normal")    
+        p12box.delete(0, "end")
+        if p12_file != "":
+            p12box.insert(0, string=p12_file)
+        else:
+            p12box.configure(placeholder_text=".p12 file")
         
 # Save device info to file and show the available content
     def show_save_device_info(self):
@@ -688,6 +766,13 @@ class MyApp(ctk.CTk):
     def pair_button(self):
         self.paired = ctk.BooleanVar(self, False)
         self.pair = threading.Thread(target=lambda: pair_device(paired=self.paired))
+        self.pair.start()
+        self.wait_variable(self.paired)
+        self.show_notpaired()
+
+    def pair_super_button(self):
+        self.paired = ctk.BooleanVar(self, False)
+        self.pair = threading.Thread(target=lambda: pair_supervised_device(paired=self.paired))
         self.pair.start()
         self.wait_variable(self.paired)
         self.show_notpaired()
@@ -3166,6 +3251,19 @@ def pair_device(paired):
         paired.set(False)
     return(lockdown)
 
+def pair_supervised_device(paired):
+    global lockdown
+    lockdown_unpaired = lockdown
+    try:
+        lockdown = create_using_usbmux()
+        global ispaired
+        ispaired = True
+        paired.set(True) 
+    except:
+        lockdown = lockdown_unpaired
+        paired.set(False)
+    return(lockdown)
+
 # Get device information #
 def dev_data():
     if lockdown != None:
@@ -3378,6 +3476,28 @@ def dev_data():
     else:
         pass
     return(device)
+
+def keybag_from_p12(p12file, password: str):
+
+    p12path = pathlib.Path(p12file)
+    keystore_data = p12path.read_bytes()
+    try:
+        decrypted_p12 = load_pkcs12(keystore_data, password.encode('utf-8'))
+        file = pathlib.Path(f'{p12file.rsplit(".",1)[0]}.cer')
+        private_key = decrypted_p12.key
+        cer = decrypted_p12.cert.certificate
+        file.write_bytes(
+            private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=serialization.NoEncryption()
+            ) + cer.public_bytes(encoding=serialization.Encoding.PEM))
+        return file
+    except Exception as pkcs12_error:
+        return "error"
+    
+
+
 
 # modified pull function from pymobiledevice3 (sets atime to mtime as it's not readable)
 def pull(self, relative_src, dst, callback=None, src_dir=''):
