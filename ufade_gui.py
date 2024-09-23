@@ -436,7 +436,7 @@ class MyApp(ctk.CTk):
             ispaired = False
         if ispaired == False:
             ctk.CTkButton(self.dynamic_frame, text="Pair", command=self.pair_button).pack(pady=10)
-            ctk.CTkButton(self.dynamic_frame, text="Pair Supervised", command=self.show_supervised).pack(pady=10)
+            ctk.CTkButton(self.dynamic_frame, text="Pair Supervised", fg_color="#2d2d35", command=self.show_supervised).pack(pady=10)
         else:
             lockdown = check_device()
             device = dev_data()
@@ -474,14 +474,16 @@ class MyApp(ctk.CTk):
 
 # Pair the supervised device
     def pair_supervised(self, text, p12_file, password):
+        text.configure(text="\n\n\n\n\nChecking certificate and password.\nThis may take some time.")
+        text.update()
+        self.after(10)
         global ispaired
         global lockdown
         self.browsebutton.pack_forget()
         self.p12box.pack_forget()
         self.p12passbox.pack_forget()
         self.okbutton.pack_forget()
-        self.after(50)
-        text.configure(text="\n\n\n\n\n\nChecking certificate and password.")
+        self.after(100)
         if pathlib.Path(p12_file).is_file():
             cert = keybag_from_p12(p12_file, password)
             if cert != "error":
@@ -569,7 +571,7 @@ class MyApp(ctk.CTk):
             import crossfiledialog
             p12_file = crossfiledialog.open_file(filter="*.p12")
         else:
-            dir = ctk.filedialog.askopenfilename(filetypes="*.p12")
+            p12_file = ctk.filedialog.askopenfilename(filetypes=[("PCKS#12 files", ".p12")])
         self.okbutton.configure(state="enabled")
         p12box.configure(state="normal")    
         p12box.delete(0, "end")
@@ -3416,9 +3418,12 @@ def dev_data():
                 "\n" + '{:13}'.format("Used: ") + "\t" + used + " GB" +
                 "\n" + '{:13}'.format("Free: ") + "\t" + free + " GB" +
                 "\n" + '{:13}'.format("UDID: ") + "\t" + udid_s +
-                "\n" + '{:13}'.format("ECID: ") + "\t" + ecid +
-                "\n" + '{:13}'.format("IMEI 1: ") + "\t" + imei +
-                "\n" + '{:13}'.format("IMEI 2: ") + "\t" + imei2)
+                "\n" + '{:13}'.format("ECID: ") + "\t" + ecid)
+            
+            if imei != " ":
+                device = device + "\n" + '{:13}'.format("IMEI 1: ") + "\t" + imei
+            if imei2 != " ":
+                device = device + "\n" + '{:13}'.format("IMEI 2: ") + "\t" + imei2
         else:
             device = ("Device unpaired ✗ \n\n" +
             '{:13}'.format("Model-Nr: ") + "\t" + dev_name_s +
