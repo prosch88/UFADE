@@ -465,7 +465,7 @@ class MyApp(ctk.CTk):
         self.p12box.bind(sequence="<Return>", command=lambda x: self.pair_supervised(self.text, self.p12box.get(), self.p12passbox.get()))
         #self.p12box.insert(0, string=dir)
         self.p12box.pack(side="left", pady=(90,0), padx=(75,0))  
-        self.p12passbox = ctk.CTkEntry(self.dynamic_frame, width=120, height=20, corner_radius=0, placeholder_text="Password")
+        self.p12passbox = ctk.CTkEntry(self.dynamic_frame, width=120, height=20, corner_radius=0, placeholder_text="Password",show="*")
         self.p12passbox.bind(sequence="<Return>", command=lambda x: self.pair_supervised(self.text, self.p12box.get(), self.p12passbox.get()))
         #self.p12box.insert(0, string=dir)
         self.p12passbox.pack(side="left", pady=(90,0), padx=(10,0)) 
