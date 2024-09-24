@@ -897,6 +897,7 @@ class MyApp(ctk.CTk):
     def pw_file_call(self):
         global pw_file
         if platform.uname().system == 'Linux':
+            import crossfiledialog
             pw_file = crossfiledialog.open_file()
         else:
             pw_file = ctk.filedialog.askopenfilename()
@@ -3258,6 +3259,7 @@ def pair_device(paired):
     except:
         lockdown = lockdown_unpaired
         paired.set(False)
+
     return(lockdown)
 
 def pair_supervised_device(paired):
@@ -3491,16 +3493,18 @@ def dev_data():
 
 class UFADEMobilebackup2Service(Mobilebackup2Service):
     def __init__(self, lockdown: LockdownClient):
-        #global supervised
+
         if isinstance(lockdown, LockdownClient):
             super().__init__(lockdown)
             try:
+                #escrow = lockdown.pair_record['EscrowBag']
                 self.include_escrow_bag = True
             except:
                 self.include_escrow_bag = False
         else:
             super().__init__(lockdown)
             try:
+                #escrow = lockdown.pair_record['EscrowBag']
                 self.include_escrow_bag = True
             except:
                 self.include_escrow_bag = False
