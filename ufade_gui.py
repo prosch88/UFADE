@@ -97,9 +97,9 @@ class MyApp(ctk.CTk):
 
         # Create frames
         self.left_frame = ctk.CTkFrame(self, width=340, corner_radius=0, fg_color="#2c353e", bg_color="#2c353e")
-        self.left_frame.grid(row=0, column=0, sticky="ns", )
+        self.left_frame.grid(row=0, column=0, sticky="ns")
 
-        self.right_frame = ctk.CTkFrame(self, width=760)
+        self.right_frame = ctk.CTkFrame(self, width=760, fg_color="#212121")
         self.right_frame.grid(row=0, column=1, sticky="nsew")
         self.grid_columnconfigure(1, weight=1)
 
@@ -122,7 +122,7 @@ class MyApp(ctk.CTk):
         self.menu_var = StringVar(value="MainMenu")
 
         # Placeholder for dynamic frame
-        self.dynamic_frame = ctk.CTkFrame(self.right_frame, corner_radius=0)
+        self.dynamic_frame = ctk.CTkFrame(self.right_frame, corner_radius=0, bg_color="#212121")
         self.dynamic_frame.pack(fill="both", expand=True, padx=0, pady=0)
         self.current_menu = None
 
@@ -653,10 +653,10 @@ class MyApp(ctk.CTk):
                 self.show_main_menu()
 
 # Crash Report extraction as single function or as part of a flow
-    def show_crash_report(self, dir="Crash_Report", flow=False):
+    def show_crash_report(self, cdir="Crash_Report", flow=False):
         save_info()
         if flow == False:
-            dir = f'Crash_Logs_{udid}_{str(datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))}'
+            cdir = f'Crash_Logs_{udid}_{str(datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))}'
         ctk.CTkLabel(self.dynamic_frame, text="UFADE by Christian Peter", text_color="#3f3f3f", height=40, padx=40, font=self.stfont).pack(anchor="center")
         ctk.CTkLabel(self.dynamic_frame, text="Extract Crash Reports", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Extracting crash reports from device.\nThis may take some time.", width=585, height=60, font=self.stfont, anchor="w", justify="left")
@@ -668,9 +668,9 @@ class MyApp(ctk.CTk):
         self.progress.pack()
         self.change = ctk.IntVar(self, 0)
         if flow != False:
-            self.crash = threading.Thread(target=lambda: crash_report(crash_dir=dir, change=self.change, progress=self.progress, prog_text=self.prog_text))
+            self.crash = threading.Thread(target=lambda: crash_report(crash_dir=cdir, change=self.change, progress=self.progress, prog_text=self.prog_text))
         else:
-            self.crash = threading.Thread(target=lambda: crash_report(crash_dir=dir, change=self.change, progress=self.progress, prog_text=self.prog_text, czip=True))
+            self.crash = threading.Thread(target=lambda: crash_report(crash_dir=cdir, change=self.change, progress=self.progress, prog_text=self.prog_text, czip=True))
         self.crash.start()
         self.wait_variable(self.change)
         self.progress.stop()
@@ -2079,7 +2079,7 @@ class MyApp(ctk.CTk):
             os_type = "tvOS"
         metadata_device_info = ET.SubElement(project, 'metadata', {'section': 'Device Info'})
         #me_dev_info = {'Serial Number': snr, 'Device Name': name, 'WiFi Address': w_mac, 'Model Number': hardware + ", Model:" + mnr, 'Bluetooth Address': b_mac, 'Device': dev_name, 'Time Zone': d_tz, 'Unique Identifier': udid}
-        me_dev_info = {'Device Name': name, 'Device': dev_name, 'Model Number': f'{hardware} , Model: {mnr}', 'MAC (WiFi Address)': w_mac, 'MAC (Bluetooth Address)': b_mac, 'Unique Identifier': udid, 'Unique Chip ID': ecid, 'Serial Number': snr, 'Disk Capacity': f'{disk}0 GB', 'Software': f'{os_type}: {dversion}', 'Buildnumber': build , 'Time Zone': d_tz,}
+        me_dev_info = {'Device Name': name, 'Device': dev_name, 'Model Number': f'{hardware} , Model: {mnr}', 'MAC (WiFi Address)': w_mac, 'MAC (Bluetooth Address)': b_mac, 'Unique Identifier': udid, 'Unique Chip ID': ecid, 'Serial Number': snr, 'Disk Capacity': f'{disk} GB', 'Software': f'{os_type}: {dversion}', 'Buildnumber': build , 'Time Zone': d_tz,}
         if imei != " ":
             me_dev_info['IMEI'] = imei
         else:
