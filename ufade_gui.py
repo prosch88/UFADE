@@ -2535,6 +2535,7 @@ class MyApp(ctk.CTk):
                         if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
                             text.configure(text="DeveloperDiskImage not loaded")
                             developer = False
+                            return("nope")
                         else:
                             text.configure(text="DeveloperDiskImage loaded")
                             developer = True
