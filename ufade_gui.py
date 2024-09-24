@@ -144,7 +144,7 @@ class MyApp(ctk.CTk):
         # Show Main Menu
         self.menu_var.set("MainMenu")
         self.current_menu = "MainMenu"
-        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
+        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
         self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
         self.menu_buttons = [
             ctk.CTkButton(self.dynamic_frame, text="Save device info", command=lambda: self.switch_menu("DevInfo"), width=200, height=70, font=self.stfont),
@@ -239,7 +239,7 @@ class MyApp(ctk.CTk):
     def show_watch_menu(self):
         for widget in self.dynamic_frame.winfo_children():
             widget.destroy()
-        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
+        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
         self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
         self.menu_buttons = [
             ctk.CTkButton(self.dynamic_frame, text="Reporting Options", command=lambda: self.switch_menu("ReportMenu"), width=200, height=70, font=self.stfont),
@@ -268,7 +268,7 @@ class MyApp(ctk.CTk):
 
 # Watch Report Menu
     def show_report_menu(self):
-        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
+        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
         self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
         self.menu_buttons = [
             ctk.CTkButton(self.dynamic_frame, text="Save device info", command=lambda: self.switch_menu("DevInfo"), width=200, height=70, font=self.stfont),
@@ -292,7 +292,7 @@ class MyApp(ctk.CTk):
 
 # Acquisition Menu
     def show_acq_menu(self):
-        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
+        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
         self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
         self.menu_buttons = [
             ctk.CTkButton(self.dynamic_frame, text="Logical Backup", command=lambda: self.switch_menu("iTunes"), width=200, height=70, font=self.stfont),
@@ -321,7 +321,7 @@ class MyApp(ctk.CTk):
 
 # Developer Options Menu
     def show_dev_menu(self):
-        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
+        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
         self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
         self.menu_buttons = [
             ctk.CTkButton(self.dynamic_frame, text="Take screenshots", command=lambda: self.switch_menu("Shot"), width=200, height=70, font=self.stfont),
@@ -350,7 +350,7 @@ class MyApp(ctk.CTk):
 
 # Advanced Options Menu
     def show_adv_menu(self):
-        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
+        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
         self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
         self.menu_buttons = [
             ctk.CTkButton(self.dynamic_frame, text="Extract crash reports", command=lambda: self.switch_menu("CrashReport"), width=200, height=50, font=self.stfont),
@@ -526,6 +526,7 @@ class MyApp(ctk.CTk):
 # Function to choose the working directoy
     def choose_cwd(self, outputbox):
         global dir
+        global dir_top
         user_input = outputbox.get()
         try:
             if user_input == '':
@@ -537,6 +538,10 @@ class MyApp(ctk.CTk):
             os.mkdir(user_input)
             os.chdir(user_input)
             dir = os.getcwd()
+        if len(dir) > 48:
+            dir_top = f"{dir[:45]}..."
+        else:
+            dir_top = dir
         if d_class == "Watch" or d_class == "AppleTV":
             self.show_watch_menu()
         else:
@@ -584,7 +589,7 @@ class MyApp(ctk.CTk):
     def show_save_device_info(self):
         save_info()
         text = "Device info saved to: \ndevice_" + udid + ".txt\n\nContains:\n- device information\n"
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         if number != "":
             text = text + "- phone number\n"
         if comp != []:
@@ -602,7 +607,7 @@ class MyApp(ctk.CTk):
 
 # Try to deactivate the UFADE encryption password
     def show_deactivate_encryption(self):
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Deactivate Encryption Password", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Trying to deactivate the encryption password.\nProvide PIN/Password if prompted.", width=585, height=60, font=self.stfont, anchor="w", justify="left")   
         self.text.pack(pady=25)
@@ -619,7 +624,7 @@ class MyApp(ctk.CTk):
 # Unified Logs Collecting screen
     def show_collect_ul(self):
         save_info()
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Collect Unified Logs", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Collecting Unified Logs will take some time.\ndo you want to continue?", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(pady=25)
@@ -657,7 +662,7 @@ class MyApp(ctk.CTk):
         save_info()
         if flow == False:
             cdir = f'Crash_Logs_{udid}_{str(datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))}'
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Extract Crash Reports", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Extracting crash reports from device.\nThis may take some time.", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(pady=25)
@@ -686,7 +691,7 @@ class MyApp(ctk.CTk):
             pass
 
     def show_sysdiag(self):
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Extract Sysdiagnose", height=40, width=585, font=("standard",24), justify="left").pack(pady=15)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Initiate the creation of a Sysdiagnose archive on the device and save \nit to disk afterwards. This may take some time. \nDo you want to continue?", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(pady=60)
@@ -928,7 +933,7 @@ class MyApp(ctk.CTk):
         m = mode
         global notify
         self.pw_found = ctk.IntVar(self,0)
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text=f"{m} Backup", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Checking Backup Encryption.\nUnlock device with PIN/PW if prompted", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)        
@@ -1448,7 +1453,7 @@ class MyApp(ctk.CTk):
 #Perform an iTunes Backup and extract only WhatsApp files (ChatStorage.sqlite and Media folder)
     def backup_tess(self):
         if "net.whatsapp.WhatsApp" not in app_id_list and "net.whatsapp.WhatsAppSMB" not in app_id_list:
-            ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+            ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
             ctk.CTkLabel(self.dynamic_frame, text="PuMA Backup", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
             self.text = ctk.CTkLabel(self.dynamic_frame, text="WhatsApp not installed on device!", width=585, height=60, font=self.stfont, anchor="w", justify="left")
             self.text.pack(anchor="center", pady=25)
@@ -1565,7 +1570,7 @@ class MyApp(ctk.CTk):
             self.change.set(1)
 
     def perf_jailbreak_ssh_dump(self):
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Filesystem Backup", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Provide the SSH parameters. The default values are suitable for Checkra1n and Palera1n: ", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
@@ -1614,7 +1619,7 @@ class MyApp(ctk.CTk):
 
 # Network Sniffer Display
     def show_sniffer(self):
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Capture Device Traffic", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Set the number of packets to sniff (0 is endless):", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
@@ -1665,7 +1670,7 @@ class MyApp(ctk.CTk):
 
 # Media Extracton for Watches
     def show_media(self):
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Extract AFC-Media files", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Performing AFC Extraction of Mediafiles", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
@@ -1692,7 +1697,7 @@ class MyApp(ctk.CTk):
 ### check start
 
     def show_report(self):
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Generate UFDR Report", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Provide the case information:", width=585, height=30, font=self.stfont, anchor="w", justify="left")
         self.change = ctk.IntVar(self, 0)
@@ -2571,7 +2576,7 @@ class MyApp(ctk.CTk):
         self.change = ctk.IntVar(self, 0)
         global developer
         global lockdown
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Developer Options", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Checking developer status.", width=585, height=100, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
@@ -2769,7 +2774,7 @@ class MyApp(ctk.CTk):
 
 # Device screenshot
     def screen_device(self, dvt):
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Take Screenshots", height=40, width=585, font=("standard",24), justify="left").pack(pady=10)
         self.shotframe = ctk.CTkFrame(self.dynamic_frame, width=400, corner_radius=0, fg_color="transparent")
         self.textframe = ctk.CTkFrame(self.dynamic_frame, width=200, corner_radius=0, fg_color="transparent")
@@ -2822,7 +2827,7 @@ class MyApp(ctk.CTk):
     def chat_shotloop(self, dvt):
         try: os.mkdir("screenshots")
         except: pass
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Chat Capture", height=40, width=585, font=("standard",24), justify="left").pack(pady=10)
         self.shotframe = ctk.CTkFrame(self.dynamic_frame, width=400, corner_radius=0, fg_color="transparent")
         self.textframe = ctk.CTkFrame(self.dynamic_frame, width=200, corner_radius=0, fg_color="transparent")
@@ -2953,7 +2958,7 @@ class MyApp(ctk.CTk):
 
 # Fileloop window
     def show_fileloop(self, dvt):
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Filesystem content", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Creating a filesystem-list. This will take a while.", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
@@ -2993,7 +2998,7 @@ class MyApp(ctk.CTk):
 
     def call_unmount(self):
         global developer
-        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Unmounting DeveloperDiskImage", height=80, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Trying to unmount the image.", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
