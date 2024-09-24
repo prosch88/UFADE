@@ -823,7 +823,7 @@ class MyApp(ctk.CTk):
 # Check, if the device has a backup password and set one
     def check_encryption(self, change):
         try:
-            Mobilebackup2Service(lockdown).change_password(new="12345")
+            UFADEMobilebackup2Service(lockdown).change_password(new="12345")
             change.set(1)
         except:
             change.set(2)
@@ -833,9 +833,9 @@ class MyApp(ctk.CTk):
         global bu_pass
         try:
             if bu_pass != "12345":
-                Mobilebackup2Service(lockdown).change_password(old="12345", new=bu_pass)
+                UFADEMobilebackup2Service(lockdown).change_password(old="12345", new=bu_pass)
             else:
-                Mobilebackup2Service(lockdown).change_password(old="12345") 
+                UFADEMobilebackup2Service(lockdown).change_password(old="12345") 
             change.set(1)
         except:
             change.set(2)
@@ -879,7 +879,7 @@ class MyApp(ctk.CTk):
         try:
             okbutton.configure(state="disabled")
             text.configure(text="Checking password...")
-            Mobilebackup2Service(lockdown).change_password(old=pw, new="12345")                     #Try to deactivate backup encryption with the given password
+            UFADEMobilebackup2Service(lockdown).change_password(old=pw, new="12345")                     #Try to deactivate backup encryption with the given password
             bu_pass = pw
             passwordbox.pack_forget()
             okbutton.pack_forget()
@@ -912,7 +912,7 @@ class MyApp(ctk.CTk):
             progress.update()
             prog_text.update()                   
             try: 
-                Mobilebackup2Service(lockdown).change_password(old=pw, new="12345")
+                UFADEMobilebackup2Service(lockdown).change_password(old=pw, new="12345")
                 text.configure(text="Password found: " + pw)
                 bu_pass = pw
                 log(f"Found correct backup password: {pw} via bruteforce")
@@ -1034,7 +1034,7 @@ class MyApp(ctk.CTk):
             self.change.set(0)
             beep_timer = threading.Timer(13.0,self.notification) 
             beep_timer.start()
-            startbu = threading.Thread(target=lambda:Mobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, beep_timer, self.text)))
+            startbu = threading.Thread(target=lambda:UFADEMobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, beep_timer, self.text)))
             startbu.start()
             self.check_if_done(startbu, self.change)
             self.wait_variable(self.change)
@@ -3489,7 +3489,24 @@ def dev_data():
         pass
     return(device)
 
+class UFADEMobilebackup2Service(Mobilebackup2Service):
+    def __init__(self, lockdown: LockdownClient):
+        #global supervised
+        if isinstance(lockdown, LockdownClient):
+            super().__init__(lockdown)
+            try:
+                self.include_escrow_bag = True
+            except:
+                self.include_escrow_bag = False
+        else:
+            super().__init__(lockdown)
+            try:
+                self.include_escrow_bag = True
+            except:
+                self.include_escrow_bag = False
+
 def keybag_from_p12(p12file, password: str):
+
 
     p12path = pathlib.Path(p12file)
     keystore_data = p12path.read_bytes()
