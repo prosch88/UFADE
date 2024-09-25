@@ -18,7 +18,7 @@ from pymobiledevice3.services.companion import CompanionProxyService
 from pymobiledevice3.services import installation_proxy
 from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
 from pymobiledevice3.services.springboard import SpringBoardServicesService
-from pymobiledevice3.services.afc import AfcService
+from pymobiledevice3.services.afc import AfcService, LockdownService
 from pymobiledevice3.services.house_arrest import HouseArrestService
 from pymobiledevice3.services.crash_reports import CrashReportsManager
 from pymobiledevice3.services.os_trace import OsTraceService
@@ -494,6 +494,7 @@ class MyApp(ctk.CTk):
                         ispaired = True
                     except:
                         pass
+   
                 self.show_nodevice()
             else:
                 text.configure(text="\n\n\n\n\n\nError loading certificate. Wrong password?")
@@ -825,8 +826,12 @@ class MyApp(ctk.CTk):
         try:
             UFADEMobilebackup2Service(lockdown).change_password(new="12345")
             change.set(1)
-        except:
-            change.set(2)
+        except Exception as e:
+            e = str(e)
+            if "device is locked" in e:
+                change.set(3)
+            else:
+                change.set(2)
 
 # Try to deactivate encryption after the Backup is complete
     def deactivate_encryption(self, change, text=None):
@@ -953,8 +958,15 @@ class MyApp(ctk.CTk):
             #Try to activate backup encryption with password "12345"
             self.text.configure(text="New Backup password: \"12345\" \nStarting Backup.\nUnlock device with PIN/PW")
             self.pw_found.set(1)
-            self.change.set(1)            
-            
+            self.change.set(1)     
+
+        if self.change.get() == 3:
+            self.change.set(0)            
+            if no_escrow:
+                self.text.configure(text="Device connection keys (escrow_bag) are missing.\nMake sure the device is unlocked while performing an backup.")
+            else:
+                self.text.configure(text="An error occured.\nMake sure the device is unlocked while performing an backup.")
+            self.after(200, ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=10))
         else:
             self.choose = ctk.BooleanVar(self, False)
             self.text.configure(text="Backup Encryption is activated with password.\n\nIs the password known?")
@@ -3491,27 +3503,27 @@ def dev_data():
         pass
     return(device)
 
-class UFADEMobilebackup2Service(Mobilebackup2Service):
+#Alternative pmd3 Backup for supervising without escrow_bag
+class UFADEMobilebackup2Service:
     def __init__(self, lockdown: LockdownClient):
-
-        if isinstance(lockdown, LockdownClient):
-            super().__init__(lockdown)
-            try:
-                #escrow = lockdown.pair_record['EscrowBag']
-                self.include_escrow_bag = True
-            except:
-                self.include_escrow_bag = False
+        global no_escrow
+        try:
+            escrow = lockdown.pair_record['EscrowBag']
+        except:
+            no_escrow = True
+        self._service = Mobilebackup2Service.__new__(Mobilebackup2Service)
+        if no_escrow == True:
+            setattr(self._service, 'include_escrow_bag', False)
+            LockdownService.__init__(self._service, lockdown, Mobilebackup2Service.SERVICE_NAME, include_escrow_bag=False)
         else:
-            super().__init__(lockdown)
-            try:
-                #escrow = lockdown.pair_record['EscrowBag']
-                self.include_escrow_bag = True
-            except:
-                self.include_escrow_bag = False
+            setattr(self._service, 'include_escrow_bag', True)
+            LockdownService.__init__(self._service, lockdown, Mobilebackup2Service.SERVICE_NAME, include_escrow_bag=True)
+
+    def __getattr__(self, name):
+        return getattr(self._service, name)
 
 def keybag_from_p12(p12file, password: str):
-
-
+    global pub_key
     p12path = pathlib.Path(p12file)
     keystore_data = p12path.read_bytes()
     try:
@@ -3525,11 +3537,10 @@ def keybag_from_p12(p12file, password: str):
                 format=PrivateFormat.TraditionalOpenSSL,
                 encryption_algorithm=serialization.NoEncryption()
             ) + cer.public_bytes(encoding=serialization.Encoding.PEM))
+        pub_key = cer.public_bytes(encoding=serialization.Encoding.PEM)
         return file
     except Exception as pkcs12_error:
         return "error"
-    
-
 
 
 # modified pull function from pymobiledevice3 (sets atime to mtime as it's not readable)
@@ -3752,10 +3763,12 @@ try:
 except:
     ispaired = False
 
+pub_key = ""
 device = dev_data()
 bu_pass = "12345"
 developer = False
 filedict = {}
+no_escrow = False
 
 
 # Start the app
