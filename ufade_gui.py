@@ -966,7 +966,10 @@ class MyApp(ctk.CTk):
                 self.text.configure(text="Device connection keys (escrow_bag) are missing.\nMake sure the device is unlocked while performing an backup.")
             else:
                 self.text.configure(text="An error occured.\nMake sure the device is unlocked while performing an backup.")
-            self.after(200, ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=10))
+                
+            self.after(200, ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.pw_found.set(2)).pack(pady=10))
+            self.wait_variable(self.pw_found)
+            self.switch_menu("AcqMenu")
         else:
             self.choose = ctk.BooleanVar(self, False)
             self.text.configure(text="Backup Encryption is activated with password.\n\nIs the password known?")
