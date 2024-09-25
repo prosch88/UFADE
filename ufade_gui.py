@@ -828,6 +828,7 @@ class MyApp(ctk.CTk):
             change.set(1)
         except Exception as e:
             e = str(e)
+            print(e)
             if "device is locked" in e:
                 change.set(3)
             else:
@@ -958,9 +959,9 @@ class MyApp(ctk.CTk):
             #Try to activate backup encryption with password "12345"
             self.text.configure(text="New Backup password: \"12345\" \nStarting Backup.\nUnlock device with PIN/PW")
             self.pw_found.set(1)
-            self.change.set(1)     
+            self.change.set(0)     
 
-        if self.change.get() == 3:
+        elif self.change.get() == 3:
             self.change.set(0)            
             if no_escrow:
                 self.text.configure(text="Device connection keys (escrow_bag) are missing.\nMake sure the device is unlocked while performing an backup.")
