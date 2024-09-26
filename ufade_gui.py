@@ -2681,6 +2681,8 @@ class MyApp(ctk.CTk):
                         lockdown = get_tunneld_devices()[0]
                     except:
                         lockdown.connect()
+
+
                 else:
                     lockdown = create_using_usbmux()
                 #dvt = DvtSecureSocketProxyService(lockdown)
@@ -3243,16 +3245,39 @@ def save_info():
             except: pass
     
     #Save user-installed Apps to txt
-    try: l = str(len(max(app_id_list, key=len)))  
-    except: l = 40 
-    file.write("\n\n" + "## Installed Apps (by user) [App, shared documents] ## \n")
+    if int(dversion.split(".")[0]) >= 18:
+        try:
+            springboard = SpringBoardServicesService(lockdown).get_icon_state()
+        except:
+            springboard = None
+    else:
+        springboard = None
+    try: al = str(len(max(app_id_list, key=len)))  
+    except: al = 40 
+    file.write("\n\n" + "## Installed Apps (by user) ## \n\n")
+    if len(apps) > 0:
+        file.write('{:{l}}'.format("app name", l=16) + "\t" + '{:{l}}'.format("bundle id", l=al) + "\t sharing")
+    else:
+        file.write('None')
+    if springboard != None:
+        file.write("\tspringboard\n")
+    else:
+        file.write("\n")
     for app in app_id_list:
+        app_name = apps.get(app)['CFBundleDisplayName']
         try: 
             apps.get(app)['UIFileSharingEnabled']
             sharing = 'yes'
         except:
             sharing = 'no'
-        file.write("\n" + '{:{l}}'.format(app, l=l) + "\t [" + sharing + "]")
+        if springboard != None:
+            if app in str(springboard):
+                state = "visible"
+            else:
+                state = "hidden"
+        file.write("\n" + '{:{l}}'.format(app_name, l=16) + "\t" + '{:{l}}'.format(app, l=al) + "\t [" + sharing + "]")
+        if springboard != None:
+            file.write("\t\t" + state)
 
     file.close()
     log("Wrote device info to text")    
