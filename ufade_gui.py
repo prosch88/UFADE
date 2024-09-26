@@ -964,9 +964,9 @@ class MyApp(ctk.CTk):
         elif self.change.get() == 3:
             self.change.set(0)            
             if no_escrow:
-                self.text.configure(text="Device connection keys (escrow_bag) are missing.\nMake sure the device is unlocked while performing an backup.")
+                self.text.configure(text="Device connection keys (escrow_bag) are missing.\nMake sure the device is unlocked while performing a backup.")
             else:
-                self.text.configure(text="An error occured.\nMake sure the device is unlocked while performing an backup.")
+                self.text.configure(text="An error occured.\nMake sure the device is unlocked while performing a backup.")
                 
             self.after(200, ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.pw_found.set(2)).pack(pady=10))
             self.wait_variable(self.pw_found)
@@ -3265,6 +3265,8 @@ def save_info():
         file.write("\n")
     for app in app_id_list:
         app_name = apps.get(app)['CFBundleDisplayName']
+        if len(app_name) > 20:
+            app_name = f'{app_name[:17]}...'
         try: 
             apps.get(app)['UIFileSharingEnabled']
             sharing = 'yes'
@@ -3275,7 +3277,7 @@ def save_info():
                 state = "visible"
             else:
                 state = "hidden"
-        file.write("\n" + '{:{l}}'.format(app_name, l=16) + "\t" + '{:{l}}'.format(app, l=al) + "\t [" + sharing + "]")
+        file.write("\n" + '{:{l}}'.format(app_name, l=20) + "\t" + '{:{l}}'.format(app, l=al) + "\t [" + sharing + "]")
         if springboard != None:
             file.write("\t\t" + state)
 
