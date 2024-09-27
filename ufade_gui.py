@@ -81,7 +81,7 @@ class MyApp(ctk.CTk):
         self.stop_event = threading.Event()
 
         # Define Window
-        self.title("Universal Forensic Apple Device Extractor 0.9.3")
+        self.title("Universal Forensic Apple Device Extractor 0.9.4")
         self.geometry("1100x600")
         self.resizable(False, False)
         if platform.uname().system == "Darwin":
@@ -3276,7 +3276,7 @@ def save_info():
             if app in str(springboard):
                 state = "visible"
             else:
-                state = "hidden"
+                state = "absent"
         file.write("\n" + '{:{l}}'.format(app_name, l=20) + "\t" + '{:{l}}'.format(app, l=al) + "\t [" + sharing + "]")
         if springboard != None:
             file.write("\t\t" + state)
