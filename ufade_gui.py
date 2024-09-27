@@ -3256,7 +3256,7 @@ def save_info():
     except: al = 40 
     file.write("\n\n" + "## Installed Apps (by user) ## \n\n")
     if len(apps) > 0:
-        file.write('{:{l}}'.format("app name", l=16) + "\t" + '{:{l}}'.format("bundle id", l=al) + "\t sharing")
+        file.write('{:{l}}'.format("app name", l=20) + "\t" + '{:{l}}'.format("bundle id", l=al) + "\t sharing")
     else:
         file.write('None')
     if springboard != None:
