@@ -2610,14 +2610,52 @@ class MyApp(ctk.CTk):
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
             return
 
-        #if int(dversion.split(".")[0]) >= 17:
-        #    self.text.configure(text="Devices with iOS 17 and up aren't currently supported in this Version of UFADE.\nTry the CLI Version instead")
-        #    self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
-        #    return
-        #else:
-        #    pass
 
         if int(dversion.split(".")[0]) >= 17:
+            try:
+                if lockdown.developer_mode_status == True:
+                    pass
+                else:
+                    self.choose = ctk.BooleanVar(self, False)
+                    self.text.configure(text="The device has to be rebooted in order to activate the developer mode.\n\nDo you want to restart the device?")
+                    self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
+                    self.yesb.pack(side="left", pady=(0,350), padx=140)
+                    self.nob = ctk.CTkButton(self.dynamic_frame, text="NO", font=self.stfont, command=lambda: self.choose.set(False))
+                    self.nob.pack(side="left", pady=(0,350))    
+                    self.wait_variable(self.choose)  
+                    if self.choose.get() == True:
+                        self.yesb.pack_forget()
+                        self.nob.pack_forget()
+                        self.text.configure(text="Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\nAfter this, press \"OK\".")
+                        try:
+                            amfi_dev = threading.Thread(target=lambda: self.amfi_developer(self.text))
+                            amfi_dev.start()
+                            self.choose.set(False)
+                            self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.choose.set(True))
+                            self.okbutton.pack()
+                            self.wait_variable(self.choose)
+                            self.okbutton.pack_forget()
+                            self.after(50)
+                            if lockdown.developer_mode_status != True:
+                                self.text.configure(text="Uh-Oh, an error was raised.\nWait for the device to reboot and try again.")
+                                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                                return
+                            else:
+                                pass
+                        except:
+                            self.text.configure(text="Uh-Oh, an error was raised. Please remove the PIN/PW and try again")
+                            developer = False
+                            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                            return
+                    else:
+                        self.yesb.pack_forget()
+                        self.nob.pack_forget()
+                        developer = False
+                        self.show_main_menu()
+                        return
+            except:
+                pass
+    
             self.chk_tun = threading.Thread(target=lambda: self.check_tun(self.change))
             self.chk_tun.start()
             self.wait_variable(self.change)
@@ -2683,7 +2721,10 @@ class MyApp(ctk.CTk):
                         try:
                             lockdown.connect()
                         except:
-                            self.text.configure(text="Something went wrong. Try again.\nOn iOS 18 and up this is expected (Please restart UFADE).")
+                            if platform.uname().system == 'Windows':
+                                self.text.configure(text="Something went wrong. Try again.\nOn iOS 18 and up this is expected.\nPlease restart UFADE.")
+                            else:
+                                self.text.configure(text="Something went wrong. Try again.\nOn iOS 18 and up this is expected.")
                             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
                             return
 
@@ -2730,6 +2771,7 @@ class MyApp(ctk.CTk):
                             tun = []
                         if tun != []:
                             break
+
                         if self.tunnel_win.is_alive() != True:
                             raise BaseException()
                 except:
@@ -2760,7 +2802,9 @@ class MyApp(ctk.CTk):
                 raise exceptions.AccessDeniedError()
             else:
                 tunnel_win()
-            #remote.cli_tunneld()
+            if self.stop_event.is_set():
+                return
+
         except:
             return
 
