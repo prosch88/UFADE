@@ -2422,7 +2422,7 @@ class MyApp(ctk.CTk):
         try:
             AmfiService(lockdown).enable_developer_mode(enable_post_restart=True)
         except exceptions.DeviceHasPasscodeSetError:
-            AmfiService(lockdown).create_amfi_show_override_path_file()
+            AmfiService(lockdown).reveal_developer_mode_option_in_ui()
             text.configure(text="The developer mode has to be activated manually.\n\nNavigate to: Settings > Privacy & Security > Developer Mode (bottom) \n\nand activate the new option. Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\nAfter this, press \"OK\".")
 
 # Try to mount a suitable developerdiskimage
