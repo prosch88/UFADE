@@ -2802,9 +2802,6 @@ class MyApp(ctk.CTk):
                 raise exceptions.AccessDeniedError()
             else:
                 tunnel_win()
-            if self.stop_event.is_set():
-                return
-
         except:
             return
 
