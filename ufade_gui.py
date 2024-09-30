@@ -2684,6 +2684,9 @@ class MyApp(ctk.CTk):
         else:
             pass
 
+        if self.change.get() == 2:
+            return
+
         if developer == True:
             try:
                 if int(dversion.split(".")[0]) >= 17:
@@ -2777,7 +2780,7 @@ class MyApp(ctk.CTk):
                 except:
                     self.text.configure(text="Couldn't create a tunnel. Try again.\nYou have to run UFADE as administrator for this.")
                     self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
-                    change.set(1)
+                    change.set(2)
                     return
             elif platform.uname().system == 'Darwin':
                 self.waitm = ctk.IntVar(self, 0)
