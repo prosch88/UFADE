@@ -1114,7 +1114,7 @@ class MyApp(ctk.CTk):
                 log(f"Error while decrypting file:{file}")
         change.set(1) 
 
-# Fallback decrption function for older devices
+# Fallback decryption function for older devices
     def decrypt_old_itunes(self, tar, change):
         log("Using fallback decryption method")
         bu = Backup.from_path(backup_path=udid, password="12345")
@@ -1424,13 +1424,13 @@ class MyApp(ctk.CTk):
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
             self.progress.pack()
             self.progress.start()
-            self.hashf = threading.Thread(target=lambda: self.hash_ufd(change=self.change, zipname=zipname))
+            self.hashf = threading.Thread(target=lambda: self.hash_ufd(change=self.change, zipname=f'{zipname}.zip'))
             self.hashf.start()
             self.wait_variable(self.change)
             with open(f'{zipname}.ufd', "w") as ufdf:
                 ufdf.write("[DeviceInfo]\nIMEI1=" + imei + "\nIMEI2=" + imei2 + "\nModel=" + product + "\nOS=" + dversion + "\nVendor=Apple\n\n[Dumps]\nFileDump=Apple_" + hardware.upper() + " " +
                 dev_name + ".zip\n\n[ExtractionStatus]\nExtractionStatus=Success\n\n[FileDump]\nType=ZIPfolder\nZIPLogicalPath=iPhoneDump\n\n[General]\nAcquisitionTool=UFADE\nBackupPassword=" + "12345" + "\nConnectionType=Cable No. 210 or Original Cable\nDate=" + begin + "\nDevice=" + d_class.upper() + "\nEndTime=" + e_end + "\nExtractionNameFromXML=File System\nExtractionType=AdvancedLogical\nFullName=" +
-                hardware.upper() + " " + dev_name + "\nGUID=" + udid + "\nInternalBuild=\nIsEncrypted=True\nIsEncryptedBySystem=True\nMachineName=\nModel=" + hardware.upper() + " " + dev_name + "\nUfdVer=1.2\nUnitId=\nUserName=\nVendor=Apple\nVersion=other\n\n[SHA256]\n" + zipname + "=" + z_hash.upper() + "")
+                hardware.upper() + " " + dev_name + "\nGUID=" + udid + "\nInternalBuild=\nIsEncrypted=True\nIsEncryptedBySystem=True\nMachineName=\nModel=" + hardware.upper() + " " + dev_name + "\nUfdVer=1.2\nUnitId=\nUserName=\nVendor=Apple\nVersion=other\n\n[SHA256]\n" + zipname + ".zip=" + z_hash.upper() + "")
             self.progress.pack_forget()
 
         self.text.configure(text="Backup complete!\nTrying to deactivate Backup Encryption again. \nUnlock device with PIN/PW if prompted")
