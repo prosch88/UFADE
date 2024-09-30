@@ -2680,8 +2680,12 @@ class MyApp(ctk.CTk):
                     try:
                         lockdown = get_tunneld_devices()[0]
                     except:
-                        lockdown.connect()
-
+                        try:
+                            lockdown.connect()
+                        except:
+                            self.text.configure(text="Something went wrong. Try again.\nOn iOS 18 and up this is expected (Please restart UFADE).")
+                            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                            return
 
                 else:
                     lockdown = create_using_usbmux()
