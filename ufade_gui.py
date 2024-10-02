@@ -1501,7 +1501,7 @@ class MyApp(ctk.CTk):
             if self.wachange.get() == 0:
                 return()
             self.label1.pack_forget()
-            self.label2.pack_forget().zip
+            self.label2.pack_forget()
             if "net.whatsapp.WhatsApp" in app_id_list and "net.whatsapp.WhatsAppSMB" in app_id_list:  
                 self.text.pack_forget()
                 self.wa_button.pack_forget()
