@@ -7,7 +7,7 @@ It utilizes the awesome projects: [pymobiledevice3](https://github.com/doronz88/
 
 The use of [pythondialog](https://github.com/frougon/pythondialog) is preventing the Windows compatibility for the command line version. Linux and MacOS should work. 
 
-Update: There is a new version based on [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter). This one works on Windows. You can also load the Windows version from the release page. 
+There is a new version based on [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter). This one works on Windows. You can also load the Windows version from the release page. 
 
 Requires Python == 3.11.
 
@@ -108,6 +108,10 @@ including:
 **Developer Options**
 
 *Try to mount a suitable DeveloperDiskImage. Gives further options for screenshots and filesystem views.* 
+
+**Advanced Options**
+
+*Gives options like network-sniffing and various Logging functions .* 
 
 
 
