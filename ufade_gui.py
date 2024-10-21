@@ -3749,17 +3749,20 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                 except: pass
                 if os.path.isdir(dst):
                     dst = os.path.join(dst, os.path.basename(relative_src))
-                    
-                with open(dst, 'wb') as f:
-                    f.write(filecontent)
-                try:
-                    if mtime < datetime.fromisoformat('1980-01-01').timestamp():
-                        mtime = datetime.fromisoformat('1980-01-01').timestamp() 
-                    os.utime(dst, (mtime, mtime))
-                except: 
+                try:    
+                    with open(dst, 'wb') as f:
+                        f.write(filecontent)
+                    try:
+                        if mtime < datetime.fromisoformat('1980-01-01').timestamp():
+                            mtime = datetime.fromisoformat('1980-01-01').timestamp() 
+                        os.utime(dst, (mtime, mtime))
+                    except: 
+                        pass
+                    if callback is not None:
+                        callback(src, dst)
+                except:
+                    log(f"Error writing file: {src}")
                     pass
-                if callback is not None:
-                    callback(src, dst)
             else:
                 pass
                     
