@@ -2683,7 +2683,7 @@ class MyApp(ctk.CTk):
                                 {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": d_app}, {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": apps.get(d_app)['CFBundleVersion']}, 
                                 {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": doc_list[app_id_list.index(d_app)]}, 
                                 {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": "visible" if d_app in springboard_rep else "absent"}] for d_app in app_id_list]
-                            }],              
+                            } if len(apps) > 0 else "None"],              
 
                         {".": "", "style": "title", "label": "title0", "outline": {}},
                     ] 
