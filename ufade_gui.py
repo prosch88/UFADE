@@ -2636,6 +2636,7 @@ class MyApp(ctk.CTk):
                             ".": "Companion Device:", "style": "title", "label": "title1", "outline": {}
                         },
                         {
+                            "widths": [2.5, 7.5],
                             "style": {"s": 11, "border_color": "lightgrey"},
                             "table": [[{".": [{".b": "Companion-UDID:"}]}, {".": [{".": comp if comp != [] else "None"}]},]]
                         },
