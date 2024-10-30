@@ -9,3 +9,4 @@ paramiko
 customtkinter
 crossfiledialog
 exifread<3
+pdfme

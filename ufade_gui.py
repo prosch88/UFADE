@@ -52,6 +52,7 @@ from playsound import playsound
 from io import BytesIO
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
+from pdfme import build_pdf
 import mimetypes
 import hashlib
 import json
@@ -71,6 +72,7 @@ import re
 import exifread
 import uuid
 
+
 ctk.set_appearance_mode("dark")  # Dark Mode
 ctk.set_default_color_theme("dark-blue") 
 
@@ -81,7 +83,7 @@ class MyApp(ctk.CTk):
         self.stop_event = threading.Event()
 
         # Define Window
-        self.title("Universal Forensic Apple Device Extractor 0.9.4")
+        self.title(f"Universal Forensic Apple Device Extractor {u_version}")
         self.geometry("1100x600")
         self.resizable(False, False)
         if platform.uname().system == "Darwin":
@@ -147,7 +149,7 @@ class MyApp(ctk.CTk):
         self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
         self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
         self.menu_buttons = [
-            ctk.CTkButton(self.dynamic_frame, text="Save device info", command=lambda: self.switch_menu("DevInfo"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Reporting Options", command=lambda: self.switch_menu("iReportMenu"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Acquisition Options", command=lambda: self.switch_menu("AcqMenu"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Collect Unified Logs", command=lambda: self.switch_menu("CollectUL"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Developer Options", command=lambda: self.switch_menu("CheckDev"), width=200, height=70, font=self.stfont),
@@ -190,6 +192,10 @@ class MyApp(ctk.CTk):
             self.show_watch_menu()
         elif menu_name == "ReportMenu":
             self.show_report_menu()
+        elif menu_name == "iReportMenu":
+            self.show_ireport_menu()
+        elif menu_name == "PDF":
+            self.show_pdf_report()
         elif menu_name == "DevInfo":
             self.show_save_device_info()
         elif menu_name == "iTunes":
@@ -266,15 +272,17 @@ class MyApp(ctk.CTk):
             r+=1
             i+=1
 
-# Watch Report Menu
+# Watch/TV Report Menu
     def show_report_menu(self):
         self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
         self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
         self.menu_buttons = [
             ctk.CTkButton(self.dynamic_frame, text="Save device info", command=lambda: self.switch_menu("DevInfo"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Create PDF Report", command=lambda: self.switch_menu("PDF"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Create UFDR Report", command=lambda: self.switch_menu("Report"), width=200, height=70, font=self.stfont),
         ]
-        self.menu_text = ["Save informations about the device, installed apps,\nSIM and companion devices.",
+        self.menu_text = ["Save informations about the device, installed apps,\nSIM and companion devices. (as .txt)",
+                          "Create a printable PDF device report",
                           "Create a UFDR-Zip container viewable\nin the Cellebrite Reader application"]
         self.menu_textbox = []
         for btn in self.menu_buttons:
@@ -289,6 +297,30 @@ class MyApp(ctk.CTk):
             i+=1
 
         ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_watch_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
+
+#iPhone/iPad Report Menu
+    def show_ireport_menu(self):
+        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
+        self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
+        self.menu_buttons = [
+            ctk.CTkButton(self.dynamic_frame, text="Save device info", command=lambda: self.switch_menu("DevInfo"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Create PDF Report", command=lambda: self.switch_menu("PDF"), width=200, height=70, font=self.stfont),
+        ]
+        self.menu_text = ["Save informations about the device, installed apps,\nSIM and companion devices. (as .txt)",
+                          "Create a printable PDF device report"]
+        self.menu_textbox = []
+        for btn in self.menu_buttons:
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=70, font=self.stfont, anchor="w", justify="left"))
+        r=1
+        i=0
+        for btn in self.menu_buttons:
+            btn.grid(row=r,column=0, padx=30, pady=10)
+            self.menu_textbox[i].grid(row=r,column=1, padx=10, pady=10)
+            self.menu_textbox[i].configure(text=self.menu_text[i])
+            r+=1
+            i+=1
+
+        ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_main_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
 
 # Acquisition Menu
     def show_acq_menu(self):
@@ -1729,6 +1761,26 @@ class MyApp(ctk.CTk):
         self.exambox.pack(pady=5, padx=30) 
         self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.change.set(1))
         self.okbutton.pack(pady=30, padx=100)
+        global case_number
+        global case_name
+        global evidence_number
+        global examiner
+        if case_number != "":
+                self.casebox.insert(0, string=case_number)
+        else:
+            pass
+        if case_name != "":
+                self.namebox.insert(0, string=case_name)
+        else:
+            pass
+        if evidence_number != "":
+                self.evidbox.insert(0, string=evidence_number)
+        else:
+            pass
+        if examiner != "":
+                self.exambox.insert(0, string=examiner)
+        else:
+            pass
         self.wait_variable(self.change)
         self.text.configure(text="Performing AFC Extraction of Mediafiles", height=60)
         self.casebox.pack_forget()
@@ -2416,6 +2468,230 @@ class MyApp(ctk.CTk):
         shutil.rmtree(path)
         log("Created UFDR Report")
         change.set(1)
+
+    def show_pdf_report(self):
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text="Generate PDF Report", height=60, width=585, font=("standard",24), justify="left").pack(pady=20)
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Provide the case information:", width=585, height=30, font=self.stfont, anchor="w", justify="left")
+        self.change = ctk.IntVar(self, 0)
+        self.text.pack(anchor="center", pady=25)
+        
+        self.casebox = ctk.CTkEntry(self.dynamic_frame, width=360, height=20, corner_radius=0, placeholder_text="case number")
+        self.casebox.pack(pady=5, padx=30)
+        self.namebox = ctk.CTkEntry(self.dynamic_frame, width=360, height=20, corner_radius=0, placeholder_text="case name")
+        self.namebox.pack(pady=5, padx=30)
+        self.evidbox = ctk.CTkEntry(self.dynamic_frame, width=360, height=20, corner_radius=0, placeholder_text="evidence number")
+        self.evidbox.pack(pady=5, padx=30)  
+        self.exambox = ctk.CTkEntry(self.dynamic_frame, width=360, height=20, corner_radius=0, placeholder_text="examiner")
+        self.exambox.pack(pady=5, padx=30) 
+        self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.change.set(1))
+        self.okbutton.pack(pady=30, padx=100)
+        global case_number
+        global case_name
+        global evidence_number
+        global examiner
+        if case_number != "":
+                self.casebox.insert(0, string=case_number)
+        else:
+            pass
+        if case_name != "":
+                self.namebox.insert(0, string=case_name)
+        else:
+            pass
+        if evidence_number != "":
+                self.evidbox.insert(0, string=evidence_number)
+        else:
+            pass
+        if examiner != "":
+                self.exambox.insert(0, string=examiner)
+        else:
+            pass
+        self.wait_variable(self.change)
+        self.casebox.pack_forget()
+        self.namebox.pack_forget()
+        self.evidbox.pack_forget()
+        self.exambox.pack_forget()
+        self.okbutton.pack_forget()
+        self.change.set(0)
+        case_number = self.casebox.get()
+        case_name = self.namebox.get()
+        evidence_number = self.evidbox.get()
+        examiner = self.exambox.get()
+        self.pdf_report(case_number, case_name, evidence_number, examiner)
+        self.text.configure(text="PDF creation complete!", height=60)
+        self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("iReportMenu")).pack(pady=40))
+
+
+#PDF Device Report with pdfme
+    def pdf_report(self, case_number="", case_name="", evidence_number="", examiner=""):
+        hobude = ["1,1","1,2","2,1","3,1","3,2","3,3","4,1","5,1","5,2","5,3","5,4","6,1","6,2","7,1","7,2","8,1","8,2","8,4","9,1","9,2","9,3","9,4","10,1","10,2","10,4","10,5","12,8","14,6"]   
+        u_grey = [0.970, 0.970, 0.970]
+        global number
+        try: 
+            number = lockdown.get_value(key="PhoneNumber")
+            if number == None:
+                number = ""
+        except: number = ""
+        global all
+        try: 
+            all = lockdown.all_values.get("CarrierBundleInfoArray")
+            if all == None:
+                all = ""
+        except: 
+            all = ""
+        try: tele = lockdown.get_value("", "TelephonyCapability")
+        except: tele = False
+        if int(dversion.split(".")[0]) >= 17:
+            try:
+                springboard_rep = str(SpringBoardServicesService(lockdown).get_icon_state())
+            except:
+                springboard_rep = app_id_list
+        else:
+            springboard_rep = app_id_list
+        
+        if d_class == "Watch":
+            d_image = os.path.join(os.path.dirname(__file__), "assets" , "report", "watch.jpg")
+        elif d_class == "AppleTV":
+            d_image = os.path.join(os.path.dirname(__file__), "assets" , "report", "tv.jpg")
+        elif d_class == "iPad":
+            d_image = os.path.join(os.path.dirname(__file__), "assets" , "report", "ipad.jpg")
+        elif d_class == "iPod":
+            d_image = os.path.join(os.path.dirname(__file__), "assets" , "report", "ipod.jpg")
+        else:
+            if product in ["iPhone" + nr for nr in hobude]:
+                d_image = os.path.join(os.path.dirname(__file__), "assets" , "report", "iphone2.jpg")
+            else:
+                d_image = os.path.join(os.path.dirname(__file__), "assets" , "report", "iphone.jpg")     
+        document = {
+            "style": {"margin_bottom": 15, "text_align": "j", "page_size": "a4", "margin": [52, 70]},
+            "formats": {
+                "url": {"c": "blue", "u": 1}, "title": {"b": 1, "s": 13}},
+            "running_sections": {
+                "header": {
+                    "x": "left", "y": 20, "height": "top", "style": {"text_align": "r"}, "content": [{".b": "This is a header"}]},
+                "footer": {
+                    "x": "left", "y": 800, "height": "bottom", "style": {"text_align": "c"}, "content": [{".": ["Page ", {"var": "$page"}]}]}
+            },
+            "sections": [
+                {
+                    "style": {"page_numbering_style": "arabic"},
+                    "running_sections": ["footer"],
+                    "content": [
+
+                        {
+                            "widths": [0.8, 0.1, 8.5],
+                            "style": {"s": 11, "border_color": "white",},
+                            "table": [
+
+                                [
+                                    {"image": os.path.join(os.path.dirname(__file__), "assets" , "report", "report_u.jpg")}, None,
+                                    {".": [{".b;s:18": "UFADE Device Report" + "\n"}, f"Created with UFADE {u_version}"]}
+                                ]
+                            ]
+                        },
+                        {".": ""},{".": ""},
+                        {".": "Case Information:", "style": "title", "label": "title1", "outline": {}},
+                        {
+                            "widths": [1.8, 0.5, 2.5, 5],
+                            "style": {"s": 11, "border_color": "white",},
+                            "table": [
+                                [{"rowspan": 4, "image": d_image}, None, {".": [{".b": "Case Number:"}]}, {".": [{".": case_number}]}],
+                                [None, None, {".": [{".b": "Case Name:"}]}, {".": [{".": case_name}]}],
+                                [None, None, {".": [{".b": "Evidence Number:"}]}, {".": [{".": evidence_number}]}],
+                                [None, None, {".": [{".b": "Examiner:"}]}, {".": [{".": examiner}]}]
+                            ]
+                        },
+                        {".": "",},
+                        {".": "Device Information:", "style": "title", "label": "title2", "outline": {}},
+                        {
+                            "widths": [1.5, 2.5, 1.5, 2.5],
+                            "style": {"s": 11, "border_color": "lightgrey"},
+                            "table": [
+                                [{".": [{".b": "Model-Nr:"}]}, {"colspan": 3, ".": [{".": dev_name}]}, None, None],
+                                [{"style": {"border_color": "white", "cell_fill": u_grey}, ".": [{".b": "Dev-Name:"}]}, {"colspan": 3, "style": {"cell_fill": u_grey}, ".": [{".": name}]}, None, None],
+                                [{".": [{".b": "UDID:"}]}, {"colspan": 3, ".": [{".": udid}]}, None, None],
+                                [{"style": {"cell_fill": u_grey}, ".": [{".b": "Hardware:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": hardware_mnr}]}, { "style": {"cell_fill": u_grey}, ".": [{".b": "WiFi MAC:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": w_mac}]}],
+                                [{".": [{".b": "Product:"}]}, {".": [{".": product}]}, {".": [{".b": "BT MAC:"}]}, {".": [{".": b_mac}]}],
+                                [{"style": {"cell_fill": u_grey}, ".": [{".b": "Software:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": dversion}]}, {"style": {"cell_fill": u_grey}, ".": [{".b": "Capacity:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": f"{disk} GB"}]}],
+                                [{".": [{".b": "Build Nr:"}]}, {".": [{".": build}]}, {".": [{".b": "Free Space:"}]}, {".": [{".": f"{free} GB"}]}],
+                                [{"style": {"cell_fill": u_grey}, ".": [{".b": "Language:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": language}]}, {"style": {"cell_fill": u_grey}, ".": [{".b": "ECID:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": ecid}]}],
+                                [{".": [{".b": "Serialnr:"}]}, {".": [{".": snr}]}, {".": [{".b": "IMEI:"}]}, {".": [{".": imei}]}],
+                                [{"style": {"cell_fill": u_grey}, ".": [{".b": "MLB-snr:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": mlbsnr}]}, {"style": {"cell_fill": u_grey}, ".": [{".b": "IMEI 2:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": imei2}]}]
+                            ]
+
+                        },
+                        {".": "",},
+                        {
+                            ".": "Telephony:", "style": "title", "label": "title1", "outline": {}
+                        },
+                        #{"image": "report_u.jpg"},
+                        {
+                            "widths": [2.5, 7.5],
+                            "style": {"s": 11, "border_color": "lightgrey"},
+                            "table": [[{".": [{".b": "Cellular:"}]}, {".": [{".": "yes" if tele == True else "no"}]},],
+                                    [{".": [{".b": "Last Number:"}]}, {".": [{".": number if number != "" else "None"}]},]]
+                        },
+                        {".": ""},
+                        {
+                            ".": "Companion Device:", "style": "title", "label": "title1", "outline": {}
+                        },
+                        {
+                            "style": {"s": 11, "border_color": "lightgrey"},
+                            "table": [[{".": [{".b": "Companion-UDID:"}]}, {".": [{".": comp if comp != [] else "None"}]},]]
+                        },
+                        ["For iOS devices, the companion device is usually an Apple Watch."],
+                        
+                        {".": "",},
+            
+                        {
+                            ".": "SIM Info:", "style": "title", "label": "title1",
+                            "outline": {}
+                        },
+                        *[
+                            {
+                            "widths": [1.5, 2.7, 1.5, 2.5],
+                            "style": {"s": 11, "border_color": "lightgrey"},
+                            "table": [
+                                [{".": [{".b": "ICCID:"}]}, {"colspan": 3, ".": [{".": entry["IntegratedCircuitCardIdentity"]}]}, None, None],
+                                [{"style": {"cell_fill": u_grey}, ".": [{".b": "IMSI:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": entry["InternationalMobileSubscriberIdentity"]}]}, { "style": {"cell_fill": u_grey}, ".": [{".b": "MCC:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": entry["MCC"]}]}],
+                                [{".": [{".b": "MNC:"}]}, {".": [{".": entry["MNC"]}]}, {".": [{".b": "Type:"}]}, {".": [{".": "SIM" if entry["Slot"] == "kOne" else "eSIM"}]}] 
+                                ]}               
+                        for entry in all if all != ""],
+                        ["None" if all == "" else ""],
+
+                        {".": "",},
+            
+                        {
+                            ".": "Applications:", "style": "title", "label": "title1", "outline": {}
+                        },
+                        
+                        {
+                            "widths": [2.2, 3, 1.4, 0.7, 0.7],
+                            "style": {"s": 9, "border_color": "white", "margin_bottom": 2},
+                            "table": [
+                                [{".": [{".b":"Name"}]},{".": [{".b":"Bundle Identifier"}]},{".": [{".b":"Version"}]}, {".": [{".b":"Sharing"}]},{".":[{".b":"visible"}]}]
+                            ]
+                        },
+
+                        *[
+                            {
+                            "widths": [2.2, 3, 1.4, 0.7, 0.7],
+                            "style": {"s": 8, "border_color": "lightgrey"},
+                            "table": [
+                                [{"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"}, ".": [{".": re.sub(r'[\u200e\u200f\u202a-\u202e]', '', apps.get(d_app)['CFBundleDisplayName'])}]}, 
+                                {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": d_app}, {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": apps.get(d_app)['CFBundleVersion']}, 
+                                {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": doc_list[app_id_list.index(d_app)]}, 
+                                {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": "visible" if d_app in springboard_rep else "absent"}] for d_app in app_id_list]
+                            }],              
+
+                        {".": "", "style": "title", "label": "title0", "outline": {}},
+                    ] 
+
+                },
+            ]
+        }
+        with open(f'Report_{udid}.pdf', 'wb') as f:
+            build_pdf(document, f)
 
 #AMFI Developer:
     def amfi_developer(self, text):
@@ -3293,7 +3569,7 @@ def save_info():
             except: pass
     
     #Save user-installed Apps to txt
-    if int(dversion.split(".")[0]) >= 18:
+    if int(dversion.split(".")[0]) >= 17:
         try:
             springboard = SpringBoardServicesService(lockdown).get_icon_state()
         except:
@@ -3851,6 +4127,11 @@ bu_pass = "12345"
 developer = False
 filedict = {}
 no_escrow = False
+case_number = ""
+case_name = ""
+evidence_number = ""
+examiner = ""
+u_version = "0.9.4"
 
 
 # Start the app
