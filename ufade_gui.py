@@ -2519,8 +2519,10 @@ class MyApp(ctk.CTk):
         examiner = self.exambox.get()
         self.pdf_report(case_number, case_name, evidence_number, examiner)
         self.text.configure(text="PDF creation complete!", height=60)
-        self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("iReportMenu")).pack(pady=40))
-
+        if d_class == "Watch" or d_class == "AppleTV":
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("ReportMenu")).pack(pady=40))
+        else:
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("iReportMenu")).pack(pady=40))
 
 #PDF Device Report with pdfme
     def pdf_report(self, case_number="", case_name="", evidence_number="", examiner=""):
