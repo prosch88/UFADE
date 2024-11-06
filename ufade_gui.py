@@ -1814,6 +1814,7 @@ class MyApp(ctk.CTk):
         self.mediaexport = threading.Thread(target=lambda: media_export(l_type="folder", dest=mfolder, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
         self.mediaexport.start()
         self.wait_variable(self.change)
+        self.mediaexport.join()
         self.change.set(0)
         self.progress.set(0)
         self.prog_text.configure(text="0%")
