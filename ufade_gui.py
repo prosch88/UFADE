@@ -1814,12 +1814,10 @@ class MyApp(ctk.CTk):
         self.mediaexport = threading.Thread(target=lambda: media_export(l_type="folder", dest=mfolder, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
         self.mediaexport.start()
         self.wait_variable(self.change)
-        self.mediaexport.join()
         self.change.set(0)
         self.progress.set(0)
         self.prog_text.configure(text="0%")
         self.text.configure(text="Pulling Crash Logs from the device.")
-        self.after(3000)
         self.crashl = threading.Thread(target=lambda: crash_report(crash_dir=cfolder, change=self.change, progress=self.progress, prog_text=self.prog_text))
         self.crashl.start()
         self.wait_variable(self.change)
@@ -3490,43 +3488,48 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False):
         zip = zipfile.ZipFile(f'{crash_dir}.zip', 'w')
     crash_count = 0
     crash_list = []
-    for entry in CrashReportsManager(lockdown).ls(""):
-        crash_list.append(entry)
-        crash_count += 1        
-    try: os.mkdir(crash_dir)
-    except: pass
-    c_nr = 0
-    for entry in crash_list:
-        c_nr += 1
-        try: 
-            pull(self=AfcService(lockdown, service_name="com.apple.crashreportcopymobile"),relative_src=entry, dst=crash_dir)
-            #AfcService(lockdown, service_name="com.apple.crashreportcopymobile").pull(relative_src=entry, dst=crash_dir, src_dir="")
-            if czip == True:
-                file_path = os.path.join(crash_dir, entry) 
-                if os.path.isfile(file_path):
-                    zip.write(file_path, entry)                            #add the file/folder to the ZIP
-                elif os.path.isdir(file_path):  
-                    for root, dirs, files in os.walk(crash_dir):
-                        for file in files:
-                            source_file = os.path.join(root, file)
-                            filename = os.path.relpath(source_file, crash_dir)
-                            zip.write(source_file, arcname=filename)
-                try: os.remove(file_path)
-                except: shutil.rmtree(file_path)
-            else:
+    try:
+        for entry in CrashReportsManager(lockdown).ls(""):
+            crash_list.append(entry)
+            crash_count += 1        
+        try: os.mkdir(crash_dir)
+        except: pass
+        c_nr = 0
+        for entry in crash_list:
+            c_nr += 1
+            try: 
+                pull(self=AfcService(lockdown, service_name="com.apple.crashreportcopymobile"),relative_src=entry, dst=crash_dir)
+                #AfcService(lockdown, service_name="com.apple.crashreportcopymobile").pull(relative_src=entry, dst=crash_dir, src_dir="")
+                if czip == True:
+                    file_path = os.path.join(crash_dir, entry) 
+                    if os.path.isfile(file_path):
+                        zip.write(file_path, entry)                            #add the file/folder to the ZIP
+                    elif os.path.isdir(file_path):  
+                        for root, dirs, files in os.walk(crash_dir):
+                            for file in files:
+                                source_file = os.path.join(root, file)
+                                filename = os.path.relpath(source_file, crash_dir)
+                                zip.write(source_file, arcname=filename)
+                    try: os.remove(file_path)
+                    except: shutil.rmtree(file_path)
+                else:
+                    pass
+            except: 
                 pass
-        except: 
-            pass
-        cpro = c_nr/crash_count
-        progress.set(cpro)
-        prog_text.configure(text=f"{int(cpro*100)}%")
-        progress.update()
-        prog_text.update()
-    if czip == True:
-        zip.close()
-        shutil.rmtree(crash_dir)
-    log("Crash log extraction complete.")
-    change.set(1)
+            cpro = c_nr/crash_count
+            progress.set(cpro)
+            prog_text.configure(text=f"{int(cpro*100)}%")
+            progress.update()
+            prog_text.update()
+        if czip == True:
+            zip.close()
+            shutil.rmtree(crash_dir)
+        log("Crash log extraction complete.")
+        change.set(1)
+    except:
+        log("Crash log extraction failed.")
+        change.set(1)
+
 
 
 def save_info():
