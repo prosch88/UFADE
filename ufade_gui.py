@@ -1818,7 +1818,7 @@ class MyApp(ctk.CTk):
         self.progress.set(0)
         self.prog_text.configure(text="0%")
         self.text.configure(text="Pulling Crash Logs from the device.")
-        self.after(500)
+        self.after(3000)
         self.crashl = threading.Thread(target=lambda: crash_report(crash_dir=cfolder, change=self.change, progress=self.progress, prog_text=self.prog_text))
         self.crashl.start()
         self.wait_variable(self.change)
