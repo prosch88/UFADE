@@ -1783,6 +1783,8 @@ class MyApp(ctk.CTk):
             pass
         self.wait_variable(self.change)
         self.text.configure(text="Performing AFC Extraction of Mediafiles", height=60)
+        global lockdown
+        lockdown = create_using_usbmux()
         self.casebox.pack_forget()
         self.namebox.pack_forget()
         self.evidbox.pack_forget()
@@ -1818,6 +1820,7 @@ class MyApp(ctk.CTk):
         self.progress.set(0)
         self.prog_text.configure(text="0%")
         self.text.configure(text="Pulling Crash Logs from the device.")
+        lockdown = create_using_usbmux()
         self.crashl = threading.Thread(target=lambda: crash_report(crash_dir=cfolder, change=self.change, progress=self.progress, prog_text=self.prog_text))
         self.crashl.start()
         self.wait_variable(self.change)
@@ -1842,6 +1845,8 @@ class MyApp(ctk.CTk):
         prog_text.configure(text="")
         text.configure(text="Generating report files. This may take some time.")
         progress.pack_forget()
+        global lockdown
+        lockdown = create_using_usbmux()
         self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
         self.progress.pack()
         self.progress.start()
@@ -4140,7 +4145,7 @@ case_number = ""
 case_name = ""
 evidence_number = ""
 examiner = ""
-u_version = "0.9.4"
+u_version = "0.9.5"
 
 
 # Start the app
