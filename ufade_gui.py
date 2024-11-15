@@ -1510,7 +1510,9 @@ class MyApp(ctk.CTk):
 
         else:
             self.wachange = ctk.IntVar(self, 0)
+            self.label1 = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
             self.label2 = ctk.CTkLabel(self.dynamic_frame, text="PuMA Backup", height=60, width=585, font=("standard",24), justify="left")
+            self.label1.pack(anchor="w")
             self.label2.pack(pady=20)
             if "net.whatsapp.WhatsApp" in app_id_list and "net.whatsapp.WhatsAppSMB" not in app_id_list:
                 self.after(100, lambda: self.wachange.set(1))
@@ -1531,6 +1533,7 @@ class MyApp(ctk.CTk):
             if self.wachange.get() == 0:
                 return()
             self.label2.pack_forget()
+            self.label1.pack_forget()
             if "net.whatsapp.WhatsApp" in app_id_list and "net.whatsapp.WhatsAppSMB" in app_id_list:  
                 self.text.pack_forget()
                 self.wa_button.pack_forget()
