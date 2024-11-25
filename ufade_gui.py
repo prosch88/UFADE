@@ -3801,7 +3801,7 @@ def dev_data():
 
     try: 
         if len(udid) > 26:
-            udid_s = udid[:25] + "\n" + '{:13}'.format(" ") + "\t" + udid[25:]
+            udid_s = udid[:20] + "\n" + '{:13}'.format(" ") + "\t" + udid[20:]
         else:
             udid_s = udid
         if len(name) > 26:
