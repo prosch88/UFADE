@@ -772,6 +772,7 @@ class MyApp(ctk.CTk):
             else:
                 self.switch_menu("AdvMenu")
 
+# Sysdiagnose creation screen
     def sysdiag(self, text, progress, waitsys):
         self.abort = ctk.CTkButton(self.dynamic_frame, text="Abort", font=self.stfont, command=self.abort_diag)
         self.abort.pack(pady=15)
@@ -905,7 +906,7 @@ class MyApp(ctk.CTk):
         else:
             self.schedule_check(t, change)
 
-# Start a thread for the 
+# Start a thread for the known password flow
     def call_known_pw(self, passwordbox, pw_found, okbutton, abort, text):
         known = threading.Thread(target=lambda: self.password_known(passwordbox, pw_found, okbutton, abort, text))
         known.start() 
@@ -1154,7 +1155,7 @@ class MyApp(ctk.CTk):
         tar.add(".tar_tmp/itunes_bu", arcname="iTunes_Backup/", recursive=True)
         change.set(1)
 
-# Only decrypt Whatsaap (TESS)
+# Only decrypt Whatsaap (TESS/PuMA)
     def decrypt_whatsapp(self, change, wachange):
         log("Started Whatsapp extraction")
         finish = False
@@ -4111,7 +4112,7 @@ def log(text):
         logtime = str(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
         logfile.write(f"{logtime}: {text}\n")
 
-# modified unback commanf from pyiosbackup for better Windows support
+# modified unback command from pyiosbackup for better Windows support
 def unback_alt(self, path='.'):
     dest_dir = pathlib.Path(path)
     dest_dir.mkdir(exist_ok=True, parents=True)
