@@ -151,13 +151,13 @@ class MyApp(ctk.CTk):
         self.menu_buttons = [
             ctk.CTkButton(self.dynamic_frame, text="Reporting Options", command=lambda: self.switch_menu("iReportMenu"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Acquisition Options", command=lambda: self.switch_menu("AcqMenu"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Collect Unified Logs", command=lambda: self.switch_menu("CollectUL"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Logging Options", command=lambda: self.switch_menu("LogMenu"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Developer Options", command=lambda: self.switch_menu("CheckDev"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Advanced Options", command=lambda: self.switch_menu("AdvMenu"), width=200, height=70, font=self.stfont),
         ]
         self.menu_text = ["Save informations about the device, installed apps,\nSIM and companion devices.", 
                           "Allows logical, advanced logical and filesystem\nextractions.", 
-                          "Collects the AUL from the device and saves\nthem as a logarchive.",
+                          "Collect the AUL, Crash Logs, Sysdiagnose and Live Syslogs",
                           "Access developer mode for further options.\nMainly screenshotting options.",
                           "More specific options for data handling."]
         self.menu_textbox = []
@@ -182,6 +182,8 @@ class MyApp(ctk.CTk):
         self.current_menu = menu_name
         if menu_name == "AcqMenu":
             self.show_acq_menu()
+        if menu_name == "LogMenu":
+            self.show_log_menu()
         elif menu_name == "DevMenu":
             self.show_dev_menu()
         elif menu_name == "CheckDev":    
@@ -214,6 +216,8 @@ class MyApp(ctk.CTk):
             self.show_deactivate_encryption()
         elif menu_name == "CollectUL":
             self.show_collect_ul()
+        elif menu_name == "LiveSys":
+            self.show_capture_syslog()
         elif menu_name == "CrashReport":
             self.show_crash_report()
         elif menu_name == "SysDiag":
@@ -351,6 +355,36 @@ class MyApp(ctk.CTk):
 
         ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_main_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
 
+# Logging Options Menu
+    def show_log_menu(self):
+        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
+        self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
+        self.menu_buttons = [
+            ctk.CTkButton(self.dynamic_frame, text="Collect Unified Logs", command=lambda: self.switch_menu("CollectUL"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Extract crash reports", command=lambda: self.switch_menu("CrashReport"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Initiate Sysdiagnose", command=lambda: self.switch_menu("SysDiag"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Capture Live Syslogs", command=lambda: self.switch_menu("LiveSys"), width=200, height=70, font=self.stfont),
+        ]
+        self.menu_text = ["Collects the AUL from the device and saves\nthem as a logarchive.", 
+                          "Pull the crash report folder from the device.", 
+                          "Create a Sysdiagnose archive on the device and\npull it to the disk afterwards.",
+                          "Capture the Live Syslogs from the device and\nwrite them to a textfile."]
+        self.menu_textbox = []
+        for btn in self.menu_buttons:
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=70, font=self.stfont, anchor="w", justify="left"))
+
+        r=1
+        i=0
+        for btn in self.menu_buttons:
+            btn.grid(row=r,column=0, padx=30, pady=10)
+            self.menu_textbox[i].grid(row=r,column=1, padx=10, pady=10)
+            self.menu_textbox[i].configure(text=self.menu_text[i])
+            r+=1
+            i+=1
+
+        ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_main_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
+
+
 # Developer Options Menu
     def show_dev_menu(self):
         self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
@@ -385,16 +419,12 @@ class MyApp(ctk.CTk):
         self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
         self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
         self.menu_buttons = [
-            ctk.CTkButton(self.dynamic_frame, text="Extract crash reports", command=lambda: self.switch_menu("CrashReport"), width=200, height=50, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Initiate Sysdiagnose", command=lambda: self.switch_menu("SysDiag"), width=200, height=50, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="WhatsApp export\n(PuMA)", command=lambda: self.switch_menu("tess"), width=200, height=50, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Sniff device traffic", command=lambda: self.switch_menu("sniff"), width=200, height=50, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Extract AFC Media files", command=lambda: self.switch_menu("Media"), width=200, height=50, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Remove UFADE Backup\nPassword", command=lambda: self.switch_menu("enc_off"), width=200, height=50, font=self.stfont)
+            ctk.CTkButton(self.dynamic_frame, text="WhatsApp export\n(PuMA)", command=lambda: self.switch_menu("tess"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Sniff device traffic", command=lambda: self.switch_menu("sniff"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Extract AFC Media files", command=lambda: self.switch_menu("Media"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Remove UFADE Backup\nPassword", command=lambda: self.switch_menu("enc_off"), width=200, height=70, font=self.stfont)
         ]
-        self.menu_text = ["Pull the crash report folder from the device.",
-                          "Create a Sysdiagnose archive on the device and\npull it to the disk afterwards.", 
-                          "Perform an iTunes-style backup and extract Whatsapp\nfiles for PuMA (LE-tool).", 
+        self.menu_text = ["Perform an iTunes-style backup and extract Whatsapp\nfiles for PuMA (LE-tool).", 
                           "Captures the device network traffic as a pcap file.",
                           "Pull the \"Media\"-folder from the device\n(pictures, videos, recordings)",
                           "Try to remove the encryption password set by UFADE"
@@ -683,12 +713,29 @@ class MyApp(ctk.CTk):
             if d_class == "Watch" or d_class == "AppleTV":
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
             else:
-                ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=10)
+                ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("LogMenu")).pack(pady=10)
         else:
             if d_class == "Watch" or d_class == "AppleTV":
                 self.show_watch_menu()
             else:
-                self.show_main_menu()
+                self.switch_menu("LogMenu")
+
+# Live Syslog screen
+    def show_capture_syslog(self):
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text="Capture Live Syslogs", height=60, width=585, font=("standard",24), justify="left").pack(pady=20)
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Press “Start” to begin recording the syslogs.\n“Stop” pauses the recording.", width=585, height=70, font=self.stfont, anchor="w", justify="left")
+        self.text.pack(pady=25)
+        self.sysl = threading.Thread(target=lambda: self.capture_syslog(text=self.text, startb=self.startb, backb=self.backb))
+        self.startb = ctk.CTkButton(self.dynamic_frame, text="Start", font=self.stfont, command=lambda: self.sysl.start())
+        self.startb.pack(pady=20) 
+        if d_class == "Watch" or d_class == "AppleTV":
+            self.backb = ctk.CTkButton(self.dynamic_frame, text="Back", font=self.stfont, command=self.show_watch_menu)
+            self.backb.pack(pady=10)
+        else:
+            self.backb = ctk.CTkButton(self.dynamic_frame, text="Back", font=self.stfont, command=lambda: self.switch_menu("LogMenu"))
+            self.backb.pack(pady=10)
+
 
 # Crash Report extraction as single function or as part of a flow
     def show_crash_report(self, cdir="Crash_Report", flow=False):
@@ -719,7 +766,7 @@ class MyApp(ctk.CTk):
             if d_class == "Watch" or d_class == "AppleTV":
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
             else:
-                ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=10)
+                ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("LogMenu")).pack(pady=10)
         else:
             pass
 
@@ -765,12 +812,12 @@ class MyApp(ctk.CTk):
             if d_class == "Watch" or d_class == "AppleTV":
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
             else:
-                ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=10)     
+                ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("LogMenu")).pack(pady=10)     
         else:
             if d_class == "Watch" or d_class == "AppleTV":
                 self.show_watch_menu()
             else:
-                self.switch_menu("AdvMenu")
+                self.switch_menu("LogMenu")
 
 # Sysdiagnose creation screen
     def sysdiag(self, text, progress, waitsys):
@@ -832,7 +879,7 @@ class MyApp(ctk.CTk):
         uname = f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.logarchive'
         try:
             OsTraceService(lockdown).collect(out= os.path.join("unified_logs", uname), start_time=time)
-            text.configure(text=f"Unified Logs written to {uname}")
+            text.configure(text=f"Unified Logs written to:\n{uname}")
             log(f"Collected Unified Logs as {uname}")
             waitul.set(1)  
         except:
@@ -841,6 +888,29 @@ class MyApp(ctk.CTk):
             waitul.set(1)
         try: os.rmdir("unified_logs")
         except: pass
+
+# Live Syslog function
+    def capture_syslog(self, text, startb, backb):
+        fname = f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}_livelog.txt'
+        sysloglive = OsTraceService(lockdown)
+        #text.configure(height=200, wraplength=900, anchor="nw")
+        startb.configure(text="Stop", command=lambda: sysloglive.close())
+        backb.configure(state="disabled")
+        backb.pack_forget()
+        i=0
+        try:
+            with open(fname, 'a') as out:
+                for entry in sysloglive.syslog():
+                    i=i+1
+                    text.configure(text=f'{i} lines of Syslogs written')
+                    out.write(f'{entry}\n')
+        except:
+            text.configure(text=f'{i} lines of Syslogs written to:\n{fname}')
+            log(f'{i} lines of Syslogs written to: {fname}')
+            startb.pack_forget()
+            backb.configure(state="normal")
+            backb.pack(pady=20)
+
 
 # Call the iTunes Backup
     def show_iTunes_bu(self):
@@ -2869,6 +2939,7 @@ class MyApp(ctk.CTk):
                         if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
                             text.configure(text="DeveloperDiskImage not loaded")
                             developer = False
+                            change.set(1)
                             return("nope")
                         else:
                             text.configure(text="DeveloperDiskImage loaded")
@@ -4177,7 +4248,7 @@ case_number = ""
 case_name = ""
 evidence_number = ""
 examiner = ""
-u_version = "0.9.5"
+u_version = "0.9.6"
 
 
 # Start the app
