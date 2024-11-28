@@ -2635,7 +2635,7 @@ class MyApp(ctk.CTk):
             "‘": "'", "’": "'", "“": '"', "”": '"', "—": "-", "–": "-",
             "ꀤ": "I", "ʂ": "s", "𝓲": "i", "ƿ": "p", "‘": "'", "𝔄": "A",
         }
-        replaced_name = ''.join(replace.get(char, '?') if not char.isascii() else char for char in name)
+        replaced_name = ''.join(replace.get(char, ' ') if not char.isascii() else char for char in name)
         global number
         try: 
             number = lockdown.get_value(key="PhoneNumber")
