@@ -57,6 +57,8 @@ Windows:
 
 install [Apple-Devices](https://apps.microsoft.com/detail/9np83lwlpz9k?hl)
 
+Highly recommended: Disable the [Maximum Path Length Limitation](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=Registry) 
+
 <br />
 
 ## Usage
