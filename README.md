@@ -62,10 +62,6 @@ Highly recommended: Disable the [Maximum Path Length Limitation](https://learn.m
 Connect an Apple device (iPhone, iPad) to your workstation, unlock and pair the device.
 Start the script:
 ```
-python ufade.py
-```
-or
-```
 python ufade_gui.py
 ```
 
