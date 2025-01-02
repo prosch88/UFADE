@@ -1,5 +1,4 @@
 pymobiledevice3
-pythondialog
 pyiosbackup
 iOSbackup
 pandas
