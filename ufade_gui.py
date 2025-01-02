@@ -8,7 +8,7 @@ if sys.stdout is None:
 if sys.stderr is None:
     sys.stderr = open(os.devnull, "w")
 import customtkinter as ctk
-from PIL import ImageTk, Image, ExifTags
+from PIL import ImageTk, Image, ExifTags, ImageDraw, ImageFont
 from tkinter import StringVar
 from pymobiledevice3 import usbmux, exceptions, lockdown
 from pymobiledevice3.services.mobile_image_mounter import DeveloperDiskImageMounter, MobileImageMounterService, PersonalizedImageMounter
@@ -33,7 +33,10 @@ from pymobiledevice3.tcp_forwarder import UsbmuxTcpForwarder
 from pymobiledevice3.services.pcapd import PcapdService
 from pymobiledevice3.osu.os_utils import get_os_utils
 from pymobiledevice3.remote.module_imports import MAX_IDLE_TIMEOUT, start_tunnel, verify_tunnel_imports
-from pymobiledevice3.tunneld import TUNNELD_DEFAULT_ADDRESS, TunnelProtocol, TunneldRunner, get_tunneld_devices, get_rsds
+from pymobiledevice3.tunneld.api import TUNNELD_DEFAULT_ADDRESS, get_tunneld_devices
+from pymobiledevice3.tunneld.server import TunneldRunner
+from pymobiledevice3.remote.common import TunnelProtocol
+from pymobiledevice3.remote.utils import get_rsds
 from pymobiledevice3.cli.remote import cli_tunneld
 from pymobiledevice3.services.os_trace import OsTraceService
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_pkcs12
@@ -2605,38 +2608,25 @@ class MyApp(ctk.CTk):
     def pdf_report(self, case_number="", case_name="", evidence_number="", examiner=""):
         hobude = ["1,1","1,2","2,1","3,1","3,2","3,3","4,1","5,1","5,2","5,3","5,4","6,1","6,2","7,1","7,2","8,1","8,2","8,4","9,1","9,2","9,3","9,4","10,1","10,2","10,4","10,5","12,8","14,6"]   
         u_grey = [0.970, 0.970, 0.970]
-        replace = {
+        background_color = tuple(int(c * 255) for c in u_grey)
+        font_size = 64
+        font_path = os.path.join(os.path.dirname(__file__),"assets", "report", "helvetica.ttf")
+        font = ImageFont.truetype(font_path, font_size)
+        dummy_image = Image.new("RGB", (1, 1))
+        draw = ImageDraw.Draw(dummy_image)
+        text_width = 2200
+        image = Image.new("RGB", (int(text_width), font_size), background_color)
+        draw = ImageDraw.Draw(image)
+        draw.text((0,12),text=name, font=font, fill="black")
+        image_stream = BytesIO()
+        image.save(image_stream, format="JPEG", quality=95)
+        image_stream.seek(0)
 
-            "𝒜": "A", "𝐴": "A", "𝔄": "A", "𝕬": "A", "𝔸": "A", "𝒶": "a", "𝐴": "A",
-            "𝒞": "C", "𝒸": "c", "ℂ": "C", "𝓒": "C", "𝔠": "c", "𝕮": "C", "ℭ": "C",
-            "𝒟": "D", "𝔇": "D", "𝔻": "D", "𝕯": "D", "𝓓": "D", "𝒹": "d",
-            "𝒜": "A", "𝔞": "a", "𝔹": "B", "𝒷": "b", "𝓑": "B", "𝔅": "B",
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
+            temp_file.write(image_stream.getvalue())
+            temp_image_name = temp_file.name
 
-            "ꌗ": "S", "Ƭ": "T", "ꍟ": "E", "ꎧ": "H", "ꑙ": "O", "и": "N", "Ɛ": "E",
-            "ℌ": "H", "ℍ": "H", "ℒ": "L", "ℰ": "E", "𝒮": "S", "𝓔": "E", "Ƒ": "F",
 
-            "𝟬": "0", "𝟭": "1", "𝟮": "2", "𝟯": "3", "𝟰": "4", "𝟱": "5",
-            "𝟲": "6", "𝟳": "7", "𝟴": "8", "𝟵": "9",
-            
-            "𝐀": "A", "𝐁": "B", "𝐂": "C", "𝐃": "D", "𝐄": "E", "𝐅": "F", "𝐆": "G", "𝐇": "H",
-            "𝐈": "I", "𝐉": "J", "𝐊": "K", "𝐋": "L", "𝐌": "M", "𝐍": "N", "𝐎": "O", "𝐏": "P",
-            "𝐐": "Q", "𝐑": "R", "𝐒": "S", "𝐓": "T", "𝐔": "U", "𝐕": "V", "𝐖": "W", "𝐗": "X",
-            "𝐘": "Y", "𝐙": "Z",
-            "𝐚": "a", "𝐛": "b", "𝐜": "c", "𝐝": "d", "𝐞": "e", "𝐟": "f", "𝐠": "g", "𝐡": "h",
-            "𝐢": "i", "𝐣": "j", "𝐤": "k", "𝐥": "l", "𝐦": "m", "𝐧": "n", "𝐨": "o", "𝐩": "p",
-            "𝐪": "q", "𝐫": "r", "𝐬": "s", "𝐭": "t", "𝐮": "u", "𝐯": "v", "𝐰": "w", "𝐱": "x",
-            "𝐲": "y", "𝐳": "z",
-            
-            "𝖆": "a", "𝖇": "b", "𝖈": "c", "𝖉": "d", "𝖊": "e", "𝖋": "f", "𝖌": "g", "𝖍": "h",
-            "𝖎": "i", "𝖏": "j", "𝖐": "k", "𝖑": "l", "𝖒": "m", "𝖓": "n", "𝖔": "o", "𝖕": "p",
-            "𝖖": "q", "𝖗": "r", "𝖘": "s", "𝖙": "t", "𝖚": "u", "𝖛": "v", "𝖜": "w", "𝖝": "x",
-            "𝖞": "y", "𝖟": "z",
-
-            "‘": "'", "’": "'", "“": '"', "”": '"', "—": "-", "–": "-",
-            "ꀤ": "I", "ʂ": "s", "𝓲": "i", "ƿ": "p", "‘": "'", "𝔄": "A",
-        }
-        replaced_name = ''.join(replace.get(char, ' ') if not char.isascii() else char for char in name)
-        replaced_name = replaced_name.replace("’","'")
         global number
         try: 
             number = lockdown.get_value(key="PhoneNumber")
@@ -2719,7 +2709,8 @@ class MyApp(ctk.CTk):
                             "style": {"s": 11, "border_color": "lightgrey"},
                             "table": [
                                 [{".": [{".b": "Model-Nr:"}]}, {"colspan": 3, ".": [{".": dev_name}]}, None, None],
-                                [{"style": {"border_color": "white", "cell_fill": u_grey}, ".": [{".b": "Dev-Name:"}]}, {"colspan": 3, "style": {"cell_fill": u_grey}, ".": [{".": replaced_name}]}, None, None],
+                                #[{"style": {"border_color": "white", "cell_fill": u_grey}, ".": [{".b": "Dev-Name:"}]}, {"colspan": 3, "style": {"cell_fill": u_grey}, ".": [{".": replaced_name}]}, None, None],
+                                [{"style": {"border_color": "white", "cell_fill": u_grey}, ".": [{".b": "Dev-Name:"}]}, {"colspan": 3, "style": {"cell_fill": u_grey}, "image": temp_image_name}, None, None],
                                 [{".": [{".b": "UDID:"}]}, {"colspan": 3, ".": [{".": udid}]}, None, None],
                                 [{"style": {"cell_fill": u_grey}, ".": [{".b": "Hardware:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": hardware_mnr}]}, { "style": {"cell_fill": u_grey}, ".": [{".b": "WiFi MAC:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": w_mac}]}],
                                 [{".": [{".b": "Product:"}]}, {".": [{".": product}]}, {".": [{".b": "BT MAC:"}]}, {".": [{".": b_mac}]}],
@@ -2794,7 +2785,7 @@ class MyApp(ctk.CTk):
                                 {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": d_app}, {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": apps.get(d_app)['CFBundleVersion']}, 
                                 {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": doc_list[app_id_list.index(d_app)]}, 
                                 {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": "visible" if d_app in springboard_rep else "absent"}] for d_app in app_id_list]
-                            } if len(apps) > 0 else "None"],              
+                            } if len(apps) > 0 else " "],              
 
                         {".": "", "style": "title", "label": "title0", "outline": {}},
                     ] 
@@ -3873,7 +3864,7 @@ def dev_data():
 
     try: 
         if len(udid) > 26:
-            udid_s = udid[:20] + "\n" + '{:13}'.format(" ") + "\t" + udid[20:]
+            udid_s = udid[:25] + "\n" + '{:13}'.format(" ") + "\t" + udid[25:]
         else:
             udid_s = udid
         if len(name) > 26:

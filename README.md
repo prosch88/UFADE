@@ -5,13 +5,13 @@ This is a python script written for my masters thesis in IT-Security and Forensi
 
 It utilizes the awesome projects: [pymobiledevice3](https://github.com/doronz88/pymobiledevice3) and [iOSbackup](https://github.com/avibrazil/iOSbackup) to automate the acquisition of Apple mobile devices. Options can be selected via a dialog. The SSH access is realized via [Paramiko](https://github.com/paramiko/paramiko).
 
-The use of [pythondialog](https://github.com/frougon/pythondialog) is preventing the Windows compatibility for the command line version. Linux and MacOS should work. 
-
-There is a new version based on [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter). This one works on Windows. You can also load the Windows version from the release page. 
+The interface is based on [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter). You can also load the Windows version from the release page. 
 
 Requires Python == 3.11.
 
 More features may follow.
+
+UFADE has been selected as a finalist for the [Sans Difference Makers Award 2024](https://www.sans.org/about/awards/difference-makers/) in the category “Innovation of the Year (Open-Source or Product Tool)”.
 
 <br />
 
@@ -26,25 +26,21 @@ To use the developer features you need to mount a DeveloperDisk image on the dev
 git clone https://github.com/prosch88/UFADE --recurse-submodules
 ```
 
-**Install Dialog (and libasound2-dev on Debian):**
+**Install dependencies:**
 
 Arch / Manjaro:
 ```
-sudo pacman -S dialog
+sudo pacman -S tk
 ```
 Debian / Ubuntu:
 ```
-sudo apt-get install dialog libasound2-dev
+sudo apt-get install python3-tk libasound2-dev
 ```
 CentOS / Red Hat:
 ```
-sudo yum install dialog
+sudo yum install tkinter
 ```
 MacOS:
-```
-brew install dialog
-```
-for the GUI-version on MacOS:
 ```
 brew install python@3.11 python-tk@3.11
 ```
