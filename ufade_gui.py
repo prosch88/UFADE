@@ -2610,14 +2610,14 @@ class MyApp(ctk.CTk):
         u_grey = [0.970, 0.970, 0.970]
         background_color = tuple(int(c * 255) for c in u_grey)
         font_size = 64
-        font_path = os.path.join(os.path.dirname(__file__),"assets", "report", "helvetica.ttf")
+        font_path = os.path.join(os.path.dirname(__file__),"assets", "report", "texgyreheros-regular.otf")
         font = ImageFont.truetype(font_path, font_size)
         dummy_image = Image.new("RGB", (1, 1))
         draw = ImageDraw.Draw(dummy_image)
-        text_width = 2200
-        image = Image.new("RGB", (int(text_width), font_size), background_color)
+        text_width = 2160
+        image = Image.new("RGB", (int(text_width), font_size+8), background_color)
         draw = ImageDraw.Draw(image)
-        draw.text((0,12),text=name, font=font, fill="black")
+        draw.text((0,-14),text=name, font=font, fill="black")
         image_stream = BytesIO()
         image.save(image_stream, format="JPEG", quality=95)
         image_stream.seek(0)
