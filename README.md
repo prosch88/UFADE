@@ -125,8 +125,6 @@ This script utilizes the following projects:
 
 [pyiosbackup](https://github.com/matan1008/pyiosbackup) by [matan1008](https://github.com/matan1008)
 
-[pythondialog](https://github.com/frougon/pythondialog) by [frougon](https://github.com/frougon) 
-
 [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) by [TomSchimansky](https://github.com/TomSchimansky) 
 
 [crossfiledialog](https://github.com/maikelwever/crossfiledialog) by [maikelwever](https://github.com/maikelwever)
