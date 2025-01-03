@@ -145,7 +145,12 @@ class MyApp(ctk.CTk):
         for widget in self.dynamic_frame.winfo_children():
             widget.destroy()
         global lockdown
-        lockdown = create_using_usbmux()
+        try:
+            lockdown = create_using_usbmux()
+        except:
+            self.after(20)
+            self.show_nodevice()
+            return()
         # Show Main Menu
         self.menu_var.set("MainMenu")
         self.current_menu = "MainMenu"
