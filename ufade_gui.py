@@ -1202,24 +1202,86 @@ class MyApp(ctk.CTk):
             change.set(2)
 
 # Decrypting / "unbacking" the Backup
-    def decrypt_itunes(self, b, backupfiles, tar, progress, prog_text, line_list, line_cnt, d_nr, change):
+    def decrypt_itunes(self, b, backupfiles, tar, progress, prog_text, line_list, line_cnt, d_nr, change, l_type="default"):
+        unback_path = {
+            "KeychainDomain": "/var/Keychain",
+            "CameraRollDomain": "/var/mobile",
+            "MobileDeviceDomain": "/var/MobileDevice",
+            "WirelessDomain": "/var/wireless",
+            "InstallDomain": "/var/installd",
+            "KeyboardDomain": "/var/mobile",
+            "HomeDomain": "/var/mobile",
+            "SystemPreferencesDomain": "/var/preferences",
+            "DatabaseDomain": "/var/db",
+            "TonesDomain": "/var/mobile",
+            "RootDomain": "/var/root",
+            "BooksDomain": "/var/mobile/Media/Books",
+            "ManagedPreferencesDomain": "/var/Managed Preferences",
+            "HomeKitDomain": "/var/mobile",
+            "MediaDomain": "/var/mobile",
+            "HealthDomain": "/var/mobile/Library",
+            "ProtectedDomain": "/var/protected",
+            "NetworkDomain": "/var/networkd/",
+            "AppDomain": "/var/mobile/Containers/Data/Application",
+            "AppDomainGroup": "/var/mobile/Containers/Shared/AppGroup",
+            "AppDomainPlugin": "/var/mobile/Containers/Data/PluginKitPlugin",
+            "SysContainerDomain": "/var/containers/Data/System",
+            "SysSharedContainerDomain": "/var/containers/Shared/SystemGroup"
+        }
+        all_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
         log("Starting Backup decryption")
         for file in line_list:
             fileout = file
             if platform.uname().system == 'Windows':
                 fileout = re.sub(r"[?%*:|\"<>\x7F\x00-\x1F]", "-", file)
+                if file != fileout:
+                    log(f"Renamed {file} to {fileout}")
             d_nr += 1
             dpro = int(100*(d_nr/line_cnt))
             progress.set(dpro/100)
             prog_text.configure(text=f"{int(dpro)}%")
             progress.update()
             prog_text.update()
+            filedomain = backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0]
+            #l_type = "unback"
             try:
                 b.getFileDecryptedCopy(relativePath=file, targetName=fileout, targetFolder=os.path.join(".tar_tmp", "itunes_bu"))               #actually decrypt the backup-files
                 file_path = os.path.join('.tar_tmp', 'itunes_bu', fileout)
-                tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
-                    backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
-                try: os.remove(file_path)                                                                                   #remove the file after adding
+                if l_type == "unback":
+                    if "AppDomain-" in filedomain:
+                        appfile = filedomain.split("-")[1]
+                        try:
+                            tarpath = all_apps.get(appfile)['Container']
+                        except:
+                            tarpath = f"/private/{unback_path["AppDomain"]}/{appfile}"
+                    elif "AppDomainGroup-" in filedomain:
+                        appfile = filedomain.split("-")[1]
+                        tarpath = ""
+                        for app in all_apps:
+                            try:
+                                if all_apps[app]['GroupContainers'].get(appfile) is not None:
+                                        tarpath = all_apps[app]['GroupContainers'].get(appfile)
+                                        break
+                                else:
+                                    tarpath = f"/private{unback_path["AppDomainGroup"]}/{appfile}"
+                            except:
+                                tarpath = f"/private{unback_path["AppDomainGroup"]}/{appfile}"
+                    elif "AppDomainPlugin-" in filedomain:
+                        appfile = filedomain.split("-")[1]
+                        tarpath = f"/private{unback_path["AppDomainPlugin"]}/{appfile}"
+                    elif "SysContainerDomain-" in filedomain:
+                        appfile = filedomain.split("-")[1]
+                        tarpath = f"/private{unback_path["SysContainerDomain"]}/{appfile}"
+                    elif "SysSharedContainerDomain-" in filedomain:
+                        appfile = filedomain.split("-")[1]
+                        tarpath = f"/private{unback_path["SysSharedContainerDomain"]}/{appfile}"
+                    else:
+                        tarpath = f"/private{unback_path[filedomain]}"
+                    tar.add(file_path, arcname=os.path.join(tarpath, file), recursive=False)
+                else:
+                    tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
+                        backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
+                try: os.remove(file_path)                                                                                       #remove the file after adding
                 except: pass
             except:
                 log(f"Error while decrypting file:{file}")
