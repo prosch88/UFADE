@@ -1253,7 +1253,7 @@ class MyApp(ctk.CTk):
                         try:
                             tarpath = all_apps.get(appfile)['Container']
                         except:
-                            tarpath = f"/private/{unback_path["AppDomain"]}/{appfile}"
+                            tarpath = f"/private/{unback_path['AppDomain']}/{appfile}"
                     elif "AppDomainGroup-" in filedomain:
                         appfile = filedomain.split("-")[1]
                         tarpath = ""
@@ -1263,18 +1263,18 @@ class MyApp(ctk.CTk):
                                         tarpath = all_apps[app]['GroupContainers'].get(appfile)
                                         break
                                 else:
-                                    tarpath = f"/private{unback_path["AppDomainGroup"]}/{appfile}"
+                                    tarpath = f"/private{unback_path['AppDomainGroup']}/{appfile}"
                             except:
-                                tarpath = f"/private{unback_path["AppDomainGroup"]}/{appfile}"
+                                tarpath = f"/private{unback_path['AppDomainGroup']}/{appfile}"
                     elif "AppDomainPlugin-" in filedomain:
                         appfile = filedomain.split("-")[1]
-                        tarpath = f"/private{unback_path["AppDomainPlugin"]}/{appfile}"
+                        tarpath = f"/private{unback_path['AppDomainPlugin']}/{appfile}"
                     elif "SysContainerDomain-" in filedomain:
                         appfile = filedomain.split("-")[1]
-                        tarpath = f"/private{unback_path["SysContainerDomain"]}/{appfile}"
+                        tarpath = f"/private{unback_path['SysContainerDomain']}/{appfile}"
                     elif "SysSharedContainerDomain-" in filedomain:
                         appfile = filedomain.split("-")[1]
-                        tarpath = f"/private{unback_path["SysSharedContainerDomain"]}/{appfile}"
+                        tarpath = f"/private{unback_path['SysSharedContainerDomain']}/{appfile}"
                     else:
                         tarpath = f"/private{unback_path[filedomain]}"
                     tar.add(file_path, arcname=os.path.join(tarpath, file), recursive=False)
