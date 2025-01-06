@@ -214,6 +214,8 @@ class MyApp(ctk.CTk):
             self.show_logicalplus()
         elif menu_name == "advanced_ufed":
             self.show_ufed()
+        elif menu_name == "PRFS":
+            self.show_prfs()
         elif menu_name == "ffs_jail":
             self.perf_jailbreak_ssh_dump()
         elif menu_name == "tess":
@@ -342,11 +344,13 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="Logical Backup", command=lambda: self.switch_menu("iTunes"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Logical+ Backup", command=lambda: self.switch_menu("advanced"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Logical+ Backup\n(UFED-Style)", command=lambda: self.switch_menu("advanced_ufed"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Partially Restored\nFilesystem Backup", command=lambda: self.switch_menu("PRFS"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Filesystem Backup\n(jailbroken)", command=lambda: self.switch_menu("ffs_jail"), width=200, height=70, font=self.stfont),
         ]
         self.menu_text = ["Perform a backup as iTunes would do it.", 
                           "Perform and decrypt an iTunes backup, gather\nAFC-media files, shared App folders and crash reports.", 
                           "Creates an advanced Logical Backup as ZIP with an\nUFD File for PA.",
+                          "Try to reconstruct parts of the device-filesystem\nincluding a decrypted Backup, Logs and Media.",
                           "Creates a FFS Backup of an already jailbroken Device"]
         self.menu_textbox = []
         for btn in self.menu_buttons:
@@ -932,6 +936,10 @@ class MyApp(ctk.CTk):
     def show_ufed(self):
         self.perf_logical_plus("UFED")
 
+# Call the advanced Backup in UFADE-Mode
+    def show_prfs(self):
+        self.perf_logical_plus("PRFS")
+
 # Check, if the device has a backup password and set one
     def check_encryption(self, change):
         try:
@@ -994,7 +1002,7 @@ class MyApp(ctk.CTk):
         pw=passwordbox.get()
         global bu_pass
         try:
-            okbutton.configure(state="disabled")
+            okbutton.check_encryptionconfigure(state="disabled")
             text.configure(text="Checking password...")
             UFADEMobilebackup2Service(lockdown).change_password(old=pw, new="12345")                     #Try to deactivate backup encryption with the given password
             bu_pass = pw
@@ -1243,17 +1251,16 @@ class MyApp(ctk.CTk):
             progress.update()
             prog_text.update()
             filedomain = backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0]
-            #l_type = "unback"
             try:
                 b.getFileDecryptedCopy(relativePath=file, targetName=fileout, targetFolder=os.path.join(".tar_tmp", "itunes_bu"))               #actually decrypt the backup-files
                 file_path = os.path.join('.tar_tmp', 'itunes_bu', fileout)
-                if l_type == "unback":
+                if l_type == "PRFS":
                     if "AppDomain-" in filedomain:
-                        appfile = filedomain.split("-")[1]
+                        appfile = filedomain.split("-", 1)[1]
                         try:
                             tarpath = all_apps.get(appfile)['Container']
                         except:
-                            tarpath = f"/private/{unback_path['AppDomain']}/{appfile}"
+                            tarpath = f"/private{unback_path['AppDomain']}/{appfile}"
                     elif "AppDomainGroup-" in filedomain:
                         appfile = filedomain.split("-")[1]
                         tarpath = ""
@@ -1277,6 +1284,7 @@ class MyApp(ctk.CTk):
                         tarpath = f"/private{unback_path['SysSharedContainerDomain']}/{appfile}"
                     else:
                         tarpath = f"/private{unback_path[filedomain]}"
+                    unback_list.append(os.path.join(tarpath, file))
                     tar.add(file_path, arcname=os.path.join(tarpath, file), recursive=False)
                 else:
                     tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
@@ -1321,15 +1329,7 @@ class MyApp(ctk.CTk):
         if wachange.get() == 3:
             wachange.set(2)
             self.decrypt_whatsapp(change, wachange)
-        else:
-            pass
-        if finish == True:
-            self.after(100, lambda: self.text.configure(text="Whatsapp files extracted."))
-            log("Whatsapp extraction completed") 
-        change.set(1)
-
-    def decrypt_whatsapp_alt(self,change, wachange):
-        finish = False
+        else:l_type="default"
         if wachange.get() in [1,3]:
             app = "Whatsapp"
             domain = "AppDomainGroup-group.net.whatsapp.WhatsApp.shared"
@@ -1392,7 +1392,19 @@ class MyApp(ctk.CTk):
                 os.makedirs(file_path, exist_ok=True)
                 pull(self=HouseArrestService(lockdown, bundle_id=app, documents_only=True), relative_src="/Documents/.", dst=file_path)
                 if l_type != "UFED":
-                    tar.add(file_path, arcname=os.path.join("App_Share/", app, str((apps.get(app)['EnvironmentVariables'])['CFFIXED_USER_HOME'])[1:], "Documents/"), recursive=True)
+                    if l_type == "PRFS":
+                        app_dest = os.path.join(str((apps.get(app)['EnvironmentVariables'])['CFFIXED_USER_HOME'])[1:], "Documents/")
+                        for root, dirs, files in os.walk(file_path):
+                            for file in files:
+                                source_file = os.path.join(root, file)
+                                filename = os.path.relpath(source_file, file_path)
+                                app_arc = os.path.join(app_dest, filename)
+                                if app_arc not in unback_list and os.path.isfile(file_path):
+                                    tar.add(file_path, app_arc, recursive=False)
+                                else:
+                                    pass
+                    else:
+                        tar.add(file_path, arcname=os.path.join("App_Share/", app, str((apps.get(app)['EnvironmentVariables'])['CFFIXED_USER_HOME'])[1:], "Documents/"), recursive=True)
                 else:
                     for root, dirs, files in os.walk(file_path):
                         for file in files:
@@ -1420,11 +1432,14 @@ class MyApp(ctk.CTk):
         log(f"Starting logical+ backup (type={l_type})")
         try: os.mkdir(".tar_tmp")                                                                                               #create temp folder for files to zip/tar
         except: pass
-
         try: os.mkdir(".tar_tmp/itunes_bu")                                                                                     #create folder for decrypted backup
         except: pass
         now = datetime.now()
-        self.perf_iTunes_bu("Logical+")
+        if l_type == "PRFS":
+            bu_name = "PRFS"
+        else:
+            bu_name = "Logical+"
+        self.perf_iTunes_bu(bu_name)
         if self.pw_found.get() == 2:
             return()                                                                                                  #call iTunes Backup with "Logical+" written in dialog
         
@@ -1450,7 +1465,7 @@ class MyApp(ctk.CTk):
                 self.change.set(0)                                                                     
                 tar = tarfile.open(f'{udid}_logical_plus_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "w:")
                 zip = None
-                decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, tar, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change))
+                decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, tar, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type))
                 decrypt.start()
 
             else:
@@ -1540,7 +1555,10 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.change)
             self.progress.pack_forget()
             self.prog_text.pack_forget()
-            tar.add(".tar_tmp/Crash", arcname=("/Crash"), recursive=True)
+            if l_type == "PRFS":
+                tar.add(".tar_tmp/Crash", arcname=("/private/var/mobile/Library/Logs/CrashReporter"), recursive=True)
+            else:
+                tar.add(".tar_tmp/Crash", arcname=("/Crash"), recursive=True)
             shutil.rmtree(".tar_tmp/Crash")
 
             
@@ -3605,7 +3623,30 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
             if l_type != "folder":
                 file_path = os.path.join(dest, entry)                                                              #get the files and folders shared over AFC
                 if l_type != "UFED":
-                    tar.add(file_path, arcname=os.path.join("Media/", entry), recursive=True)                                   #add the file/folder to the TAR
+                    #tar.add(file_path, arcname=os.path.join("Media/", entry), recursive=True)                                   #add the file/folder to the TAR
+                    if os.path.isfile(file_path):
+                        if l_type == "PRFS":
+                            if os.path.join("/private/var/mobile/Media", entry) not in unback_list:
+                                tar.add(file_path, arcname=os.path.join("/private/var/mobile/Media", entry))
+                            else:
+                                pass 
+                        else:
+                            tar.add(file_path, arcname=os.path.join("Media", entry))                            #add the file/folder to the ZIP
+                    elif os.path.isdir(file_path):
+                        for root, dirs, files in os.walk(dest):
+                            for file in files:
+                                source_file = os.path.join(root, file)
+                                filename = os.path.relpath(source_file, dest)
+                                base_folder = os.path.join(dest, "AirFair")
+                                if dest.startswith(base_folder):
+                                    filename = os.path.relpath(source_file, os.path.join(dest, "AirFair"))
+                                if l_type == "PRFS":
+                                    if os.path.join("/private/var/mobile/Media", filename) not in unback_list:
+                                        tar.add(source_file, arcname=os.path.join("/private/var/mobile/Media", filename))
+                                    else:
+                                        pass
+                                else:
+                                    tar.add(source_file, arcname=os.path.join("Media", filename))
                 else:
                     if os.path.isfile(file_path):
                         zip.write(file_path, arcname=os.path.join("iPhoneDump/AFC Service/", entry))                            #add the file/folder to the ZIP
@@ -4302,6 +4343,7 @@ device = dev_data()
 bu_pass = "12345"
 developer = False
 filedict = {}
+unback_list = []
 no_escrow = False
 case_number = ""
 case_name = ""
