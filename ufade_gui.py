@@ -1463,7 +1463,10 @@ class MyApp(ctk.CTk):
                         line_list.append(line)
                 d_nr = 0
                 self.change.set(0)                                                                     
-                tar = tarfile.open(f'{udid}_logical_plus_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "w:")
+                if l_type == "PRFS":
+                    tar = tarfile.open(f'{udid}_prfs_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "w:")
+                else:
+                    tar = tarfile.open(f'{udid}_logical_plus_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "w:")
                 zip = None
                 decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, tar, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type))
                 decrypt.start()
