@@ -2901,7 +2901,7 @@ class MyApp(ctk.CTk):
                             "widths": [2.2, 3, 1.4, 0.7, 0.7],
                             "style": {"s": 8, "border_color": "lightgrey"},
                             "table": [
-                                [{"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"}, ".": [{".": re.sub(r'[\u200e\u200f\u202a-\u202e]', '', apps.get(d_app)['CFBundleDisplayName'])}]}, 
+                                [{"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"}, ".": [{".": re.sub(r'[\u2002\u200e\u200f\u202a-\u202e]', '', apps.get(d_app)['CFBundleDisplayName'])}]}, 
                                 {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": d_app}, {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": apps.get(d_app)['CFBundleVersion']}, 
                                 {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": doc_list[app_id_list.index(d_app)]}, 
                                 {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": "visible" if d_app in springboard_rep else "absent"}] for d_app in app_id_list]
