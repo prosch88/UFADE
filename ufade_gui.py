@@ -1564,7 +1564,39 @@ class MyApp(ctk.CTk):
                 tar.add(".tar_tmp/Crash", arcname=("/Crash"), recursive=True)
             shutil.rmtree(".tar_tmp/Crash")
 
-            
+        #Add Bundle Files for PRFS
+            if l_type == "PRFS":
+                try:
+                    appfile = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier', 'iTunesMetadata', 'ApplicationDSID', 'ApplicationSINF', 'ApplicationType', 'CFBundleDisplayName', 'CFBundleExecutable', 'CFBundleName', 'CFBundlePackageType', 'CFBundleShortVersionString', 'CFBundleVersion', 'Container', 'GroupContainers', 'MinimumOSVersion', 'Path', 'UIDeviceFamily', 'DynamicDiskUsage', 'StaticDiskUsage', 'UIFileSharingEnabled'])
+                    for app in appfile:
+                        try:
+                            if "Bundle" in app['Path']:
+                                bpath = app['Path']
+                                bundlepath = f"{bpath}/"
+                                bundle_folder = tarfile.TarInfo(name=bundlepath)
+                                bundle_folder.type = tarfile.DIRTYPE
+                                tar.addfile(bundle_folder)
+                                try:
+                                    itunesplist = app['iTunesMetadata']
+                                    itunes_path = "/".join(list(bpath.split('/')[0:-1])) 
+                                    metafile = os.path.join(".tar_tmp", "iTunesMetadata.plist")
+                                    with open(metafile, "wb") as file:
+                                        file.write(itunesplist)
+                                    tar.add(metafile, arcname=(f"{itunes_path}/iTunesMetadata.plist"))
+                                    os.remove(metafile)
+
+                                    #itunes_stream = io.BytesIO(itunesplist)
+                                    #itunes_path = "/".join(list(bpath.split('/')[0:-1])) 
+                                    #tarinfo = tarfile.TarInfo(name=f"{itunes_path}/iTunesMetadata.plist")
+                                    #tarinfo.size = len(itunesplist)
+                                    #tar.addfile(tarinfo, itunes_stream)
+                                except:
+                                    pass
+                        except:
+                            pass
+                except:
+                    pass
+
         #Gather device information as device_values.plist for UFD-ZIP
         else:
             de_va_di = self.devinfo_plist()
