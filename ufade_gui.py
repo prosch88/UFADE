@@ -943,13 +943,18 @@ class MyApp(ctk.CTk):
 # Check, if the device has a backup password and set one
     def check_encryption(self, change):
         try:
-            UFADEMobilebackup2Service(lockdown).change_password(new="12345")
+            if no_escrow == True:
+                UFADEMobilebackup2Service(lockdown).change_password(new="12345")
+            else:
+                Mobilebackup2Service(lockdown).change_password(new="12345")
             change.set(1)
         except Exception as e:
             e = str(e)
             print(e)
             if "device is locked" in e:
                 change.set(3)
+            elif "Cannot parse a NULL" in e:
+                change.set(1)
             else:
                 change.set(2)
 
@@ -1017,7 +1022,7 @@ class MyApp(ctk.CTk):
             pw_found.set(1)
         except:
             text.configure(text="Wrong password.\nProvide the correct backup password:\n(UFADE sets this to \"12345\")")
-            log("Provided incorrect backup password: {pw} or device error (MDM)")
+            log(f"Provided incorrect backup password: {pw} or device error (MDM)")
             okbutton.configure(state="normal")
             return()
 
