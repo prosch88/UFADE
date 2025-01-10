@@ -1002,7 +1002,7 @@ class MyApp(ctk.CTk):
         pw=passwordbox.get()
         global bu_pass
         try:
-            okbutton.check_encryptionconfigure(state="disabled")
+            okbutton.configure(state="disabled")
             text.configure(text="Checking password...")
             UFADEMobilebackup2Service(lockdown).change_password(old=pw, new="12345")                     #Try to deactivate backup encryption with the given password
             bu_pass = pw
