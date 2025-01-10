@@ -1004,7 +1004,10 @@ class MyApp(ctk.CTk):
         try:
             okbutton.configure(state="disabled")
             text.configure(text="Checking password...")
-            UFADEMobilebackup2Service(lockdown).change_password(old=pw, new="12345")                     #Try to deactivate backup encryption with the given password
+            if no_escrow == True:
+                UFADEMobilebackup2Service(lockdown).change_password(old=pw, new="12345")                     #Try to deactivate backup encryption with the given password
+            else:
+                Mobilebackup2Service(lockdown).change_password(old=pw, new="12345")
             bu_pass = pw
             passwordbox.pack_forget()
             okbutton.pack_forget()
@@ -1170,7 +1173,11 @@ class MyApp(ctk.CTk):
             self.change.set(0)
             beep_timer = threading.Timer(13.0,self.notification) 
             beep_timer.start()
-            startbu = threading.Thread(target=lambda:UFADEMobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, beep_timer, self.text)))
+            if no_escrow == True:
+                startbu = threading.Thread(target=lambda:UFADEMobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, beep_timer, self.text)))
+            else:
+                startbu = threading.Thread(target=lambda:Mobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, beep_timer, self.text)))
+
             startbu.start()
             self.check_if_done(startbu, self.change)
             self.wait_variable(self.change)
