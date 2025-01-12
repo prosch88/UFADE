@@ -3650,9 +3650,13 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         zip = zipfile.ZipFile(f'Media_{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.zip', 'w')
     text.configure(text="Performing AFC Extraction of Mediafiles")
     text.update()
-    for line in AfcService(lockdown).listdir("/"):
+    if l_type == "PRFS":
+        for line in AfcService(lockdown).dirlist("/", -1):
             media_list.append(line)
-    if l_type != "folder":
+    else:
+        for line in AfcService(lockdown).listdir("/"):
+            media_list.append(line)
+    if l_type != "folder" and l_type != "PRFS":
         media_list.remove("DCIM")                                                                                         #get amount of lines (files and folders) in media root
     media_count = len(media_list)
     try: os.mkdir(dest)
@@ -3666,60 +3670,57 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         prog_text.update()
         progress.update()
         try:
-            pull(self=AfcService(lockdown),relative_src=entry, dst=dest)
-            if l_type != "folder":
-                file_path = os.path.join(dest, entry)                                                              #get the files and folders shared over AFC
-                if l_type != "UFED":
-                    #tar.add(file_path, arcname=os.path.join("Media/", entry), recursive=True)                                   #add the file/folder to the TAR
-                    if os.path.isfile(file_path):
-                        if l_type == "PRFS":
-                            if os.path.join("/private/var/mobile/Media", entry) not in unback_list:
-                                tar.add(file_path, arcname=os.path.join("/private/var/mobile/Media", entry))
-                            else:
-                                pass 
-                        else:
-                            tar.add(file_path, arcname=os.path.join("Media", entry))                            #add the file/folder to the ZIP
-                    elif os.path.isdir(file_path):
-                        for root, dirs, files in os.walk(dest):
-                            for file in files:
-                                source_file = os.path.join(root, file)
-                                filename = os.path.relpath(source_file, dest)
-                                base_folder = os.path.join(dest, "AirFair")
-                                if dest.startswith(base_folder):
-                                    filename = os.path.relpath(source_file, os.path.join(dest, "AirFair"))
-                                if l_type == "PRFS":
-                                    if os.path.join("/private/var/mobile/Media", filename) not in unback_list:
-                                        tar.add(source_file, arcname=os.path.join("/private/var/mobile/Media", filename))
-                                    else:
-                                        pass
-                                else:
-                                    tar.add(source_file, arcname=os.path.join("Media", filename))
+            if l_type == "PRFS":
+                if os.path.join("/private/var/mobile/Media", entry) not in unback_list:
+                    pull_file(self=AfcService(lockdown),relative_src=entry, dst=dest)
+                    file_path = os.path.join(dest, pathlib.Path(entry).name)
+                    arcname = os.path.join("/private/var/mobile/Media", entry.strip("/"))
+                    tar.add(file_path, arcname=arcname)
                 else:
-                    if os.path.isfile(file_path):
-                        zip.write(file_path, arcname=os.path.join("iPhoneDump/AFC Service/", entry))                            #add the file/folder to the ZIP
-                    elif os.path.isdir(file_path):
-                        for root, dirs, files in os.walk(dest):
-                            for file in files:
-                                source_file = os.path.join(root, file)
-                                filename = os.path.relpath(source_file, dest)
-                                zip.write(source_file, arcname=os.path.join("iPhoneDump/AFC Service/", filename))
-                try: os.remove(file_path)
-                except: shutil.rmtree(file_path)
+                    pass
             else:
-                if fzip == True:
-                    file_path = os.path.join(dest, entry) 
-                    if os.path.isfile(file_path):
-                        zip.write(file_path, arcname=os.path.join("private/var/Media/", entry))                            #add the file/folder to the ZIP
-                    elif os.path.isdir(file_path):  
-                        for root, dirs, files in os.walk(dest):
-                            for file in files:
-                                source_file = os.path.join(root, file)
-                                filename = os.path.relpath(source_file, dest)
-                                zip.write(source_file, arcname=os.path.join("private/var/Media/", filename))
+                pull(self=AfcService(lockdown),relative_src=entry, dst=dest)
+                if l_type != "folder":
+                    file_path = os.path.join(dest, entry)                                                              #get the files and folders shared over AFC
+                    if l_type != "UFED":
+                        #tar.add(file_path, arcname=os.path.join("Media/", entry), recursive=True)                                   #add the file/folder to the TAR
+                        if os.path.isfile(file_path):
+                            tar.add(file_path, arcname=os.path.join("Media", entry))                            #add the file/folder to the ZIP
+                        elif os.path.isdir(file_path):
+                            for root, dirs, files in os.walk(dest):
+                                for file in files:
+                                    source_file = os.path.join(root, file)
+                                    filename = os.path.relpath(source_file, dest)
+                                    base_folder = os.path.join(dest, "AirFair")
+                                    if dest.startswith(base_folder):
+                                        filename = os.path.relpath(source_file, os.path.join(dest, "AirFair"))
+                                    tar.add(source_file, arcname=os.path.join("Media", filename))
+                    else:
+                        if os.path.isfile(file_path):
+                            zip.write(file_path, arcname=os.path.join("iPhoneDump/AFC Service/", entry))                            #add the file/folder to the ZIP
+                        elif os.path.isdir(file_path):
+                            for root, dirs, files in os.walk(dest):
+                                for file in files:
+                                    source_file = os.path.join(root, file)
+                                    filename = os.path.relpath(source_file, dest)
+                                    zip.write(source_file, arcname=os.path.join("iPhoneDump/AFC Service/", filename))
                     try: os.remove(file_path)
                     except: shutil.rmtree(file_path)
                 else:
-                    pass
+                    if fzip == True:
+                        file_path = os.path.join(dest, entry) 
+                        if os.path.isfile(file_path):
+                            zip.write(file_path, arcname=os.path.join("private/var/Media/", entry))                            #add the file/folder to the ZIP
+                        elif os.path.isdir(file_path):  
+                            for root, dirs, files in os.walk(dest):
+                                for file in files:
+                                    source_file = os.path.join(root, file)
+                                    filename = os.path.relpath(source_file, dest)
+                                    zip.write(source_file, arcname=os.path.join("private/var/Media/", filename))
+                        try: os.remove(file_path)
+                        except: shutil.rmtree(file_path)
+                    else:
+                        pass
         except:
             pass
 
@@ -4323,6 +4324,42 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                     continue
 
                 pull(self, src_filename, str(dst_path), callback=callback)
+
+#pull single file
+def pull_file(self, relative_src, dst, callback=None, src_dir=''):
+        src = self.resolve_path(posixpath.join(src_dir, relative_src))
+        if not self.isdir(src):
+            output_format = "%Y-%m-%dT%H:%M:%S+00:00"
+            try: 
+                filecontent = self.get_file_contents(src)
+                readable = 1
+            except:
+                log(f"Error reading file: {src}")
+                readable = 0
+            if readable == 1:
+                try: mtime = self.stat(src)['st_mtime'].timestamp()
+                except: pass
+                if os.path.isdir(dst):
+                    #dst = os.path.join(dst, os.path.basename(relative_src))
+                    dst = os.path.join(dst, pathlib.Path(relative_src).name)
+                try:    
+                    with open(dst, 'wb') as f:
+                        f.write(filecontent)
+                    try:
+                        if mtime < datetime.fromisoformat('1980-01-01').timestamp():
+                            mtime = datetime.fromisoformat('1980-01-01').timestamp() 
+                        os.utime(dst, (mtime, mtime))
+                    except: 
+                        pass
+                    if callback is not None:
+                        callback(src, dst)
+                except:
+                    log(f"Error writing file: {src}")
+                    pass
+            else:
+                pass
+        else:
+            pass
 
 #UFADE "logging"
 def log(text):
