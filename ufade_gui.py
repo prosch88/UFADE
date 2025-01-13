@@ -2842,7 +2842,7 @@ class MyApp(ctk.CTk):
                             },
                             {".": "Screenshot:", "style": "title", "label": "title2", "outline": {}},
                             {
-                                "widths": [1.2, 2.5, 2.5, 1.2],
+                                "widths": [1.2, 2.5, 1.8, 2.5],
                                 "style": {"s": 10, "border_color": "lightgrey"},
                                 "table": [
                                     [{".": [{".b": "Name:"}]}, {"colspan": 3, ".": [{".": shot}]}, None, None],
