@@ -2756,7 +2756,7 @@ class MyApp(ctk.CTk):
         if h == 426:
             lr_width = (1.4 * (185/w))    
         else:
-            lr_width = 0.8
+            lr_width = 0.5
         if app_name != "- none -":
             app_name = f'{app_name} (Named by examiner)'
         if chat_name != "- none -":
