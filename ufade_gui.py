@@ -1248,7 +1248,7 @@ class MyApp(ctk.CTk):
             "SysContainerDomain": "/var/containers/Data/System",
             "SysSharedContainerDomain": "/var/containers/Shared/SystemGroup"
         }
-        all_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
+        #all_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
         log("Starting Backup decryption")
         for file in line_list:
             fileout = file
@@ -4186,8 +4186,10 @@ def dev_data():
     #Get installed Apps
     if lockdown != None and ispaired != False:
         global apps 
+        global all_apps
         global app_id_list 
         try:
+            all_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
             apps = installation_proxy.InstallationProxyService(lockdown).get_apps("User")
             app_id_list = []
             for app in apps.keys():
