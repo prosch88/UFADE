@@ -2746,7 +2746,7 @@ class MyApp(ctk.CTk):
         font = ImageFont.truetype(font_path, font_size)
         dummy_image = Image.new("RGB", (1, 1))
         draw = ImageDraw.Draw(dummy_image)
-        text_width = 2400
+        text_width = 2440
         image = Image.new("RGB", (int(text_width), font_size+8), background_color)
         draw = ImageDraw.Draw(image)
         draw.text((0,-16),text=name, font=font, fill="black")
