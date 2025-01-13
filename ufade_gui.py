@@ -4201,6 +4201,7 @@ def dev_data():
                 except:
                     doc_list.append("no")
         except:
+            apps = {}
             app_id_list = []
     else:
         pass
