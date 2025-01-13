@@ -4516,7 +4516,7 @@ case_number = ""
 case_name = ""
 evidence_number = ""
 examiner = ""
-u_version = "0.9.6"
+u_version = "0.9.7"
 
 
 # Start the app
