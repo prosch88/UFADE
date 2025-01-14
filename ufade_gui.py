@@ -1459,6 +1459,7 @@ class MyApp(ctk.CTk):
 
 # Actually perform the advanced logical backup
     def perf_logical_plus(self, t):
+        global lockdown
         l_type = t
         log(f"Starting logical+ backup (type={l_type})")
         try: os.mkdir(".tar_tmp")                                                                                               #create temp folder for files to zip/tar
@@ -1614,6 +1615,7 @@ class MyApp(ctk.CTk):
                 tar.add(".tar_tmp/Crash", arcname=("/private/var/mobile/Library/Logs/CrashReporter"), recursive=True)
             else:
                 tar.add(".tar_tmp/Crash", arcname=("/Crash"), recursive=True)
+            self.after(100)
             shutil.rmtree(".tar_tmp/Crash")
 
         #Add Bundle Files for PRFS
