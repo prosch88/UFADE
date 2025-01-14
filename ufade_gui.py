@@ -1438,6 +1438,15 @@ class MyApp(ctk.CTk):
             z_hash = " Error - Python >= 3.11 required"
         change.set(1)
 
+    def check_lock(self, change, text):
+        try:
+            check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
+            change.set(1) 
+        except exceptions.PasscodeRequiredError:
+            text.configure("The device is locked. Unlock the device to continue.")
+            self.after(3000, self.check_lock(change, text))
+
+
 # Actually perform the advanced logical backup
     def perf_logical_plus(self, t):
         l_type = t
@@ -1521,11 +1530,14 @@ class MyApp(ctk.CTk):
         try: os.mkdir(".tar_tmp/media")
         except: pass
         self.change.set(0)
+        self.check_lock(self.change, self.text)
+        self.change.set(0)
         self.prog_text.configure(text="0%")
         self.progress.pack_forget()
         self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
         self.progress.set(0)
         self.progress.pack()
+
 
         if l_type != "UFED":
             self.tar_media = threading.Thread(target=lambda: media_export(l_type=l_type, dest=".tar_tmp/media", archive=tar, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
@@ -1537,6 +1549,9 @@ class MyApp(ctk.CTk):
         shutil.rmtree(".tar_tmp/media")                                                                                       #remove media-folder
 
         #Gather Shared App-Folders
+        self.change.set(0)
+        self.check_lock(self.change, self.text)
+        self.change.set(0)
         media_count = 0
         self.text.configure(text="Performing Extraction of Shared App-Files")
         for app in doc_list:
@@ -1558,6 +1573,8 @@ class MyApp(ctk.CTk):
 
         #Gather Crash-Reports
         if l_type != "UFED":
+            self.change.set(0)
+            self.check_lock(self.change, self.text)
             self.change.set(0)
             self.text.configure(text="Performing Extraction of Crash Reports")
             self.prog_text.configure(text="0%")
@@ -4204,6 +4221,7 @@ def dev_data():
                     doc_list.append("no")
         except:
             apps = {}
+            all_apps = {}
             app_id_list = []
     else:
         pass
