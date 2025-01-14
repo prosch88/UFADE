@@ -1450,6 +1450,7 @@ class MyApp(ctk.CTk):
                 try:
                     self.after(3000)
                     check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
+                    lockdown = create_usbmux()
                     change.set(1) 
                 except:
                     pass
