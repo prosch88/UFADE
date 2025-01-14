@@ -1596,8 +1596,7 @@ class MyApp(ctk.CTk):
             self.lockcheck.start()
             self.wait_variable(self.change)
             self.after(100)
-            if self.change.get() == 2:
-                lockdown = create_using_usbmux()
+            lockdown = create_using_usbmux()
             self.text.configure(text="Performing Extraction of Crash Reports")
             self.prog_text.configure(text="0%")
             self.progress.pack_forget() 
