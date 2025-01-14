@@ -1447,7 +1447,7 @@ class MyApp(ctk.CTk):
             text.update()
             while change.get() == 0:
                 try:
-                    self.wait(3000)
+                    self.after(3000)
                     check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
                     change.set(1) 
                 except:
