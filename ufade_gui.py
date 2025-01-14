@@ -1495,9 +1495,9 @@ class MyApp(ctk.CTk):
                 d_nr = 0
                 self.change.set(0)                                                                     
                 if l_type == "PRFS":
-                    tar = tarfile.open(f'{udid}_prfs_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "w:")
+                    tar = tarfile.open(f'{udid}_prfs_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "a:")
                 else:
-                    tar = tarfile.open(f'{udid}_logical_plus_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "w:")
+                    tar = tarfile.open(f'{udid}_logical_plus_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "a:")
                 zip = None
                 decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, tar, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type))
                 decrypt.start()
@@ -1595,15 +1595,15 @@ class MyApp(ctk.CTk):
             self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
             self.lockcheck.start()
             self.wait_variable(self.change)
-            self.after(100)
-            lockdown = create_using_usbmux()
-            self.change.set(0)
             self.text.configure(text="Performing Extraction of Crash Reports")
             self.prog_text.configure(text="0%")
             self.progress.pack_forget() 
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
             self.progress.set(0)
             self.progress.pack()
+            self.after(100)
+            lockdown = create_using_usbmux()
+            self.change.set(0)
             self.crash_start = threading.Thread(target=lambda: crash_report(crash_dir=".tar_tmp/Crash", change=self.change, progress=self.progress, prog_text=self.prog_text))
             self.crash_start.start()
             self.wait_variable(self.change)
@@ -1651,6 +1651,7 @@ class MyApp(ctk.CTk):
 
         #Gather device information as device_values.plist for UFD-ZIP
         else:
+            lockdown = create_using_usbmux()
             de_va_di = self.devinfo_plist()
             with open("device_values.plist", "wb") as file:
                 plistlib.dump(de_va_di, file)
