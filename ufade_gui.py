@@ -1597,6 +1597,7 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.change)
             self.after(100)
             lockdown = create_using_usbmux()
+            self.change.set(0)
             self.text.configure(text="Performing Extraction of Crash Reports")
             self.prog_text.configure(text="0%")
             self.progress.pack_forget() 
@@ -1608,6 +1609,7 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.change)
             self.progress.pack_forget()
             self.prog_text.pack_forget()
+            self.after(100)
             if l_type == "PRFS":
                 tar.add(".tar_tmp/Crash", arcname=("/private/var/mobile/Library/Logs/CrashReporter"), recursive=True)
             else:
