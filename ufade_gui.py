@@ -1450,8 +1450,7 @@ class MyApp(ctk.CTk):
                 try:
                     self.after(3000)
                     check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
-                    lockdown = create_usbmux()
-                    change.set(1) 
+                    change.set(2) 
                 except:
                     pass
         finally:
@@ -1544,6 +1543,9 @@ class MyApp(ctk.CTk):
         self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
         self.lockcheck.start()
         self.wait_variable(self.change)
+        self.after(100)
+        if self.change.get() == 2:
+            lockdown = create_usbmux()
         self.prog_text.configure(text="0%")
         self.progress.pack_forget()
         self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
@@ -1564,6 +1566,9 @@ class MyApp(ctk.CTk):
         self.change.set(0)
         self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
         self.lockcheck.start()
+        self.after(100)
+        if self.change.get() == 2:
+            lockdown = create_usbmux()
         self.wait_variable(self.change)
         media_count = 0
         self.text.configure(text="Performing Extraction of Shared App-Files")
@@ -1590,6 +1595,9 @@ class MyApp(ctk.CTk):
             self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
             self.lockcheck.start()
             self.wait_variable(self.change)
+            self.after(100)
+            if self.change.get() == 2:
+                lockdown = create_usbmux()
             self.text.configure(text="Performing Extraction of Crash Reports")
             self.prog_text.configure(text="0%")
             self.progress.pack_forget() 
