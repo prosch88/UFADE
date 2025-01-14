@@ -3499,9 +3499,9 @@ class MyApp(ctk.CTk):
             file.write(png)
         with open(hashpath, "w") as hash_file:
             hash_file.write(hash_sha256)
-        self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, w=wsize, h=hsize)
         log(f"Created screenshot {filename} with hash {hash_sha256}")
         namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
+        self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, w=wsize, h=hsize)
 
     def chat_shotloop(self, dvt):
         try: os.mkdir("screenshots")
@@ -3583,9 +3583,9 @@ class MyApp(ctk.CTk):
             hash_sha256 = hashlib.sha256(png).hexdigest()
             with open(os.path.join(hashpath), "w") as hash_file:
                 hash_file.write(hash_sha256)
-            self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, app_name=app_name, chat_name=chat_name, w=wsize, h=hsize)
             log(f"Created screenshot {filename} with hash {hash_sha256}")
             namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
+            self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, app_name=app_name, chat_name=chat_name, w=wsize, h=hsize)
             self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, png=png, text=text)
         else:
             while not self.stop_event.is_set():
@@ -3621,9 +3621,9 @@ class MyApp(ctk.CTk):
                         hash_sha256 = hashlib.sha256(png).hexdigest()
                         with open(os.path.join(hashpath), "w") as hash_file:
                             hash_file.write(hash_sha256)
-                        self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, app_name=app_name, chat_name=chat_name, w=wsize, h=hsize)
                         log(f"Created screenshot {filename} with hash {hash_sha256}")
                         namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
+                        self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, app_name=app_name, chat_name=chat_name, w=wsize, h=hsize)
                         sc_count += 1
                         ab_count = 0
                     else:
