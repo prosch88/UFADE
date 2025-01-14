@@ -1442,7 +1442,7 @@ class MyApp(ctk.CTk):
         try:
             check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
             change.set(1) 
-        except exceptions.PasscodeRequiredError:
+        except exceptions.PasswordRequiredError:
             text.configure("The device is locked. Unlock the device to continue.")
             self.after(3000, self.check_lock(change, text))
 
@@ -2754,7 +2754,7 @@ class MyApp(ctk.CTk):
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("iReportMenu")).pack(pady=40))
 
 #PDF Device Report with pdfme
-    def pdf_report(self, case_number="", case_name="", evidence_number="", examiner="", pdf_type="default", shot="none", sha256="none", shot_png="none", app_name="- none -", chat_name="- none -", w=None, h=None):
+    def pdf_report(self, case_number="", case_name="", evidence_number="", examiner="", pdf_type="default", shot="none", sha256="none", shot_png="none", app_name=None, chat_name=None, w=None, h=None):
         hobude = ["1,1","1,2","2,1","3,1","3,2","3,3","4,1","5,1","5,2","5,3","5,4","6,1","6,2","7,1","7,2","8,1","8,2","8,4","9,1","9,2","9,3","9,4","10,1","10,2","10,4","10,5","12,8","14,6"]   
         u_grey = [0.970, 0.970, 0.970]
         background_color = tuple(int(c * 255) for c in u_grey)
@@ -2774,9 +2774,9 @@ class MyApp(ctk.CTk):
             lr_width = (1.4 * (185/w))    
         else:
             lr_width = 0.5
-        if app_name != "- none -":
+        if app_name != None:
             app_name = f'{app_name} (Named by examiner)'
-        if chat_name != "- none -":
+        if chat_name != None:
             chat_name = f'{chat_name} (Named by examiner)'
 
         with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
@@ -2864,11 +2864,16 @@ class MyApp(ctk.CTk):
                                 "table": [
                                     [{".": [{".b": "Name:"}]}, {"colspan": 3, ".": [{".": shot}]}, None, None],
                                     [{"style": {"border_color": "white", "cell_fill": u_grey}, ".": [{".b": "SHA256:"}]}, {"colspan": 3, "style": {"cell_fill": u_grey}, ".": [{".": sha256}]}, None, None],
+                                ]
+                            },
+                            {
+                                "widths": [1.2, 2.5, 1.8, 2.5],
+                                "style": {"s": 10, "border_color": "lightgrey"},
+                                "table": [
                                     [{".": [{".b": "App:"}]}, {"colspan": 3, ".": [{".": app_name}]}, None, None],
                                     [{"style": {"border_color": "white", "cell_fill": u_grey}, ".": [{".b": "Chat:"}]}, {"colspan": 3, "style": {"cell_fill": u_grey}, ".": [{".": chat_name}]}, None, None],
                                 ]
-
-                            },
+                            } if app_name is not None else "",
                             {
                                 "widths": [lr_width, 2, lr_width],
                                 "style": {"s": 10, "border_color": "white"},
