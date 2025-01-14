@@ -1440,9 +1440,7 @@ class MyApp(ctk.CTk):
 
     def check_lock(self, change, text):
         try:
-            print(change.get())
             check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
-            print("Device unlocked")
             change.set(1) 
         except exceptions.PasswordRequiredError:
             print("Device locked")
