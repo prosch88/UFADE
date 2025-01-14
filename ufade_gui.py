@@ -1440,10 +1440,13 @@ class MyApp(ctk.CTk):
 
     def check_lock(self, change, text):
         try:
+            print(change.get())
             check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
+            print("Device unlocked")
             change.set(1) 
         except exceptions.PasswordRequiredError:
-            text.configure("The device is locked. Unlock the device to continue.")
+            print("Device locked")
+            text.configure(text="The device is locked. Unlock the device to continue.")
             text.update()
             while change.get() == 0:
                 try:
@@ -1452,6 +1455,8 @@ class MyApp(ctk.CTk):
                     change.set(1) 
                 except:
                     pass
+        finally:
+            return()
 
 
 # Actually perform the advanced logical backup
@@ -1537,9 +1542,9 @@ class MyApp(ctk.CTk):
         try: os.mkdir(".tar_tmp/media")
         except: pass
         self.change.set(0)
-        self.check_lock(self.change, self.text)
+        self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
+        self.lockcheck.start()
         self.wait_variable(self.change)
-        self.change.set(0)
         self.prog_text.configure(text="0%")
         self.progress.pack_forget()
         self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
@@ -1558,9 +1563,9 @@ class MyApp(ctk.CTk):
 
         #Gather Shared App-Folders
         self.change.set(0)
-        self.check_lock(self.change, self.text)
+        self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
+        self.lockcheck.start()
         self.wait_variable(self.change)
-        self.change.set(0)
         media_count = 0
         self.text.configure(text="Performing Extraction of Shared App-Files")
         for app in doc_list:
@@ -1583,9 +1588,9 @@ class MyApp(ctk.CTk):
         #Gather Crash-Reports
         if l_type != "UFED":
             self.change.set(0)
-            self.check_lock(self.change, self.text)
+            self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
+            self.lockcheck.start()
             self.wait_variable(self.change)
-            self.change.set(0)
             self.text.configure(text="Performing Extraction of Crash Reports")
             self.prog_text.configure(text="0%")
             self.progress.pack_forget() 
