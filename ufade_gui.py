@@ -1545,7 +1545,7 @@ class MyApp(ctk.CTk):
         self.wait_variable(self.change)
         self.after(100)
         if self.change.get() == 2:
-            lockdown = create_usbmux()
+            lockdown = create_using_usbmux()
         self.prog_text.configure(text="0%")
         self.progress.pack_forget()
         self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
@@ -1568,7 +1568,7 @@ class MyApp(ctk.CTk):
         self.lockcheck.start()
         self.after(100)
         if self.change.get() == 2:
-            lockdown = create_usbmux()
+            lockdown = create_using_usbmux()
         self.wait_variable(self.change)
         media_count = 0
         self.text.configure(text="Performing Extraction of Shared App-Files")
@@ -1597,7 +1597,7 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.change)
             self.after(100)
             if self.change.get() == 2:
-                lockdown = create_usbmux()
+                lockdown = create_using_usbmux()
             self.text.configure(text="Performing Extraction of Crash Reports")
             self.prog_text.configure(text="0%")
             self.progress.pack_forget() 
