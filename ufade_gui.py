@@ -1538,6 +1538,7 @@ class MyApp(ctk.CTk):
         except: pass
         self.change.set(0)
         self.check_lock(self.change, self.text)
+        self.wait_variable(self.change)
         self.change.set(0)
         self.prog_text.configure(text="0%")
         self.progress.pack_forget()
@@ -1558,6 +1559,7 @@ class MyApp(ctk.CTk):
         #Gather Shared App-Folders
         self.change.set(0)
         self.check_lock(self.change, self.text)
+        self.wait_variable(self.change)
         self.change.set(0)
         media_count = 0
         self.text.configure(text="Performing Extraction of Shared App-Files")
@@ -1582,6 +1584,7 @@ class MyApp(ctk.CTk):
         if l_type != "UFED":
             self.change.set(0)
             self.check_lock(self.change, self.text)
+            self.wait_variable(self.change)
             self.change.set(0)
             self.text.configure(text="Performing Extraction of Crash Reports")
             self.prog_text.configure(text="0%")
