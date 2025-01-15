@@ -950,13 +950,14 @@ class MyApp(ctk.CTk):
             change.set(1)
         except Exception as e:
             e = str(e)
-            print(e)
-            if "device is locked" in e:
+            if "device is locked" in e or "PasswordProtected" in e:
                 change.set(3)
             elif "Cannot parse a NULL" in e:
                 change.set(1)
             else:
+                print(e)
                 change.set(2)
+
 
 # Try to deactivate encryption after the Backup is complete
     def deactivate_encryption(self, change, text=None):
@@ -970,7 +971,10 @@ class MyApp(ctk.CTk):
         except:
             change.set(2)
         if text != None:
-            text.configure(text="Backup password got removed.\nBackup complete.")  
+            if change.get() == 1:
+                text.configure(text="Backup password got removed.\nBackup complete.")
+            else:
+                text.configure(text="Backup password could not be removed.\nBackup complete.")  
         else:
             pass
 
@@ -1457,8 +1461,6 @@ class MyApp(ctk.CTk):
                 except:
                     pass
 
-
-
 # Actually perform the advanced logical backup
     def perf_logical_plus(self, t):
         global lockdown
@@ -1724,7 +1726,6 @@ class MyApp(ctk.CTk):
         remove_enc.start()
         self.wait_variable(self.change)
         beep_timer.cancel()   
-
         self.text.configure(text="Logical+ Backup completed!")
         log("Logical+ Backup completed!")
         self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
