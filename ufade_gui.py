@@ -46,6 +46,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import hashes, serialization 
 from paramiko import SSHClient, AutoAddPolicy, Transport
 from datetime import datetime, timedelta, timezone, date
+from concurrent.futures import ThreadPoolExecutor
 from subprocess import Popen, PIPE, check_call, run
 from pymobiledevice3 import exceptions
 from importlib.metadata import version
@@ -1382,14 +1383,26 @@ class MyApp(ctk.CTk):
                 self.after(100, lambda: self.text.configure(text="Whatsapp files extracted.")) 
             change.set(1)
 
+# Zip thread helper
+    def zip_file(self, zip, source_file, arcname, lock):
+        with lock:
+            zip.write(source_file, arcname=arcname)
+
+
  # Move the backup files to a zip archive   
     def zip_itunes(self, zip, change):
         base = udid
-        for root, dirs, files in os.walk(base):
-            for file in files:
-                source_file = os.path.join(root, file)
-                filename = os.path.relpath(source_file, base)
-                zip.write(source_file, arcname=os.path.join("iPhoneDump/Backup Service", udid, "Snapshot", filename)) 
+        lock = threading.Lock()
+        with ThreadPoolExecutor() as executor:
+            tasks = []
+            for root, dirs, files in os.walk(base):
+                for file in files:
+                    source_file = os.path.join(root, file)
+                    filename = os.path.relpath(source_file, base)
+                    arcname = os.path.join("iPhoneDump/Backup Service", udid, "Snapshot", filename)
+                    tasks.append(executor.submit(self.zip_file, zip, source_file, arcname, lock))
+            for task in tasks:
+                    task.result()  
         change.set(1)
 
 # Extract shared app-documents
@@ -1452,14 +1465,16 @@ class MyApp(ctk.CTk):
             print("Device locked")
             text.configure(text="The device is locked. Unlock the device to continue.")
             text.update()
-            while change.get() == 0:
+            while True:
                 try:
                     self.after(3000)
                     check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
                     change.set(2)
-                    return() 
+                    break 
                 except:
                     pass
+        finally:
+            return()
 
 # Actually perform the advanced logical backup
     def perf_logical_plus(self, t):
@@ -1527,7 +1542,7 @@ class MyApp(ctk.CTk):
             
         else:
             zipname = f'Apple_{hardware.upper()}_{dev_name}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     #create ZIP-File for CLB PA (TAR-handling isn't as good here)
-            zip = zipfile.ZipFile(f'{zipname}.zip', "w")
+            zip = zipfile.ZipFile(f'{zipname}.zip', "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1)
             tar = None
             self.after(100, lambda: self.text.configure(text="Processing Backup - this may take a while."))
             self.prog_text = ctk.CTkLabel(self.dynamic_frame, text=" ", width=585, height=20, font=self.stfont, anchor="w", justify="left")
