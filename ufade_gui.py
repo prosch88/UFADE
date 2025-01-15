@@ -1301,7 +1301,7 @@ class MyApp(ctk.CTk):
                         tarpath = f"/private{unback_path['SysSharedContainerDomain']}/{appfile}"
                     else:
                         tarpath = f"/private{unback_path[filedomain]}"
-                    unback_list.append(os.path.join(tarpath, file))
+                    unback_list.append(posixpath.join(tarpath, file))
                     tar.add(file_path, arcname=os.path.join(tarpath, file), recursive=False)
                 else:
                     tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
@@ -1427,7 +1427,7 @@ class MyApp(ctk.CTk):
                             for file in files:
                                 source_file = os.path.join(root, file)
                                 filename = os.path.relpath(source_file, file_path)
-                                app_arc = os.path.join(app_dest, filename)
+                                app_arc = posixpath.join(app_dest, filename)
                                 if app_arc not in unback_list and os.path.isfile(file_path):
                                     tar.add(file_path, app_arc, recursive=False)
                                 else:
@@ -1645,7 +1645,7 @@ class MyApp(ctk.CTk):
                         try:
                             if "Bundle" in app['Path']:
                                 bpath = app['Path']
-                                bundlepath = f"{bpath}/"
+                                bundlepath = f'{bpath.strip("/")}/'
                                 bundle_folder = tarfile.TarInfo(name=bundlepath)
                                 bundle_folder.type = tarfile.DIRTYPE
                                 tar.addfile(bundle_folder)
@@ -3820,7 +3820,8 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         progress.update()
         try:
             if l_type == "PRFS":
-                if os.path.join("/private/var/mobile/Media", entry) not in unback_list:
+                if (f"/private/var/mobile/Media{entry}") not in unback_list:
+                    print(entry)
                     pull_file(self=AfcService(lockdown),relative_src=entry, dst=dest)
                     file_path = os.path.join(dest, pathlib.Path(entry).name)
                     arcname = os.path.join("/private/var/mobile/Media", entry.strip("/"))
