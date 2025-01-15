@@ -1441,7 +1441,8 @@ class MyApp(ctk.CTk):
     def check_lock(self, change, text):
         try:
             check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
-            change.set(1) 
+            change.set(1)
+            return() 
         except exceptions.PasswordRequiredError:
             print("Device locked")
             text.configure(text="The device is locked. Unlock the device to continue.")
@@ -1450,11 +1451,11 @@ class MyApp(ctk.CTk):
                 try:
                     self.after(3000)
                     check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
-                    change.set(2) 
+                    change.set(2)
+                    return() 
                 except:
                     pass
-        finally:
-            return()
+
 
 
 # Actually perform the advanced logical backup
