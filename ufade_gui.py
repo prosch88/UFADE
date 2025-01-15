@@ -1438,6 +1438,7 @@ class MyApp(ctk.CTk):
             z_hash = " Error - Python >= 3.11 required"
         change.set(1)
 
+# Check, if the device is locked
     def check_lock(self, change, text):
         try:
             check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
@@ -1545,7 +1546,7 @@ class MyApp(ctk.CTk):
         self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
         self.lockcheck.start()
         self.wait_variable(self.change)
-        self.after(100)
+        self.after(200)
         if self.change.get() == 2:
             lockdown = create_using_usbmux()
         self.prog_text.configure(text="0%")
@@ -1554,7 +1555,7 @@ class MyApp(ctk.CTk):
         self.progress.set(0)
         self.progress.pack()
 
-
+        self.change.set(0)
         if l_type != "UFED":
             self.tar_media = threading.Thread(target=lambda: media_export(l_type=l_type, dest=".tar_tmp/media", archive=tar, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
             self.tar_media.start()
@@ -1568,10 +1569,10 @@ class MyApp(ctk.CTk):
         self.change.set(0)
         self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
         self.lockcheck.start()
+        self.wait_variable(self.change)
         self.after(100)
         if self.change.get() == 2:
             lockdown = create_using_usbmux()
-        self.wait_variable(self.change)
         media_count = 0
         self.text.configure(text="Performing Extraction of Shared App-Files")
         for app in doc_list:
