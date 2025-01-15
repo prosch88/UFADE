@@ -3821,7 +3821,6 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         try:
             if l_type == "PRFS":
                 if (f"/private/var/mobile/Media{entry}") not in unback_list:
-                    print(entry)
                     pull_file(self=AfcService(lockdown),relative_src=entry, dst=dest)
                     file_path = os.path.join(dest, pathlib.Path(entry).name)
                     arcname = os.path.join("/private/var/mobile/Media", entry.strip("/"))
