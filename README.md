@@ -90,7 +90,11 @@ including:
 >***Logical+ Backup (UFED-Style)***
 >  
 >*Creates an "advanced Logical Backup" as ZIP-archive with an UFD file to load in the [Cellebrite Physical Analyzer©](https://cellebrite.com/de/cellebrite-physical-analyzer-de/)*
+>
+>***PRFS Backup***
 >  
+>*Perform and decrypt an iTunes backup, gather AFC-media files, shared App folders and crash reports. Creates a TAR-archive structured like the filesystem on the device.*
+>    
 >***Filesystem Backup (jailbroken)***
 >  
 >*Creates a full filesystem backup from an already jailbroken device.*
@@ -129,5 +133,5 @@ This script utilizes the following projects:
 
 [crossfiledialog](https://github.com/maikelwever/crossfiledialog) by [maikelwever](https://github.com/maikelwever)
 
-[paramiko](https://github.com/paramiko/paramiko), [pandas](https://github.com/pandas-dev/pandas), [pyarrow](https://github.com/apache/arrow), [playsound](https://github.com/TaylorSMarks/playsound) 
+[paramiko](https://github.com/paramiko/paramiko), [pandas](https://github.com/pandas-dev/pandas), [pyarrow](https://github.com/apache/arrow), [playsound](https://github.com/TaylorSMarks/playsound), [pdfme](https://github.com/aFelipeSP/pdfme)
 
