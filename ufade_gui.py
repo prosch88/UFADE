@@ -1301,7 +1301,7 @@ class MyApp(ctk.CTk):
                         tarpath = f"/private{unback_path['SysSharedContainerDomain']}/{appfile}"
                     else:
                         tarpath = f"/private{unback_path[filedomain]}"
-                    unback_list.append(posixpath.join(tarpath, file))
+                    unback_set.add(posixpath.join(tarpath, file))
                     tar.add(file_path, arcname=os.path.join(tarpath, file), recursive=False)
                 else:
                     tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
@@ -1428,7 +1428,7 @@ class MyApp(ctk.CTk):
                                 source_file = os.path.join(root, file)
                                 filename = os.path.relpath(source_file, file_path)
                                 app_arc = posixpath.join(app_dest, filename)
-                                if app_arc not in unback_list and os.path.isfile(file_path):
+                                if app_arc not in unback_set and os.path.isfile(file_path):
                                     tar.add(file_path, app_arc, recursive=False)
                                 else:
                                     pass
@@ -3820,7 +3820,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         progress.update()
         try:
             if l_type == "PRFS":
-                if (f"/private/var/mobile/Media{entry}") not in unback_list:
+                if (f"/private/var/mobile/Media{entry}") not in unback_set:
                     pull_file(self=AfcService(lockdown),relative_src=entry, dst=dest)
                     file_path = os.path.join(dest, pathlib.Path(entry).name)
                     arcname = os.path.join("/private/var/mobile/Media", entry.strip("/"))
@@ -4258,11 +4258,12 @@ def dev_data():
             all_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
             apps = installation_proxy.InstallationProxyService(lockdown).get_apps("User")
             app_id_list = []
-            for app in apps.keys():
+            sorted_apps = sorted(apps.keys(), key=lambda app: apps.get(app).get('CFBundleDisplayName', '').lower())
+            for app in sorted_apps:
                 app_id_list.append(app)
             global doc_list
             doc_list = []
-            for app in apps:
+            for app in sorted_apps:
                 try: 
                     apps.get(app)['UIFileSharingEnabled']
                     doc_list.append("yes")
@@ -4580,7 +4581,7 @@ device = dev_data()
 bu_pass = "12345"
 developer = False
 filedict = {}
-unback_list = []
+unback_set = set()
 no_escrow = False
 case_number = ""
 case_name = ""
