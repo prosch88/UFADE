@@ -3801,8 +3801,13 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
     text.update()
     if l_type == "PRFS":
         for line in AfcService(lockdown).dirlist("/", -1):
-            if not line.endswith((".JPG",".HEIC",".MOV")):
-                media_list.append(line)
+            if not line.startswith("/private/var/mobile/Media/PhotoData/Thumbnails/V2/"):
+                if not line.endswith((".JPG",".HEIC",".MOV")):
+                    media_list.append(line)
+                else:
+                    pass
+            else:
+                pass
     else:
         for line in AfcService(lockdown).listdir("/"):
             media_list.append(line)
@@ -3826,6 +3831,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
                     file_path = os.path.join(dest, pathlib.Path(entry).name)
                     arcname = os.path.join("/private/var/mobile/Media", entry.strip("/"))
                     tar.add(file_path, arcname=arcname)
+                    os.remove(file_path)
                 else:
                     pass
             else:
