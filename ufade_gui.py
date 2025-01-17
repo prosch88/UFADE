@@ -1302,8 +1302,6 @@ class MyApp(ctk.CTk):
                     else:
                         tarpath = f"/private{unback_path[filedomain]}"
                     unback_set.add(posixpath.join(tarpath, file))
-                    if "private/var/mobile/Media" in tarpath:
-                        unback_media_set.add(posixpath.join(tarpath, file))
                     tar.add(file_path, arcname=os.path.join(tarpath, file), recursive=False)
                 else:
                     tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
@@ -3823,7 +3821,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         progress.update()
         try:
             if l_type == "PRFS":
-                if (f"/private/var/mobile/Media{entry}") not in unback_media_set:
+                if (f"/private/var/mobile/Media{entry}") not in unback_set:
                     pull_file(self=AfcService(lockdown),relative_src=entry, dst=dest)
                     file_path = os.path.join(dest, pathlib.Path(entry).name)
                     arcname = os.path.join("/private/var/mobile/Media", entry.strip("/"))
@@ -4585,7 +4583,6 @@ bu_pass = "12345"
 developer = False
 filedict = {}
 unback_set = set()
-unback_media_set = set()
 no_escrow = False
 case_number = ""
 case_name = ""
