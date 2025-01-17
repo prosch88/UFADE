@@ -1301,7 +1301,10 @@ class MyApp(ctk.CTk):
                         tarpath = f"/private{unback_path['SysSharedContainerDomain']}/{appfile}"
                     else:
                         tarpath = f"/private{unback_path[filedomain]}"
-                    unback_set.add(posixpath.join(tarpath, file))
+                        tarfile_path = posixpath.join(tarpath, file)
+                    unback_set.add(tarfile_path)
+                    if "/private/var/mobile/Media" in tarfile_path:
+                        m_unback_set.add(tarfile_path.replace("/private/var/mobile/Media", ""))
                     tar.add(file_path, arcname=os.path.join(tarpath, file), recursive=False)
                 else:
                     tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
@@ -3792,7 +3795,11 @@ def fileloop(dvt, start, lista, fcount, cnt, folder_text, progress, prog_text):
 
 # Pull Media-files
 def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, progress=None, change=None, fzip=False):
-    media_list = []
+    if l_type == "PRFS":
+        media_list = set()
+        media_set = set()
+    else:
+        media_list = []
     tar = archive
     zip = archive
     if fzip == True:
@@ -3801,13 +3808,15 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
     text.update()
     if l_type == "PRFS":
         for line in AfcService(lockdown).dirlist("/", -1):
-            if not line.startswith("/private/var/mobile/Media/PhotoData/Thumbnails/V2/"):
-                if not line.endswith((".JPG",".HEIC",".MOV")):
-                    media_list.append(line)
-                else:
-                    pass
-            else:
-                pass
+            #if not line.startswith("/private/var/mobile/Media/PhotoData/Thumbnails/V2/"):
+            #    if not line.endswith((".JPG",".HEIC",".MOV")):
+            #        media_list.append(line)
+            #    else:
+            #        pass
+            #else:
+            #    pass
+            media_set.add(line)
+        media_list = media_set.difference(m_unback_set)
     else:
         for line in AfcService(lockdown).listdir("/"):
             media_list.append(line)
@@ -3826,14 +3835,14 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         progress.update()
         try:
             if l_type == "PRFS":
-                if (f"/private/var/mobile/Media{entry}") not in unback_set:
-                    pull_file(self=AfcService(lockdown),relative_src=entry, dst=dest)
-                    file_path = os.path.join(dest, pathlib.Path(entry).name)
-                    arcname = os.path.join("/private/var/mobile/Media", entry.strip("/"))
-                    tar.add(file_path, arcname=arcname)
-                    os.remove(file_path)
-                else:
-                    pass
+                #if (f"/private/var/mobile/Media{entry}") not in unback_set:
+                pull_file(self=AfcService(lockdown),relative_src=entry, dst=dest)
+                file_path = os.path.join(dest, pathlib.Path(entry).name)
+                arcname = os.path.join("/private/var/mobile/Media", entry.strip("/"))
+                tar.add(file_path, arcname=arcname)
+                os.remove(file_path)
+                #else:
+                #    pass
             else:
                 pull(self=AfcService(lockdown),relative_src=entry, dst=dest)
                 if l_type != "folder":
@@ -4589,6 +4598,7 @@ bu_pass = "12345"
 developer = False
 filedict = {}
 unback_set = set()
+m_unback_set = set()
 no_escrow = False
 case_number = ""
 case_name = ""
