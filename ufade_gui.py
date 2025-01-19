@@ -1312,7 +1312,7 @@ class MyApp(ctk.CTk):
                 try: os.remove(file_path)                                                                                       #remove the file after adding
                 except: pass
             except:
-                log(f"Error while decrypting file:{file}")
+                log(f"Error while decrypting file:{file.encode('cp1252', errors='ignore').decode('cp1252')}")
         change.set(1) 
 
 # Fallback decryption function for older devices
