@@ -1301,7 +1301,7 @@ class MyApp(ctk.CTk):
                         tarpath = f"/private{unback_path['SysSharedContainerDomain']}/{appfile}"
                     else:
                         tarpath = f"/private{unback_path[filedomain]}"
-                        tarfile_path = posixpath.join(tarpath, file)
+                    tarfile_path = posixpath.join(tarpath, file)
                     unback_set.add(tarfile_path)
                     if "/private/var/mobile/Media" in tarfile_path:
                         m_unback_set.add(tarfile_path.replace("/private/var/mobile/Media", ""))
