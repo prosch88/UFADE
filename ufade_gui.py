@@ -1305,7 +1305,10 @@ class MyApp(ctk.CTk):
                     unback_set.add(tarfile_path)
                     if "/private/var/mobile/Media" in tarfile_path:
                         m_unback_set.add(tarfile_path.replace("/private/var/mobile/Media", ""))
-                    tar.add(file_path, arcname=os.path.join(tarpath, file), recursive=False)
+                    if tarfile_path == "/private/var/mobile/Media":
+                        pass
+                    else:
+                        tar.add(file_path, arcname=os.path.join(tarpath, file), recursive=False)
                 else:
                     tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
                         backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
