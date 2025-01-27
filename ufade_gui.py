@@ -2979,7 +2979,7 @@ class MyApp(ctk.CTk):
                             {".": "",},
                             {".": "Device Information:", "style": "title", "label": "title2", "outline": {}},
                             {
-                                "widths": [1.5, 2.5, 1.5, 2.5],
+                                "widths": [1.2, 2.5, 1.2, 3.1],
                                 "style": {"s": 10, "border_color": "lightgrey"},
                                 "table": [
                                     [{".": [{".b": "Model-Nr:"}]}, {"colspan": 3, ".": [{".": dev_name}]}, None, None],
@@ -3043,7 +3043,7 @@ class MyApp(ctk.CTk):
                             },
                             
                             {
-                                "widths": [2.2, 3.5, 1.8, 0.7],
+                                "widths": [2.1, 3.7, 1.7, 0.7],
                                 "style": {"s": 9, "border_color": "white", "margin_bottom": 2},
                                 "table": [
                                     [{".": [{".b":"Name"}]},{".": [{".b":"Bundle Identifier"}]},{".": [{".b":"Version"}]},{".":[{".b":"visible"}]}]
@@ -3052,7 +3052,7 @@ class MyApp(ctk.CTk):
 
                             *[
                                 {
-                                "widths": [2.2, 3.5, 1.8, 0.7],
+                                "widths": [2.1, 3.7, 1.7, 0.7],
                                 "style": {"s": 9, "border_color": "lightgrey"},
                                 "table": [
                                     [{"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"}, ".": [{".": apps.get(d_app)['CFBundleDisplayName'].encode('cp1252', errors='ignore').decode('cp1252')[:22]}]}, 
