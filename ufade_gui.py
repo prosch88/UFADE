@@ -3031,7 +3031,7 @@ class MyApp(ctk.CTk):
                                 "table": [
                                     [{".": [{".b": "ICCID:"}]}, {"colspan": 3, ".": [{".": entry["IntegratedCircuitCardIdentity"]}]}, None, None],
                                     [{"style": {"cell_fill": u_grey}, ".": [{".b": "IMSI:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": entry["InternationalMobileSubscriberIdentity"]}]}, { "style": {"cell_fill": u_grey}, ".": [{".b": "MCC:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": entry["MCC"]}]}],
-                                    [{".": [{".b": "MNC:"}]}, {".": [{".": entry["MNC"]}]}, {".": [{".b": "Type:"}]}, {".": [{".": "SIM" if entry["Slot"] == "kOne" else "eSIM"}]}] 
+                                    [{".": [{".b": "MNC:"}]}, {".": [{".": entry["MNC"]}]}, {".": [{".b": "Slot:"}]}, {".": entry["Slot"]}] 
                                     ]}               
                             for entry in all if all != ""],
                             ["None" if all == "" else ""],
@@ -3043,7 +3043,7 @@ class MyApp(ctk.CTk):
                             },
                             
                             {
-                                "widths": [2.5, 3.2, 1.6, 0.7],
+                                "widths": [2.2, 3.5, 1.8, 0.7],
                                 "style": {"s": 9, "border_color": "white", "margin_bottom": 2},
                                 "table": [
                                     [{".": [{".b":"Name"}]},{".": [{".b":"Bundle Identifier"}]},{".": [{".b":"Version"}]},{".":[{".b":"visible"}]}]
@@ -3052,10 +3052,10 @@ class MyApp(ctk.CTk):
 
                             *[
                                 {
-                                "widths": [2.5, 3.2, 1.6, 0.7],
+                                "widths": [2.2, 3.5, 1.8, 0.7],
                                 "style": {"s": 9, "border_color": "lightgrey"},
                                 "table": [
-                                    [{"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"}, ".": [{".": apps.get(d_app)['CFBundleDisplayName'].encode('cp1252', errors='ignore').decode('cp1252')}]}, 
+                                    [{"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"}, ".": [{".": apps.get(d_app)['CFBundleDisplayName'].encode('cp1252', errors='ignore').decode('cp1252')[:22]}]}, 
                                     {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": d_app}, {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": apps.get(d_app)['CFBundleVersion']}, 
                                     {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": "visible" if d_app in springboard_rep else "absent"}] for d_app in app_id_list]
                                 } if len(apps) > 0 else " "],              
@@ -3990,15 +3990,11 @@ def save_info():
         all = ""
     if all != "":
         for entry in all:
-            if entry["Slot"] == "kOne":
-                stype = "SIM"
-            else:
-                stype = "eSIM"
             try: file.write("\n\n## SIM-Info ##\n\nICCID:  " + entry["IntegratedCircuitCardIdentity"] + 
                                     "\nIMSI:   " + entry["InternationalMobileSubscriberIdentity"] + 
                                     "\nMCC:    " + entry["MCC"] + 
                                     "\nMNC:    " + entry["MNC"] +
-                                    "\nType:   " + stype)
+                                    "\nSlot:   " + entry["Slot"])
             except: pass
     
     #Save user-installed Apps to txt
