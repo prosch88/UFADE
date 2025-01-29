@@ -2271,7 +2271,7 @@ class MyApp(ctk.CTk):
                 plistlib.dump(addition, file)
 
             with open(os.path.join("Report", "files", "Applications", appname, "description.info"), "w") as file:
-                file.write(f"Name={app['CFBundleDisplayName']}\n")
+                file.write(f"Name={app['CFBundleDisplayName'].encode('cp1252', errors='ignore').decode('cp1252')}\n")
                 file.write(f"Package={app['CFBundleIdentifier']}\n")
                 try: file.write(f"Version={app['CFBundleVersion']}\n")
                 except: file.write("Version=")
