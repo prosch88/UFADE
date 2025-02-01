@@ -274,6 +274,9 @@ class MyApp(ctk.CTk):
                           "Pull the crash report folder from the device.",
                           "Create a Sysdiagnose archive on the device and\npull it to the disk afterwards.", 
                           "Pull the \"Media\"-folder from the device\n(pictures, videos, recordings)"]
+        if d_class == "AudioAccessory":
+            self.menu_buttons.pop(3)
+            self.menu_text.pop(3)
         self.menu_textbox = []
         for btn in self.menu_buttons:
             self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=70, font=self.stfont, anchor="w", justify="left"))
