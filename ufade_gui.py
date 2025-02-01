@@ -618,7 +618,7 @@ class MyApp(ctk.CTk):
             dir_top = f"{dir[:45]}..."
         else:
             dir_top = dir
-        if d_class == "Watch" or d_class == "AppleTV":
+        if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
             self.show_watch_menu()
         else:
             self.show_main_menu()
@@ -676,7 +676,7 @@ class MyApp(ctk.CTk):
             text = text + "- app information"
         self.text = ctk.CTkLabel(self.dynamic_frame, width=420, height=200, font=self.stfont, text=text, anchor="w", justify="left")
         self.text.pack(pady=50)
-        if d_class == "Watch" or d_class == "AppleTV":
+        if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
             ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
         else:
             ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=10)
@@ -723,12 +723,12 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.waitul)
             self.progress.stop()
             self.progress.pack_forget()
-            if d_class == "Watch" or d_class == "AppleTV":
+            if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
             else:
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("LogMenu")).pack(pady=10)
         else:
-            if d_class == "Watch" or d_class == "AppleTV":
+            if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
                 self.show_watch_menu()
             else:
                 self.switch_menu("LogMenu")
@@ -742,7 +742,7 @@ class MyApp(ctk.CTk):
         self.sysl = threading.Thread(target=lambda: self.capture_syslog(text=self.text, startb=self.startb, backb=self.backb))
         self.startb = ctk.CTkButton(self.dynamic_frame, text="Start", font=self.stfont, command=lambda: self.sysl.start())
         self.startb.pack(pady=20) 
-        if d_class == "Watch" or d_class == "AppleTV":
+        if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
             self.backb = ctk.CTkButton(self.dynamic_frame, text="Back", font=self.stfont, command=self.show_watch_menu)
             self.backb.pack(pady=10)
         else:
@@ -776,7 +776,7 @@ class MyApp(ctk.CTk):
         self.prog_text.pack_forget()
         if flow == False:
             self.text.configure(text="Extraction of crash reports completed!")
-            if d_class == "Watch" or d_class == "AppleTV":
+            if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
             else:
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("LogMenu")).pack(pady=10)
@@ -822,12 +822,12 @@ class MyApp(ctk.CTk):
             self.diag = threading.Thread(target=lambda: self.sysdiag(self.text, self.progress, self.waitsys))
             self.diag.start()
             self.wait_variable(self.waitsys)
-            if d_class == "Watch" or d_class == "AppleTV":
+            if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=10)
             else:
                 ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("LogMenu")).pack(pady=10)     
         else:
-            if d_class == "Watch" or d_class == "AppleTV":
+            if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
                 self.show_watch_menu()
             else:
                 self.switch_menu("LogMenu")
@@ -2012,7 +2012,7 @@ class MyApp(ctk.CTk):
         self.text.configure(text="AFC Extraction complete.")
         self.prog_text.pack_forget()
         self.progress.pack_forget()
-        if d_class == "Watch" or d_class == "AppleTV":
+        if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("WatchMenu")).pack(pady=40))  
         else:
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=40)) 
@@ -2430,6 +2430,8 @@ class MyApp(ctk.CTk):
             os_type = "WatchOS"
         elif d_class == "AppleTV":
             os_type = "tvOS"
+        elif d_class == "AudioAccessory":
+            os_type = "audioOS"
         metadata_device_info = ET.SubElement(project, 'metadata', {'section': 'Device Info'})
         #me_dev_info = {'Serial Number': snr, 'Device Name': name, 'WiFi Address': w_mac, 'Model Number': hardware + ", Model:" + mnr, 'Bluetooth Address': b_mac, 'Device': dev_name, 'Time Zone': d_tz, 'Unique Identifier': udid}
         me_dev_info = {'Device Name': name, 'Device': dev_name, 'Model Number': f'{hardware} , Model: {mnr}', 'MAC (WiFi Address)': w_mac, 'MAC (Bluetooth Address)': b_mac, 'Unique Identifier': udid, 'Unique Chip ID': ecid, 'Serial Number': snr, 'Disk Capacity': f'{disk} GB', 'Software': f'{os_type}: {dversion}', 'Buildnumber': build , 'Time Zone': d_tz,}
@@ -2798,7 +2800,7 @@ class MyApp(ctk.CTk):
         examiner = self.exambox.get()
         self.pdf_report(case_number, case_name, evidence_number, examiner)
         self.text.configure(text="PDF creation complete!", height=60)
-        if d_class == "Watch" or d_class == "AppleTV":
+        if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("ReportMenu")).pack(pady=40))
         else:
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("iReportMenu")).pack(pady=40))
@@ -2865,6 +2867,8 @@ class MyApp(ctk.CTk):
             d_image = os.path.join(os.path.dirname(__file__), "assets" , "report", "ipad.jpg")
         elif d_class == "iPod":
             d_image = os.path.join(os.path.dirname(__file__), "assets" , "report", "ipod.jpg")
+        elif d_class == "AudioAccessory":
+            d_image = os.path.join(os.path.dirname(__file__), "assets" , "report", "homepod.jpg")
         else:
             if product in ["iPhone" + nr for nr in hobude]:
                 d_image = os.path.join(os.path.dirname(__file__), "assets" , "report", "iphone2.jpg")
@@ -3892,7 +3896,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         except:
             pass
 
-    if d_class == "Watch" or d_class == "AppleTV":
+    if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
         with open(f"afc_files_{udid}.json", "w") as file:
             json.dump(filedict, file)
     else:
@@ -4348,7 +4352,7 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                 log(f"Error reading file: {src}")
                 readable = 0
             if readable == 1:
-                if d_class == "Watch" or d_class == "AppleTV":
+                if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
                     textfiles = [".txt", ".doc", ".docx", ".odt"]
                     dbfiles = [".db", ".sqlite", ".realm", ".kgdb"]
                     configfiles = [".plist", ".xml"]
