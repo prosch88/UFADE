@@ -2807,14 +2807,14 @@ class MyApp(ctk.CTk):
     def pdf_report(self, case_number="", case_name="", evidence_number="", examiner="", pdf_type="default", shot="none", sha256="none", shot_png="none", app_name=None, chat_name=None, w=None, h=None):
         hobude = ["1,1","1,2","2,1","3,1","3,2","3,3","4,1","5,1","5,2","5,3","5,4","6,1","6,2","7,1","7,2","8,1","8,2","8,4","9,1","9,2","9,3","9,4","10,1","10,2","10,4","10,5","12,8","14,6"]   
         u_grey = [0.970, 0.970, 0.970]
-        background_color = tuple(int(c * 255) for c in u_grey)
+        #background_color = tuple(int(c * 255) for c in u_grey)
         font_size = 64
         font_path = os.path.join(os.path.dirname(__file__),"assets", "report", "texgyreheros-regular.otf")
         font = ImageFont.truetype(font_path, font_size)
         dummy_image = Image.new("RGB", (1, 1))
         draw = ImageDraw.Draw(dummy_image)
         text_width = 2400
-        image = Image.new("RGB", (int(text_width), font_size+8), background_color)
+        image = Image.new("RGB", (int(text_width), font_size+8), 'white')
         draw = ImageDraw.Draw(image)
         draw.text((0,-16),text=name, font=font, fill="black")
         image_stream = BytesIO()
@@ -2902,8 +2902,8 @@ class MyApp(ctk.CTk):
                                 "widths": [1.2, 2.5, 1.8, 2.5],
                                 "style": {"s": 10, "border_color": "lightgrey"},
                                 "table": [
-                                    [{".": [{".b": "Model-Nr:"}]}, {"colspan": 3, ".": [{".": dev_name}]}, None, None],
-                                    [{"style": {"border_color": "white", "cell_fill": u_grey}, ".": [{".b": "Dev-Name:"}]}, {"colspan": 3, "style": {"cell_fill": u_grey}, "image": temp_image_name}, None, None],
+                                    [{".": [{".b": "Dev-Name:"}]}, {"colspan": 3, "image": temp_image_name}, None, None],
+                                    [{"style": {"border_color": "white", "cell_fill": u_grey}, ".": [{".b": "Model-Nr:"}]}, {"colspan": 3, "style": {"cell_fill": u_grey}, ".": [{".": dev_name}]}, None, None],
                                     [{".": [{".b": "UDID:"}]}, {"colspan": 3, ".": [{".": udid}]}, None, None],
                                 ]
                             },
@@ -2982,9 +2982,8 @@ class MyApp(ctk.CTk):
                                 "widths": [1.2, 2.5, 1.2, 3.1],
                                 "style": {"s": 10, "border_color": "lightgrey"},
                                 "table": [
-                                    [{".": [{".b": "Model-Nr:"}]}, {"colspan": 3, ".": [{".": dev_name}]}, None, None],
-                                    #[{"style": {"border_color": "white", "cell_fill": u_grey}, ".": [{".b": "Dev-Name:"}]}, {"colspan": 3, "style": {"cell_fill": u_grey}, ".": [{".": replaced_name}]}, None, None],
-                                    [{"style": {"border_color": "white", "cell_fill": u_grey}, ".": [{".b": "Dev-Name:"}]}, {"colspan": 3, "style": {"cell_fill": u_grey}, "image": temp_image_name}, None, None],
+                                    [{".": [{".b": "Dev-Name:"}]}, {"colspan": 3, "image": temp_image_name}, None, None],
+                                    [{"style": {"border_color": "white", "cell_fill": u_grey}, ".": [{".b": "Model-Nr:"}]}, {"colspan": 3, "style": {"cell_fill": u_grey}, ".": [{".": dev_name}]}, None, None],
                                     [{".": [{".b": "UDID:"}]}, {"colspan": 3, ".": [{".": udid}]}, None, None],
                                     [{"style": {"cell_fill": u_grey}, ".": [{".b": "Hardware:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": hardware_mnr}]}, { "style": {"cell_fill": u_grey}, ".": [{".b": "WiFi MAC:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": w_mac}]}],
                                     [{".": [{".b": "Product:"}]}, {".": [{".": product}]}, {".": [{".b": "BT MAC:"}]}, {".": [{".": b_mac}]}],
