@@ -672,7 +672,7 @@ class MyApp(ctk.CTk):
             text = text + "- phone number\n"
         if comp != []:
             text = text + "- companion udid\n"
-        if all != "" and all != None:
+        if all != "" and all != None and all != []:
             text = text + "- SIM information\n"
         if app_id_list != []:
             text = text + "- app information"
