@@ -38,7 +38,6 @@ from pymobiledevice3.tunneld.server import TunneldRunner
 from pymobiledevice3.remote.common import TunnelProtocol
 from pymobiledevice3.remote.utils import get_rsds
 from pymobiledevice3.cli.remote import cli_tunneld
-from pymobiledevice3.services.os_trace import OsTraceService
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_pkcs12
 from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat, load_pem_public_key
 from cryptography.hazmat.primitives.serialization.pkcs7 import PKCS7SignatureBuilder
