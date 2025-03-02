@@ -4537,7 +4537,7 @@ def pull_file(self, relative_src, dst, callback=None, src_dir=''):
 
 #UFADE "logging"
 def log(text):
-    with open(f"ufade_log_{udid}.log", 'a') as logfile:
+    with open(f"ufade_log_{udid}.log", 'a', encoding="utf-8") as logfile:
         logtime = str(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
         logfile.write(f"{logtime}: {text}\n")
 
