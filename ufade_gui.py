@@ -38,6 +38,7 @@ from pymobiledevice3.tunneld.server import TunneldRunner
 from pymobiledevice3.remote.common import TunnelProtocol
 from pymobiledevice3.remote.utils import get_rsds
 from pymobiledevice3.cli.remote import cli_tunneld
+from pymobiledevice3 import irecv
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_pkcs12
 from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat, load_pem_public_key
 from cryptography.hazmat.primitives.serialization.pkcs7 import PKCS7SignatureBuilder
@@ -74,6 +75,7 @@ import tempfile
 import re
 import exifread
 import uuid
+import ast
 
 
 ctk.set_appearance_mode("dark")  # Dark Mode
@@ -87,7 +89,7 @@ class MyApp(ctk.CTk):
 
         # Define Window
         self.title(f"Universal Forensic Apple Device Extractor {u_version}")
-        self.geometry("1100x600")
+        self.geometry(f"{resx}x{resy}")
         self.resizable(False, False)
         if platform.uname().system == "Darwin":
             self.iconpath = ImageTk.PhotoImage(file=os.path.join(os.path.dirname(__file__), "assets" , "ufade.icns" ))
@@ -98,23 +100,23 @@ class MyApp(ctk.CTk):
 
         # Font:
         self.stfont = ctk.CTkFont("default")
-        self.stfont.configure(size=14)
+        self.stfont.configure(size=fsize)
 
         # Create frames
-        self.left_frame = ctk.CTkFrame(self, width=340, corner_radius=0, fg_color="#2c353e", bg_color="#2c353e")
+        self.left_frame = ctk.CTkFrame(self, width=leftx, corner_radius=0, fg_color="#2c353e", bg_color="#2c353e")
         self.left_frame.grid(row=0, column=0, sticky="ns")
 
-        self.right_frame = ctk.CTkFrame(self, width=760, fg_color="#212121")
+        self.right_frame = ctk.CTkFrame(self, width=rightx, fg_color="#212121")
         self.right_frame.grid(row=0, column=1, sticky="nsew")
         self.grid_columnconfigure(1, weight=1)
 
         # Widgets (left Frame))
         if platform.uname().system == 'Windows':
-            self.info_text = ctk.CTkTextbox(self.left_frame, height=600, width=340, fg_color="#2c353e", corner_radius=0, font=("Consolas", 14), activate_scrollbars=False)
+            self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=("Consolas", fsize), activate_scrollbars=False)
         elif platform.uname().system == 'Darwin':
-            self.info_text = ctk.CTkTextbox(self.left_frame, height=600, width=340, fg_color="#2c353e", corner_radius=0, font=("Menlo", 14), activate_scrollbars=False)
+            self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=("Menlo", fsize), activate_scrollbars=False)
         else:
-            self.info_text = ctk.CTkTextbox(self.left_frame, height=600, width=340, fg_color="#2c353e", corner_radius=0, font=("monospace", 14), activate_scrollbars=False)
+            self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=("monospace", fsize), activate_scrollbars=False)
         if lockdown != None:
             self.info_text.configure(text_color="#abb3bd")
         else:
@@ -138,7 +140,10 @@ class MyApp(ctk.CTk):
             else:
                 self.show_notpaired()
         else:
-            self.show_nodevice()
+            if mode == "normal":
+                self.show_nodevice()
+            else:
+                self.show_recovery()
 
     def show_main_menu(self):
          # Erase content of dynamic frame
@@ -170,7 +175,7 @@ class MyApp(ctk.CTk):
                           "More specific options for data handling."]
         self.menu_textbox = []
         for btn in self.menu_buttons:
-            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=70, font=self.stfont, anchor="w", justify="left"))
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=70, font=self.stfont, anchor="w", justify="left"))
 
         r=1
         i=0
@@ -278,7 +283,7 @@ class MyApp(ctk.CTk):
             self.menu_text.pop(3)
         self.menu_textbox = []
         for btn in self.menu_buttons:
-            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=70, font=self.stfont, anchor="w", justify="left"))
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=70, font=self.stfont, anchor="w", justify="left"))
 
         r=1
         i=0
@@ -303,7 +308,7 @@ class MyApp(ctk.CTk):
                           "Create a UFDR-Zip container viewable\nin the Cellebrite Reader application"]
         self.menu_textbox = []
         for btn in self.menu_buttons:
-            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=70, font=self.stfont, anchor="w", justify="left"))
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=70, font=self.stfont, anchor="w", justify="left"))
         r=1
         i=0
         for btn in self.menu_buttons:
@@ -327,7 +332,7 @@ class MyApp(ctk.CTk):
                           "Create a printable PDF device report"]
         self.menu_textbox = []
         for btn in self.menu_buttons:
-            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=70, font=self.stfont, anchor="w", justify="left"))
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=70, font=self.stfont, anchor="w", justify="left"))
         r=1
         i=0
         for btn in self.menu_buttons:
@@ -357,7 +362,7 @@ class MyApp(ctk.CTk):
                           "Creates a FFS Backup of an already jailbroken Device"]
         self.menu_textbox = []
         for btn in self.menu_buttons:
-            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=70, font=self.stfont, anchor="w", justify="left"))
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=70, font=self.stfont, anchor="w", justify="left"))
 
         r=1
         i=0
@@ -386,7 +391,7 @@ class MyApp(ctk.CTk):
                           "Capture the Live Syslogs from the device and\nwrite them to a textfile."]
         self.menu_textbox = []
         for btn in self.menu_buttons:
-            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=70, font=self.stfont, anchor="w", justify="left"))
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=70, font=self.stfont, anchor="w", justify="left"))
 
         r=1
         i=0
@@ -416,7 +421,7 @@ class MyApp(ctk.CTk):
                           "Try to unmount the image. Reboot the device if this fails"]
         self.menu_textbox = []
         for btn in self.menu_buttons:
-            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=70, font=self.stfont, anchor="w", justify="left"))
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=70, font=self.stfont, anchor="w", justify="left"))
 
         r=1
         i=0
@@ -446,7 +451,7 @@ class MyApp(ctk.CTk):
                           ]
         self.menu_textbox = []
         for btn in self.menu_buttons:
-            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=400, height=50, font=self.stfont, anchor="w", justify="left"))
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=50, font=self.stfont, anchor="w", justify="left"))
 
         r=1
         i=0
@@ -458,6 +463,35 @@ class MyApp(ctk.CTk):
             i+=1
 
         ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_main_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
+
+# No device is seen in recovery or dfu mode:
+    def show_recovery(self):
+        for widget in self.dynamic_frame.winfo_children():
+            widget.destroy()
+        self.after(10)
+        global mode
+        device = dev_data()
+        self.info_text.configure(state="normal")
+        self.info_text.delete("0.0", "end")
+        self.info_text.configure(text_color="#abb3bd")
+        self.info_text.insert("0.0", device)
+        self.info_text.configure(state="disabled")
+
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="center")
+        self.text = ctk.CTkLabel(self.dynamic_frame, width=400, height=200, font=self.stfont, anchor="w", justify="left")
+        self.text.configure(text="A device found in " + mode + " mode.\n\n" +
+                            "You can try to reboot the device to a working state.\nWait some time before trying to reconnect.\n" + 
+                            "Devices in DFU mode might need a hard-reset.")
+        self.text.pack(pady=50)
+        ctk.CTkButton(self.dynamic_frame, text="Reboot", command=self.reboot_button).pack(pady=10)
+
+
+# reboot button function:
+    def reboot_button(self):
+        irecv.IRecv(timeout=0.1).reboot()
+        global device
+        device = dev_data()
+        self.show_nodevice()
 
 # No device is seen in the usbmux list:
     def show_nodevice(self):
@@ -537,7 +571,7 @@ class MyApp(ctk.CTk):
         self.text.pack(pady=10)
 
         self.browsebutton = ctk.CTkButton(self.dynamic_frame, text="Browse", font=self.stfont, command=lambda: self.browse_p12(self.p12box), width=40, fg_color="#2d2d35")
-        self.browsebutton.pack(side="bottom", pady=(0,410), padx=(0,525))
+        self.browsebutton.pack(side="bottom", pady=(0,410), padx=(0,sb_button_offset_x))
         self.p12box = ctk.CTkEntry(self.dynamic_frame, width=340, height=20, corner_radius=0, placeholder_text=".p12 file")
         self.p12box.bind(sequence="<Return>", command=lambda x: self.pair_supervised(self.text, self.p12box.get(), self.p12passbox.get()))
         #self.p12box.insert(0, string=dir)
@@ -593,7 +627,7 @@ class MyApp(ctk.CTk):
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="center")
         ctk.CTkLabel(self.dynamic_frame, text="Choose Output Directory:", height=30, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.browsebutton = ctk.CTkButton(self.dynamic_frame, text="Browse", font=self.stfont, command=lambda: self.browse_cwd(self.outputbox), width=60, fg_color="#2d2d35")
-        self.browsebutton.pack(side="bottom", pady=(0,410), padx=(0,415))
+        self.browsebutton.pack(side="bottom", pady=(0,b_button_offset_y), padx=(0,b_button_offset_x))
         self.outputbox = ctk.CTkEntry(self.dynamic_frame, width=360, height=20, corner_radius=0, placeholder_text=[dir])
         self.outputbox.bind(sequence="<Return>", command=lambda x: self.choose_cwd(self.outputbox))
         self.outputbox.insert(0, string=dir)
@@ -4075,226 +4109,271 @@ def pair_supervised_device(paired):
         lockdown = lockdown_unpaired
         paired.set(False)
     return(lockdown)
+      
 
 # Get device information #
 def dev_data():
-    if lockdown != None:
-        global d_class 
-        try: d_class= lockdown.get_value("","DeviceClass")
-        except: d_class = " "
-        global dev_name
-        try: 
-            dev_name = lockdown.display_name
-            if dev_name == None:
-                if d_class == "Watch":
-                    dev_name = "Apple Watch"
-                elif d_class == "AppleTV":
-                    dev_name = "Apple TV"
-                elif d_class == "iPod":
-                    dev_name = "iPod Touch"
-                elif d_class == "iPad":
-                    dev_name = "iPad"
-                elif d_class == "iPhone":
-                    dev_name = "iPhone"
-                else:
-                    dev_name = "Apple device"
-        except: 
-            dev_name = "Apple device"
-        global hardware
-        try: 
-            hardware = lockdown.hardware_model
-            if hardware == None:
-                hardware = " "
-        except: 
-            hardware = " "
-        global product
-        try: 
-            product = lockdown.product_type
-            if product == None:
-                product = lockdown.get_value("","ProductType")
-                if product == None:
-                    product = d_class
-        except: 
-            product = d_class
-        global udid
-        try: udid = lockdown.udid
-        except: udid = " "
-        global ecid
-        try: ecid = str(lockdown.ecid)
-        except: ecid = " "
-        global dversion
-        try: dversion = lockdown.product_version
-        except: dversion = " "
-        global w_mac 
-        try: w_mac = lockdown.wifi_mac_address
-        except: w_mac = " "
-        global name
-        try: name =  lockdown.get_value("","DeviceName")
-        except: name = " "
-        global build
-        try: build = lockdown.get_value("","BuildVersion")
-        except: build = " "
-        if ispaired == True:
-            global imei
-            global imei2
-            try: imei = lockdown.get_value("","InternationalMobileEquipmentIdentity")
-            except: imei = " "
-            try: imei2 = lockdown.get_value("","InternationalMobileEquipmentIdentity2")
-            except: imei2 = " "
-            global snr 
-            try: snr = lockdown.get_value("","SerialNumber")
-            except: snr = " "
-            global mlbsnr 
-            try: mlbsnr = lockdown.get_value("","MLBSerialNumber")
-            except: mlbsnr = " "
-            global d_tz 
-            try: d_tz = lockdown.get_value("","TimeZone")
-            except: d_tz = " "
-            global b_mac
-            try: b_mac = lockdown.get_value("","BluetoothAddress")
-            except: b_mac = " "
-            global mnr
-            try: mnr = lockdown.get_value("", "ModelNumber")
-            except: mnr = " "
-            global hardware_mnr
-            if hardware == " ":
-                hardware_mnr = mnr
-            else:
-                hardware_mnr = f"{hardware}, {mnr}"
-            global disk1 
-            disk1 = lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity")/1000000000
-            global disk 
-            disk = f'{round(disk1,2):.2f}'
-            global free1 
-            free1 = lockdown.get_value("com.apple.disk_usage","AmountDataAvailable")/1000000000
-            global free 
-            free = f'{round(free1,2):.2f}'
-            global used1 
-            used1 = disk1 - free1
-            global used 
-            used = f'{round(used1,2):.2f}'
-            global graph_progress 
-            graph_progress = "" + "▓" * int(26/100*(100/disk1*used1)) + "░" * int(26/100*(100/disk1*free1)) + ""
-            global language
-            try: language = lockdown.language
-            except: language = " "
-            global comp
-            if d_class != "Watch":
-                try: comp = CompanionProxyService(lockdown).list()
-                except: comp = []
-            else:
-                comp = []
-        else:
-            pass
-
+    global mode
+    global dev_name
+    global hardware
+    global product
+    global ecid
+    global snr
     try: 
-        if len(udid) > 26:
-            udid_s = udid[:25] + "\n" + '{:13}'.format(" ") + "\t" + udid[25:]
-        else:
-            udid_s = udid
-        if len(name) > 26:
-            wordnames = name.split()
-            if len(' '.join(wordnames[:-1])) < 27:
-                name_s = ' '.join(wordnames[:-1]) + "\n" + '{:13}'.format(" ") + "\t" + wordnames[-1]
-            else:
-                name_s = ' '.join(wordnames[:-2]) + "\n" + '{:13}'.format(" ") + "\t" + ' '.join(wordnames[-2:])
-        else:
-            name_s = name
-        if len(dev_name) > 26:
-            wordnames = dev_name.split()
-            if len(' '.join(wordnames[:-1])) < 27:
-                dev_name_s = ' '.join(wordnames[:-1]) + "\n" + '{:13}'.format(" ") + "\t" + wordnames[-1]
-            else:
-                dev_name_s = ' '.join(wordnames[:-2]) + "\n" + '{:13}'.format(" ") + "\t" + ' '.join(wordnames[-2:])
-        else:
-            dev_name_s = dev_name
+        r_mode = irecv.IRecv(timeout=0.01).mode
+        if "RECOVERY" in str(r_mode):
+            mode = "Recovery"
+        elif "DFU" in str(r_mode):
+            mode = "DFU"
+    except:
+        mode = "normal"
 
-        if ispaired == True:
-            device = ("Device paired ✔ \n\n" +
-                '{:13}'.format("Model-Nr: ") + "\t" + dev_name_s +
-                "\n" + '{:13}'.format("Dev-Name: ") + "\t" + name_s +
-                "\n" + '{:13}'.format("Hardware: ") + "\t" + hardware_mnr +
-                "\n" + '{:13}'.format("Product: ") + "\t" + product +
-                "\n" + '{:13}'.format("Software: ") + "\t" + dversion +
-                "\n" + '{:13}'.format("Build-Nr: ") + "\t" + build +
-                "\n" + '{:13}'.format("Language: ") + "\t" + language +
-                "\n" + '{:13}'.format("Serialnr: ") + "\t" + snr +
-                "\n" + '{:13}'.format("MLB-Snr: ") + "\t" + mlbsnr +
-                "\n" + '{:13}'.format("Wifi MAC: ") + "\t" + w_mac +
-                "\n" + '{:13}'.format("BT MAC: ") + "\t" + b_mac +
-                "\n" + '{:13}'.format("Disk Use: ") + "\t" + graph_progress +
-                "\n" + '{:13}'.format("Capacity: ") + "\t" + disk + " GB" +
-                "\n" + '{:13}'.format("Used: ") + "\t" + used + " GB" +
-                "\n" + '{:13}'.format("Free: ") + "\t" + free + " GB" +
-                "\n" + '{:13}'.format("UDID: ") + "\t" + udid_s +
-                "\n" + '{:13}'.format("ECID: ") + "\t" + ecid)
-            
-            if imei != " ":
-                device = device + "\n" + '{:13}'.format("IMEI 1: ") + "\t" + imei
-            if imei2 != " ":
-                device = device + "\n" + '{:13}'.format("IMEI 2: ") + "\t" + imei2
-        else:
-            device = ("Device unpaired ✗ \n\n" +
-            '{:13}'.format("Model-Nr: ") + "\t" + dev_name_s +
-                "\n" + '{:13}'.format("Dev-Name: ") + "\t" + name_s +
+    if mode != "normal":
+        try: dev_name = irecv.IRecv().display_name
+        except: dev_name = "Apple device"
+        try: hardware = irecv.IRecv().hardware_model
+        except: hardware = " "
+        try: product = irecv.IRecv().product_type
+        except: product = " "
+        try: irec_val = ast.literal_eval(str(irecv.IRecv()))
+        except: irec_val = {}
+        try: ecid = irec_val['ECID']
+        except: ecid = " "
+        try: snr = irec_val['SRNM']
+        except: snr = " "
+        try: iboot = irec_val['SRTG']
+        except: iboot = " "
+
+        device = ("Device is in " + mode + " mode \n\n" +
+            '{:13}'.format("Model-Nr: ") + "\t" + dev_name +
                 "\n" + '{:13}'.format("Hardware: ") + "\t" + hardware +
                 "\n" + '{:13}'.format("Product: ") + "\t" + product +
-                "\n" + '{:13}'.format("Software: ") + "\t" + dversion +
-                "\n" + '{:13}'.format("Build-Nr: ") + "\t" + build +
-                "\n" + '{:13}'.format("Wifi MAC: ") + "\t" + w_mac +
-                "\n" + '{:13}'.format("UDID: ") + "\t" + udid_s +
-                "\n" + '{:13}'.format("ECID: ") + "\t" + ecid)  
-
-    except: 
-        device = ("No device detected!\n" +
-            "\n" + '{:13}'.format("Python: ") + "\t" + platform.python_version() +
-            "\n" + '{:13}'.format("PMD3: ") + "\t" + version('pymobiledevice3') +
-            "\n" + '{:13}'.format("pyiosbackup: ") + "\t" + version('pyiosbackup') +
-            "\n" + '{:13}'.format("iOSbackup: ") + "\t" + version('iOSbackup') +
-            "\n" + '{:13}'.format("paramiko: ") + "\t" + version('paramiko') +
-            "\n" + '{:13}'.format("pandas: ") + "\t" + version('pandas') +
-            "\n\n" + 
-            "   59 65 74 20 73 75 63 68 20 69 73 \n" +
-            "   20 6F 66 74 20 74 68 65 20 63 6F \n" +
-            "   75 72 73 65 20 6F 66 20 64 65 65 \n" +
-            "   64 73 20 74 68 61 74 20 6D 6F 76 \n" +
-            "   65 20 74 68 65 20 77 68 65 65 6C \n" + 
-            "   73 20 6F 66 20 74 68 65 20 77 6F \n" +
-            "   72 6C 64 3A 20 73 6D 61 6C 6C 20 \n" + 
-            "   68 61 6E 64 73 20 64 6F 20 74 68 \n" +
-            "   65 6D 20 62 65 63 61 75 73 65 20 \n" +
-            "   74 68 65 79 20 6D 75 73 74 2C 20 \n" +
-            "   77 68 69 6C 65 20 74 68 65 20 65 \n" +
-            "   79 65 73 20 6F 66 20 74 68 65 20 \n" +
-            "   67 72 65 61 74 20 61 72 65 20 65 \n" +
-            "   6C 73 65 77 68 65 72 65 2E")
-
-    #Get installed Apps
-    if lockdown != None and ispaired != False:
-        global apps 
-        global all_apps
-        global app_id_list 
-        try:
-            all_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
-            apps = installation_proxy.InstallationProxyService(lockdown).get_apps("User")
-            app_id_list = []
-            sorted_apps = sorted(apps.keys(), key=lambda app: apps.get(app).get('CFBundleDisplayName', '').lower())
-            for app in sorted_apps:
-                app_id_list.append(app)
-            global doc_list
-            doc_list = []
-            for app in sorted_apps:
-                try: 
-                    apps.get(app)['UIFileSharingEnabled']
-                    doc_list.append("yes")
-                except:
-                    doc_list.append("no")
-        except:
-            apps = {}
-            all_apps = {}
-            app_id_list = []
+                "\n" + '{:13}'.format("Serialnr: ") + "\t" + snr +
+                "\n" + '{:13}'.format("iBOOT: ") + "\t" + iboot +
+                "\n" + '{:13}'.format("ECID: ") + "\t" + ecid +
+                "\n\n\n\n" + 
+                "   42 75 74 20 69 6E 20 74 68 65 20 \n" +
+                "   65 6E 64 20 69 74 27 73 20 6F 6E \n" +
+                "   6C 79 20 61 20 70 61 73 73 69 6E \n" +
+                "   67 20 74 68 69 6E 67 2C 20 74 68 \n" +
+                "   69 73 20 73 68 61 64 6F 77 3B 20 \n" +
+                "   65 76 65 6E 20 64 61 72 6B 6E 65 \n" +
+                "   73 73 20 6D 75 73 74 20 70 61 73 \n" +
+                "   73 2E")  
     else:
-        pass
+        if lockdown != None:
+            global d_class 
+            try: d_class= lockdown.get_value("","DeviceClass")
+            except: d_class = " "
+            
+            try: 
+                dev_name = lockdown.display_name
+                if dev_name == None:
+                    if d_class == "Watch":
+                        dev_name = "Apple Watch"
+                    elif d_class == "AppleTV":
+                        dev_name = "Apple TV"
+                    elif d_class == "iPod":
+                        dev_name = "iPod Touch"
+                    elif d_class == "iPad":
+                        dev_name = "iPad"
+                    elif d_class == "iPhone":
+                        dev_name = "iPhone"
+                    else:
+                        dev_name = "Apple device"
+            except: 
+                dev_name = "Apple device"
+            try: 
+                hardware = lockdown.hardware_model
+                if hardware == None:
+                    hardware = " "
+            except: 
+                hardware = " "
+            try: 
+                product = lockdown.product_type
+                if product == None:
+                    product = lockdown.get_value("","ProductType")
+                    if product == None:
+                        product = d_class
+            except: 
+                product = d_class
+            global udid
+            try: udid = lockdown.udid
+            except: udid = " "
+            try: ecid = str(lockdown.ecid)
+            except: ecid = " "
+            global dversion
+            try: dversion = lockdown.product_version
+            except: dversion = " "
+            global w_mac 
+            try: w_mac = lockdown.wifi_mac_address
+            except: w_mac = " "
+            global name
+            try: name =  lockdown.get_value("","DeviceName")
+            except: name = " "
+            global build
+            try: build = lockdown.get_value("","BuildVersion")
+            except: build = " "
+            if ispaired == True:
+                global imei
+                global imei2
+                try: imei = lockdown.get_value("","InternationalMobileEquipmentIdentity")
+                except: imei = " "
+                try: imei2 = lockdown.get_value("","InternationalMobileEquipmentIdentity2")
+                except: imei2 = " "
+                try: snr = lockdown.get_value("","SerialNumber")
+                except: snr = " "
+                global mlbsnr 
+                try: mlbsnr = lockdown.get_value("","MLBSerialNumber")
+                except: mlbsnr = " "
+                global d_tz 
+                try: d_tz = lockdown.get_value("","TimeZone")
+                except: d_tz = " "
+                global b_mac
+                try: b_mac = lockdown.get_value("","BluetoothAddress")
+                except: b_mac = " "
+                global mnr
+                try: mnr = lockdown.get_value("", "ModelNumber")
+                except: mnr = " "
+                global hardware_mnr
+                if hardware == " ":
+                    hardware_mnr = mnr
+                else:
+                    hardware_mnr = f"{hardware}, {mnr}"
+                global disk1 
+                disk1 = lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity")/1000000000
+                global disk 
+                disk = f'{round(disk1,2):.2f}'
+                global free1 
+                free1 = lockdown.get_value("com.apple.disk_usage","AmountDataAvailable")/1000000000
+                global free 
+                free = f'{round(free1,2):.2f}'
+                global used1 
+                used1 = disk1 - free1
+                global used 
+                used = f'{round(used1,2):.2f}'
+                global graph_progress 
+                graph_progress = "" + "▓" * int(26/100*(100/disk1*used1)) + "░" * int(26/100*(100/disk1*free1)) + ""
+                global language
+                try: language = lockdown.language
+                except: language = " "
+                global comp
+                if d_class != "Watch":
+                    try: comp = CompanionProxyService(lockdown).list()
+                    except: comp = []
+                else:
+                    comp = []
+            else:
+                pass
+
+        try: 
+            if len(udid) > 26:
+                udid_s = udid[:25] + "\n" + '{:13}'.format(" ") + "\t" + udid[25:]
+            else:
+                udid_s = udid
+            if len(name) > 26:
+                wordnames = name.split()
+                if len(' '.join(wordnames[:-1])) < 27:
+                    name_s = ' '.join(wordnames[:-1]) + "\n" + '{:13}'.format(" ") + "\t" + wordnames[-1]
+                else:
+                    name_s = ' '.join(wordnames[:-2]) + "\n" + '{:13}'.format(" ") + "\t" + ' '.join(wordnames[-2:])
+            else:
+                name_s = name
+            if len(dev_name) > 26:
+                wordnames = dev_name.split()
+                if len(' '.join(wordnames[:-1])) < 27:
+                    dev_name_s = ' '.join(wordnames[:-1]) + "\n" + '{:13}'.format(" ") + "\t" + wordnames[-1]
+                else:
+                    dev_name_s = ' '.join(wordnames[:-2]) + "\n" + '{:13}'.format(" ") + "\t" + ' '.join(wordnames[-2:])
+            else:
+                dev_name_s = dev_name
+
+            if ispaired == True:
+                device = ("Device paired ✔ \n\n" +
+                    '{:13}'.format("Model-Nr: ") + "\t" + dev_name_s +
+                    "\n" + '{:13}'.format("Dev-Name: ") + "\t" + name_s +
+                    "\n" + '{:13}'.format("Hardware: ") + "\t" + hardware_mnr +
+                    "\n" + '{:13}'.format("Product: ") + "\t" + product +
+                    "\n" + '{:13}'.format("Software: ") + "\t" + dversion +
+                    "\n" + '{:13}'.format("Build-Nr: ") + "\t" + build +
+                    "\n" + '{:13}'.format("Language: ") + "\t" + language +
+                    "\n" + '{:13}'.format("Serialnr: ") + "\t" + snr +
+                    "\n" + '{:13}'.format("MLB-Snr: ") + "\t" + mlbsnr +
+                    "\n" + '{:13}'.format("Wifi MAC: ") + "\t" + w_mac +
+                    "\n" + '{:13}'.format("BT MAC: ") + "\t" + b_mac +
+                    "\n" + '{:13}'.format("Disk Use: ") + "\t" + graph_progress +
+                    "\n" + '{:13}'.format("Capacity: ") + "\t" + disk + " GB" +
+                    "\n" + '{:13}'.format("Used: ") + "\t" + used + " GB" +
+                    "\n" + '{:13}'.format("Free: ") + "\t" + free + " GB" +
+                    "\n" + '{:13}'.format("UDID: ") + "\t" + udid_s +
+                    "\n" + '{:13}'.format("ECID: ") + "\t" + ecid)
+                
+                if imei != " ":
+                    device = device + "\n" + '{:13}'.format("IMEI 1: ") + "\t" + imei
+                if imei2 != " ":
+                    device = device + "\n" + '{:13}'.format("IMEI 2: ") + "\t" + imei2
+            else:
+                device = ("Device unpaired ✗ \n\n" +
+                '{:13}'.format("Model-Nr: ") + "\t" + dev_name_s +
+                    "\n" + '{:13}'.format("Dev-Name: ") + "\t" + name_s +
+                    "\n" + '{:13}'.format("Hardware: ") + "\t" + hardware +
+                    "\n" + '{:13}'.format("Product: ") + "\t" + product +
+                    "\n" + '{:13}'.format("Software: ") + "\t" + dversion +
+                    "\n" + '{:13}'.format("Build-Nr: ") + "\t" + build +
+                    "\n" + '{:13}'.format("Wifi MAC: ") + "\t" + w_mac +
+                    "\n" + '{:13}'.format("UDID: ") + "\t" + udid_s +
+                    "\n" + '{:13}'.format("ECID: ") + "\t" + ecid)  
+
+        except: 
+            device = ("No device detected!\n" +
+                "\n" + '{:13}'.format("Python: ") + "\t" + platform.python_version() +
+                "\n" + '{:13}'.format("PMD3: ") + "\t" + version('pymobiledevice3') +
+                "\n" + '{:13}'.format("pyiosbackup: ") + "\t" + version('pyiosbackup') +
+                "\n" + '{:13}'.format("iOSbackup: ") + "\t" + version('iOSbackup') +
+                "\n" + '{:13}'.format("paramiko: ") + "\t" + version('paramiko') +
+                "\n" + '{:13}'.format("pandas: ") + "\t" + version('pandas') +
+                "\n\n" + 
+                "   59 65 74 20 73 75 63 68 20 69 73 \n" +
+                "   20 6F 66 74 20 74 68 65 20 63 6F \n" +
+                "   75 72 73 65 20 6F 66 20 64 65 65 \n" +
+                "   64 73 20 74 68 61 74 20 6D 6F 76 \n" +
+                "   65 20 74 68 65 20 77 68 65 65 6C \n" + 
+                "   73 20 6F 66 20 74 68 65 20 77 6F \n" +
+                "   72 6C 64 3A 20 73 6D 61 6C 6C 20 \n" + 
+                "   68 61 6E 64 73 20 64 6F 20 74 68 \n" +
+                "   65 6D 20 62 65 63 61 75 73 65 20 \n" +
+                "   74 68 65 79 20 6D 75 73 74 2C 20 \n" +
+                "   77 68 69 6C 65 20 74 68 65 20 65 \n" +
+                "   79 65 73 20 6F 66 20 74 68 65 20 \n" +
+                "   67 72 65 61 74 20 61 72 65 20 65 \n" +
+                "   6C 73 65 77 68 65 72 65 2E")
+
+        #Get installed Apps
+        if lockdown != None and ispaired != False:
+            global apps 
+            global all_apps
+            global app_id_list 
+            try:
+                all_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
+                apps = installation_proxy.InstallationProxyService(lockdown).get_apps("User")
+                app_id_list = []
+                sorted_apps = sorted(apps.keys(), key=lambda app: apps.get(app).get('CFBundleDisplayName', '').lower())
+                for app in sorted_apps:
+                    app_id_list.append(app)
+                global doc_list
+                doc_list = []
+                for app in sorted_apps:
+                    try: 
+                        apps.get(app)['UIFileSharingEnabled']
+                        doc_list.append("yes")
+                    except:
+                        doc_list.append("no")
+            except:
+                apps = {}
+                all_apps = {}
+                app_id_list = []
+        else:
+            pass
     return(device)
 
 #Alternative pmd3 Backup for supervising without escrow_bag
@@ -4596,7 +4675,41 @@ try:
 except:
     ispaired = False
 
+guiv = "default"
+try:
+    if sys.argv[1] == "1368":
+        guiv = "1368"
+    else:
+        pass
+except:
+    pass
+
+
+if guiv == "default":
+    resx = 1100
+    resy = 600
+    leftx = 340
+    rightx = 760
+    fsize = 14
+    b_button_offset_x = 415
+    b_button_offset_y = 410
+    sb_button_offset_x = 525
+    right_content = 400
+
+elif guiv == "1368":
+    resx = 1358
+    resy = 764
+    leftx = 460
+    rightx = 800
+    fsize = 16
+    b_button_offset_x = 545
+    b_button_offset_y = 460
+    sb_button_offset_x = 655
+    right_content = 500
+
+
 pub_key = ""
+mode = "normal"
 device = dev_data()
 bu_pass = "12345"
 developer = False
@@ -4609,6 +4722,8 @@ case_name = ""
 evidence_number = ""
 examiner = ""
 u_version = "0.9.7"
+
+
 
 
 # Start the app
