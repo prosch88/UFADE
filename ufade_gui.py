@@ -4141,7 +4141,7 @@ def dev_data():
         except: ecid = " "
         try: snr = irec_val['SRNM']
         except: snr = " "
-        try: iboot = irec_val['SRTG']
+        try: iboot = irecv.IRecv().getenv('build-version').decode(errors='ignore')[:13]
         except: iboot = " "
 
         device = ("Device is in " + mode + " mode \n\n" +
