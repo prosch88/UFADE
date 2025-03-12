@@ -464,7 +464,7 @@ class MyApp(ctk.CTk):
 
         ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_main_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
 
-# No device is seen in recovery or dfu mode:
+# device is in recovery or dfu mode:
     def show_recovery(self):
         for widget in self.dynamic_frame.winfo_children():
             widget.destroy()
@@ -478,7 +478,7 @@ class MyApp(ctk.CTk):
         self.info_text.configure(state="disabled")
 
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="center")
-        self.text = ctk.CTkLabel(self.dynamic_frame, width=400, height=200, font=self.stfont, anchor="w", justify="left")
+        self.text = ctk.CTkLabel(self.dynamic_frame, width=400, height=180, font=self.stfont, anchor="w", justify="left")
         self.text.configure(text="A device found in " + mode + " mode.\n\n" +
                             "You can try to reboot the device to a working state.\nWait some time before trying to reconnect.\n" + 
                             "Devices in DFU mode might need a hard-reset.")
@@ -4151,7 +4151,7 @@ def dev_data():
                 "\n" + '{:13}'.format("Serialnr: ") + "\t" + snr +
                 "\n" + '{:13}'.format("iBOOT: ") + "\t" + iboot +
                 "\n" + '{:13}'.format("ECID: ") + "\t" + ecid +
-                "\n\n\n\n" + 
+                "\n\n\n\n\n\n" + 
                 "   42 75 74 20 69 6E 20 74 68 65 20 \n" +
                 "   65 6E 64 20 69 74 27 73 20 6F 6E \n" +
                 "   6C 79 20 61 20 70 61 73 73 69 6E \n" +
