@@ -4144,6 +4144,8 @@ def dev_data():
         try: iboot = irecv.IRecv().getenv('build-version').decode().rstrip('\x00')
 #.decode('ascii', errors='ignore')
         except: iboot = " "
+        try: cpid = irec_val['CPID']
+        except: cpid = ""
 
         device = ("Device is in " + mode + " mode \n\n" +
             '{:13}'.format("Model-Nr: ") + "\t" + dev_name +
@@ -4152,6 +4154,7 @@ def dev_data():
                 "\n" + '{:13}'.format("Serialnr: ") + "\t" + snr +
                 "\n" + '{:13}'.format("iBOOT: ") + "\t" + iboot +
                 "\n" + '{:13}'.format("ECID: ") + "\t" + ecid +
+                "\n" + '{:13}'.format("CPID: ") + "\t" + cpid +
                 "\n\n\n\n\n\n" + 
                 "   42 75 74 20 69 6E 20 74 68 65 20 \n" +
                 "   65 6E 64 20 69 74 27 73 20 6F 6E \n" +
