@@ -4119,6 +4119,7 @@ def dev_data():
     global product
     global ecid
     global snr
+    global udid
     try: 
         r_mode = irecv.IRecv(timeout=0.01).mode
         if "RECOVERY" in str(r_mode):
@@ -4142,10 +4143,18 @@ def dev_data():
         try: snr = irec_val['SRNM']
         except: snr = " "
         try: iboot = irecv.IRecv().getenv('build-version').decode().rstrip('\x00')
-#.decode('ascii', errors='ignore')
         except: iboot = " "
         try: cpid = irec_val['CPID']
         except: cpid = ""
+        try:
+            if "iPhone" in str(product):
+                if int(product.split(",")[0].strip('iPhone')) >= 11:
+                    udid = f"{cpid.zfill(8)}-{ecid.zfill(16)}"
+                else:
+                    udid = "unavailable"
+        except:
+            udid = "unavailable"
+
 
         device = ("Device is in " + mode + " mode \n\n" +
             '{:13}'.format("Model-Nr: ") + "\t" + dev_name +
@@ -4153,7 +4162,8 @@ def dev_data():
                 "\n" + '{:13}'.format("Product: ") + "\t" + product +
                 "\n" + '{:13}'.format("Serialnr: ") + "\t" + snr +
                 "\n" + '{:13}'.format("iBOOT: ") + "\t" + iboot +
-                "\n" + '{:13}'.format("ECID: ") + "\t" + ecid +
+                "\n" + '{:13}'.format("UDID: ") + "\t" + udid +
+                "\n" + '{:13}'.format("ECID: ") + "\t" + str(int(ecid, 16)) +
                 "\n" + '{:13}'.format("CPID: ") + "\t" + cpid +
                 "\n\n\n\n\n\n" + 
                 "   42 75 74 20 69 6E 20 74 68 65 20 \n" +
@@ -4201,7 +4211,6 @@ def dev_data():
                         product = d_class
             except: 
                 product = d_class
-            global udid
             try: udid = lockdown.udid
             except: udid = " "
             try: ecid = str(lockdown.ecid)
