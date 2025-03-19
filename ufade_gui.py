@@ -4037,7 +4037,7 @@ def save_info():
             except: pass
     
     #Save user-installed Apps to txt
-    if int(dversion.split(".")[0]) >= 17:
+    if int(dversion.split(".")[0]) >= 14:
         try:
             springboard = SpringBoardServicesService(lockdown).get_icon_state()
         except:
