@@ -3135,9 +3135,12 @@ class MyApp(ctk.CTk):
                 change.set(1)
                 return("developer")
         except exceptions.MessageNotSupportedError:
-            text.configure(text="Something went wrong. Make sure the device is unlocked.")
-            change.set(1)
-            return("nope")
+            if int(dversion.split(".")[0]) < 15:
+                pass
+            else:
+                text.configure(text="Something went wrong. Make sure the device is unlocked.")
+                change.set(1)
+                return("nope")
         except:
             pass
         try:
@@ -3195,6 +3198,8 @@ class MyApp(ctk.CTk):
                 info = ("Looking for version " + dversion)
                 text.configure(text=info)
                 self.after(1000)
+                if not os.path.isdir(os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", dversion)):
+                    raise Exception("Version not found!") 
                 lockdown = create_using_usbmux()
                 DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", dversion, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", dversion, "DeveloperDiskImage.dmg.signature"))
                 developer = True
@@ -3217,6 +3222,7 @@ class MyApp(ctk.CTk):
                     lockdown = create_using_usbmux()
                     self.after(1000)
                     try:
+                        self.after(50)
                         DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
                         info = info + "\nVersion: " + ver + " was used"
                         text.configure(text=info)
@@ -3228,7 +3234,8 @@ class MyApp(ctk.CTk):
                         developer = True
                         change.set(1)
                         return("developer")            
-                    except: 
+                    except:
+                        print("except") 
                         for i in range(index)[::-1]:
                             ver = str(v[0]) + "." + str(d_images[int(v[0])][i])
                             try:
