@@ -959,7 +959,8 @@ class MyApp(ctk.CTk):
                             file_path = os.path.join(root, file)
                             archive_name = os.path.join(target_path, os.path.relpath(file_path, item_path))
                             tar.add(file_path, arcname=archive_name)
-                elif item == "dsc" or hex_pattern.fullmatch(item):
+                    continue
+                if item == "dsc" or hex_pattern.fullmatch(item):
                     target_path = os.path.join("private/var/db/uuidtext", item)
                 else:
                     target_path = os.path.join("private/var/db/diagnostics", item)
