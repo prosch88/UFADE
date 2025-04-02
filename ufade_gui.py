@@ -922,14 +922,19 @@ class MyApp(ctk.CTk):
         playsound(os.path.join(os.path.dirname(__file__), "assets", "notification.mp3"))
 
 # Unified logs collection function
-    def collect_ul(self, time, text, waitul):
-        try: os.mkdir("unified_logs")
-        except: pass
+    def collect_ul(self, time, text, waitul, mode="default"):
+        if mode == "default":
+            try: os.mkdir("unified_logs")
+            except: pass
         uname = f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.logarchive'
         try:
-            OsTraceService(lockdown).collect(out= os.path.join("unified_logs", uname), start_time=time)
-            text.configure(text=f"Unified Logs written to:\n{uname}")
-            log(f"Collected Unified Logs as {uname}")
+            if mode == "default":
+                OsTraceService(lockdown).collect(out= os.path.join("unified_logs", uname), start_time=time)
+                text.configure(text=f"Unified Logs written to:\n{uname}")
+                log(f"Collected Unified Logs as {uname}")
+            else:
+                OsTraceService(lockdown).collect(out=f"{udid}.logarchive", start_time=time) 
+                log(f"Collected Unified Logs in PRFS-flow")
             waitul.set(1)  
         except:
             text.configure(text="Error: \nCoud not collect logs - Maybe the device or its iOS version is too old.")
@@ -937,6 +942,37 @@ class MyApp(ctk.CTk):
             waitul.set(1)
         try: os.rmdir("unified_logs")
         except: pass
+
+# Include Unified Logs in PRFS-Tar-archive 
+    def tar_ul(self, tar, text, waitul):
+        source_folder = f"{udid}.logarchive"
+        hex_pattern = re.compile(r'^[0-9A-Fa-f]{2}$')
+    
+        for item in os.listdir(source_folder):
+            item_path = os.path.join(source_folder, item)
+            
+            if os.path.isdir(item_path):
+                if item == "Extra":
+                    target_path = "private/var/db/diagnostics"
+                    for root, _, files in os.walk(item_path):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            archive_name = os.path.join(target_path, os.path.relpath(file_path, item_path))
+                            tar.add(file_path, arcname=archive_name)
+                elif item == "dsc" or hex_pattern.fullmatch(item):
+                    target_path = os.path.join("private/var/db/uuidtext", item)
+                else:
+                    target_path = os.path.join("private/var/db/diagnostics", item)
+                
+                for root, _, files in os.walk(item_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        archive_name = os.path.join(target_path, os.path.relpath(file_path, item_path))
+                        tar.add(file_path, arcname=archive_name)
+        waitul.set(1)
+       
+
+
 
 # Live Syslog function
     def capture_syslog(self, text, startb, backb):
@@ -1523,9 +1559,11 @@ class MyApp(ctk.CTk):
         global lockdown
         l_type = t
         log(f"Starting logical+ backup (type={l_type})")
-        try: os.mkdir(".tar_tmp")                                                                                               #create temp folder for files to zip/tar
+        #create temp folder for files to zip/tar
+        try: os.mkdir(".tar_tmp")                                                                                               
         except: pass
-        try: os.mkdir(".tar_tmp/itunes_bu")                                                                                     #create folder for decrypted backup
+        #create folder for decrypted backup
+        try: os.mkdir(".tar_tmp/itunes_bu")                                                                                     
         except: pass
         now = datetime.now()
         if l_type == "PRFS":
@@ -1534,8 +1572,9 @@ class MyApp(ctk.CTk):
             bu_name = "Logical+"
         self.perf_iTunes_bu(bu_name)
         if self.pw_found.get() == 2:
-            return()                                                                                                  #call iTunes Backup with "Logical+" written in dialog
+            return()                                                                                                  
         
+        #call iTunes Backup with "Logical+" written in dialog
         if l_type != "UFED":
             self.after(100, lambda: self.text.configure(text="Decrypting iTunes Backup: "))
             self.prog_text = ctk.CTkLabel(self.dynamic_frame, text="0%", width=585, height=20, font=self.stfont, anchor="w", justify="left")
@@ -1548,9 +1587,10 @@ class MyApp(ctk.CTk):
             panda_backup.start()
             self.wait_variable(self.change)
             if self.change.get() == 1:
+                #get amount of lines (files) of backup
                 line_list = []
                 line_cnt = 0
-                for line in backupfiles['relativePath']:                                                                        #get amount of lines (files) of backup
+                for line in backupfiles['relativePath']:                                                                        
                     if(line not in line_list):
                         line_cnt += 1
                         line_list.append(line)
@@ -1578,12 +1618,14 @@ class MyApp(ctk.CTk):
                 self.decrypt.start()
             
             self.wait_variable(self.change)
-            shutil.rmtree(".tar_tmp/itunes_bu")                                                                                 #remove the backup folder
+             #remove the backup folder
+            shutil.rmtree(".tar_tmp/itunes_bu")                                                                                
             shutil.rmtree(udid)
             
             
         else:
-            zipname = f'Apple_{hardware.upper()}_{dev_name}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     #create ZIP-File for CLB PA (TAR-handling isn't as good here)
+            #create ZIP-File for CLB PA (TAR-handling isn't as good here)
+            zipname = f'Apple_{hardware.upper()}_{dev_name}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     
             zip = zipfile.ZipFile(f'{zipname}.zip', "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1)
             tar = None
             self.after(100, lambda: self.text.configure(text="Processing Backup - this may take a while."))
@@ -1595,8 +1637,32 @@ class MyApp(ctk.CTk):
             self.zip_start = threading.Thread(target=lambda: self.zip_itunes(zip, self.change))
             self.zip_start.start()
             self.wait_variable(self.change)        
+            #delete the backup after zipping
             try: shutil.rmtree(udid)   
-            except: pass                                                                                              #delete the backup after zipping
+            except: pass
+
+        if l_type == "PRFS":
+            try:
+                self.after(100, lambda: self.text.configure(text="Collecting Unified Logs - this may take a while."))
+                self.change.set(0)
+                self.prog_text.pack_forget()
+                self.progress.pack_forget()
+                self.prog_text = ctk.CTkLabel(self.dynamic_frame, text=" ", width=585, height=20, font=self.stfont, anchor="w", justify="left")
+                self.prog_text.pack()
+                self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
+                self.progress.pack()
+                self.progress.start()
+                self.prfs_ul = threading.Thread(target=lambda: self.collect_ul(time=None, text=self.text, waitul=self.change, mode="PRFS"))
+                self.prfs_ul.start() 
+                self.wait_variable(self.change)
+                self.change.set(0)
+                self.after(100, lambda: self.text.configure(text="Include Unified Logs in the archive."))
+                self.ul_tar = threading.Thread(target=lambda: self.tar_ul(tar=tar, text=self.text, waitul=self.change)) 
+                self.ul_tar.start()
+                self.wait_variable(self.change)
+                shutil.rmtree(f"{udid}.logarchive") 
+            except:
+                pass                                                                                            
 
         #Gather Media Directory
         try: os.mkdir(".tar_tmp/media")
@@ -1622,7 +1688,8 @@ class MyApp(ctk.CTk):
             self.zip_media = threading.Thread(target=lambda: media_export(l_type=l_type, dest=".tar_tmp/media", archive=zip, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
             self.zip_media.start()
         self.wait_variable(self.change)
-        shutil.rmtree(".tar_tmp/media")                                                                                       #remove media-folder
+        #remove media-folder
+        shutil.rmtree(".tar_tmp/media")                                                                                       
 
         #Gather Shared App-Folders
         self.change.set(0)
