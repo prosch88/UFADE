@@ -1394,10 +1394,14 @@ class MyApp(ctk.CTk):
 # Fallback decryption function for older devices
     def decrypt_old_itunes(self, tar, change):
         log("Using fallback decryption method")
-        bu = Backup.from_path(backup_path=udid, password="12345")
-        unback_alt(bu, os.path.join(".tar_tmp", "itunes_bu"))
-        tar.add(".tar_tmp/itunes_bu", arcname="iTunes_Backup/", recursive=True)
-        change.set(1)
+        try:
+            bu = Backup.from_path(backup_path=udid, password="12345")
+            unback_alt(bu, os.path.join(".tar_tmp", "itunes_bu"))
+            tar.add(".tar_tmp/itunes_bu", arcname="iTunes_Backup/", recursive=True)
+            change.set(1)
+        except:
+            log("Error decrypting backup")
+            change.set(2)
 
 # Only decrypt Whatsaap (TESS/PuMA)
     def decrypt_whatsapp(self, change, wachange):
@@ -1575,9 +1579,8 @@ class MyApp(ctk.CTk):
         if self.pw_found.get() == 2:
             return()                                                                                                  
         
-        #call iTunes Backup with "Logical+" written in dialog
         if l_type != "UFED":
-            self.after(100, lambda: self.text.configure(text="Decrypting iTunes Backup: "))
+            self.after(10, lambda: self.text.configure(text="Decrypting iTunes Backup: "))
             self.prog_text = ctk.CTkLabel(self.dynamic_frame, text="0%", width=585, height=20, font=self.stfont, anchor="w", justify="left")
             self.prog_text.pack() 
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
@@ -1607,6 +1610,7 @@ class MyApp(ctk.CTk):
 
             else:
                 self.text.configure(text="Decrypting iTunes Backup - this may take a while.")
+                self.text.update()
                 self.prog_text.configure(text=" ")
                 self.progress.pack_forget()
                 self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
@@ -1620,10 +1624,19 @@ class MyApp(ctk.CTk):
             
             self.wait_variable(self.change)
              #remove the backup folder
-            shutil.rmtree(".tar_tmp/itunes_bu")                                                                                
-            shutil.rmtree(udid)
-            
-            
+            try: shutil.rmtree(".tar_tmp/itunes_bu")
+            except: pass                                                                                
+            try: shutil.rmtree(udid)
+            except: pass
+            if self.change.get() == 2:
+                self.after(50)
+                self.text.configure(text="An error occured.\nTry again and make sure the device stays unlocked.")
+                self.text.update()
+                self.progress.pack_forget()
+                self.prog_text.pack_forget()
+                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
+                return
+                        
         else:
             #create ZIP-File for CLB PA (TAR-handling isn't as good here)
             zipname = f'Apple_{hardware.upper()}_{dev_name}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     
