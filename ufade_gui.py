@@ -1514,7 +1514,6 @@ class MyApp(ctk.CTk):
                                 if app_arc not in unback_set and os.path.isfile(file_path):
                                     tar.add(file_path, app_arc, recursive=False)
                                 else:
-                                    log(f"Error zipping file: {filename}")
                                     pass
                     else:
                         tar.add(file_path, arcname=os.path.join("App_Share/", app, str((apps.get(app)['EnvironmentVariables'])['CFFIXED_USER_HOME'])[1:], "Documents/"), recursive=True)
@@ -1526,7 +1525,9 @@ class MyApp(ctk.CTk):
                             try:
                                 zip.write(source_file, arcname=os.path.join("iPhoneDump/Applications/", app, filename))
                             except:
+                                log(f"Error zipping file {filename}")
                                 pass
+
                 try: os.remove(file_path)
                 except: shutil.rmtree(file_path)
             i += 1
