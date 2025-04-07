@@ -666,9 +666,14 @@ class MyApp(ctk.CTk):
         self.okbutton.configure(state="disabled")
         outputbox.configure(state="disabled")
         if platform.uname().system == 'Linux':
-            import crossfiledialog
-            dir = crossfiledialog.choose_folder()
-            if dir == "":
+            try:
+                import crossfiledialog
+                dir = crossfiledialog.choose_folder()
+                if dir == "":
+                    dir = olddir
+            except:
+                dir = ctk.filedialog.askdirectory()
+                if not dir:
                 dir = olddir
         else:
             dir = ctk.filedialog.askdirectory()
