@@ -674,7 +674,7 @@ class MyApp(ctk.CTk):
             except:
                 dir = ctk.filedialog.askdirectory()
                 if not dir:
-                dir = olddir
+                    dir = olddir
         else:
             dir = ctk.filedialog.askdirectory()
             if not dir:
