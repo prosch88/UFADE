@@ -4677,12 +4677,16 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
 
                 src_filename = self.resolve_path(src_filename)
 
-                if self.isdir(src_filename):
-                    dst_filename.mkdir(exist_ok=True)
-                    pull(self, src_filename, str(dst_path), callback=callback,)
-                    continue
+                try:
+                    if self.isdir(src_filename):
+                        dst_filename.mkdir(exist_ok=True)
+                        pull(self, src_filename, str(dst_path), callback=callback,)
+                        continue
 
-                pull(self, src_filename, str(dst_path), callback=callback)
+                    pull(self, src_filename, str(dst_path), callback=callback)
+                except:
+                    log(f"Error pulling folder: {src_filename}")
+                    pass
 
 #pull single file
 def pull_file(self, relative_src, dst, callback=None, src_dir=''):
