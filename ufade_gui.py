@@ -1465,7 +1465,7 @@ class MyApp(ctk.CTk):
             if wachange.get() == 3:
                 wachange.set(2)
                 #self.wabwait = ctk.IntVar(self, 0)
-                self.decrypt_whatsapp_alt(change, wachange)
+                self.decrypt_whatsapp(change, wachange)
                 #self.waitvar(self.wabwait)
             if finish == True:
                 self.after(100, lambda: self.text.configure(text="Whatsapp files extracted.")) 
@@ -1957,9 +1957,7 @@ class MyApp(ctk.CTk):
                 self.waitvar(self.change)
             elif self.change.get() == 2:
                 self.change.set(0)
-                self.tess_backup_alt = threading.Thread(target=lambda: self.decrypt_whatsapp_alt(self.change, self.wachange))
-                self.tess_backup_alt.start()
-                self.waitvar(self.change)
+                self.text.configure(text="Something went wrong. Please try again.")
             self.prog_text.pack_forget()
             self.progress.pack_forget()
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=40))   
