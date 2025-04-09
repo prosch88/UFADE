@@ -958,22 +958,34 @@ class MyApp(ctk.CTk):
             
             if os.path.isdir(item_path):
                 if item == "Extra":
-                    target_path = "private/var/db/diagnostics"
-                    for root, _, files in os.walk(item_path):
+                    for root, dirs, files in os.walk(item_path):
+                        rel_root = os.path.relpath(root, item_path)
+                        archive_root = os.path.join("private/var/db/diagnostics", rel_root) if rel_root != "." else "private/var/db/diagnostics"
+                        if not files and not dirs:
+                            tarinfo = tarfile.TarInfo(name=archive_root)
+                            tarinfo.type = tarfile.DIRTYPE
+                            tar.addfile(tarinfo)
                         for file in files:
                             file_path = os.path.join(root, file)
-                            archive_name = os.path.join(target_path, os.path.relpath(file_path, item_path))
+                            archive_name = os.path.join(archive_root, file)
                             tar.add(file_path, arcname=archive_name)
-                    continue
+                    continue 
+
                 if item == "dsc" or hex_pattern.fullmatch(item):
                     target_path = os.path.join("private/var/db/uuidtext", item)
                 else:
                     target_path = os.path.join("private/var/db/diagnostics", item)
-                
-                for root, _, files in os.walk(item_path):
+
+                for root, dirs, files in os.walk(item_path):
+                    rel_root = os.path.relpath(root, item_path)
+                    archive_root = os.path.join(target_path, rel_root) if rel_root != "." else target_path
+                    if not files and not dirs:
+                        tarinfo = tarfile.TarInfo(name=archive_root)
+                        tarinfo.type = tarfile.DIRTYPE
+                        tar.addfile(tarinfo)
                     for file in files:
                         file_path = os.path.join(root, file)
-                        archive_name = os.path.join(target_path, os.path.relpath(file_path, item_path))
+                        archive_name = os.path.join(archive_root, file)
                         tar.add(file_path, arcname=archive_name)
         waitul.set(1)
        
