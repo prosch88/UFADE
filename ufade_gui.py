@@ -1769,16 +1769,20 @@ class MyApp(ctk.CTk):
             self.after(100)
             lockdown = create_using_usbmux()
             self.change.set(0)
-            self.crash_start = threading.Thread(target=lambda: crash_report(crash_dir=".tar_tmp/Crash", change=self.change, progress=self.progress, prog_text=self.prog_text))
+            if l_type == "PRFS":
+                tarpath = "/private/var/mobile/Library/Logs/CrashReporter"
+            else:
+                tarpath = "/Crash"
+            self.crash_start = threading.Thread(target=lambda: crash_report(crash_dir=".tar_tmp/Crash", change=self.change, progress=self.progress, prog_text=self.prog_text, tar=tar, tarpath=tarpath))
             self.crash_start.start()
             self.wait_variable(self.change)
             self.progress.pack_forget()
             self.prog_text.pack_forget()
             self.after(100)
-            if l_type == "PRFS":
-                tar.add(".tar_tmp/Crash", arcname=("/private/var/mobile/Library/Logs/CrashReporter"), recursive=True)
-            else:
-                tar.add(".tar_tmp/Crash", arcname=("/Crash"), recursive=True)
+            #if l_type == "PRFS":
+            #    tar.add(".tar_tmp/Crash", arcname=("/private/var/mobile/Library/Logs/CrashReporter"), recursive=True)
+            #else:
+            #    tar.add(".tar_tmp/Crash", arcname=("Crash"), recursive=True)
             self.after(100)
             shutil.rmtree(".tar_tmp/Crash")
 
@@ -4053,7 +4057,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
 
 
 # Pull crash logs
-def crash_report(crash_dir, change, progress, prog_text, czip=False):
+def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, tarpath=None):
     log("Starting crash log extraction")
     if czip == True:
         zip = zipfile.ZipFile(f'{crash_dir}.zip', 'w')
@@ -4074,7 +4078,8 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False):
                 if czip == True:
                     file_path = os.path.join(crash_dir, entry) 
                     if os.path.isfile(file_path):
-                        zip.write(file_path, entry)                            #add the file/folder to the ZIP
+                        #add the file/folder to the ZIP
+                        zip.write(file_path, entry)                            
                     elif os.path.isdir(file_path):  
                         for root, dirs, files in os.walk(crash_dir):
                             for file in files:
@@ -4083,6 +4088,20 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False):
                                 zip.write(source_file, arcname=filename)
                     try: os.remove(file_path)
                     except: shutil.rmtree(file_path)
+                elif tar != None:
+                    file_path = os.path.join(crash_dir, entry) 
+                    if os.path.isfile(file_path):
+                        tar.add(file_path, arcname=os.path.join(tarpath, entry))
+                    elif os.path.isdir(file_path):  
+                        for root, dirs, files in os.walk(crash_dir):
+                            for file in files:
+                                source_file = os.path.join(root, file)
+                                filename = os.path.relpath(source_file, crash_dir)
+                                tar.add(source_file, arcname=os.path.join(tarpath,filename))
+                                #zip.write(source_file, arcname=filename)
+                    try: os.remove(file_path)
+                    except: shutil.rmtree(file_path)
+
                 else:
                     pass
             except: 
