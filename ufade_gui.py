@@ -1779,11 +1779,6 @@ class MyApp(ctk.CTk):
             self.progress.pack_forget()
             self.prog_text.pack_forget()
             self.after(100)
-            #if l_type == "PRFS":
-            #    tar.add(".tar_tmp/Crash", arcname=("/private/var/mobile/Library/Logs/CrashReporter"), recursive=True)
-            #else:
-            #    tar.add(".tar_tmp/Crash", arcname=("Crash"), recursive=True)
-            self.after(100)
             shutil.rmtree(".tar_tmp/Crash")
 
         #Add Bundle Files for PRFS
@@ -4098,7 +4093,6 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, t
                                 source_file = os.path.join(root, file)
                                 filename = os.path.relpath(source_file, crash_dir)
                                 tar.add(source_file, arcname=os.path.join(tarpath,filename))
-                                #zip.write(source_file, arcname=filename)
                     try: os.remove(file_path)
                     except: shutil.rmtree(file_path)
 
