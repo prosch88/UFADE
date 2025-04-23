@@ -976,9 +976,12 @@ class MyApp(ctk.CTk):
                             tarinfo.type = tarfile.DIRTYPE
                             tar.addfile(tarinfo)
                         for file in files:
-                            file_path = os.path.join(root, file)
-                            archive_name = os.path.join(archive_root, file)
-                            tar.add(file_path, arcname=archive_name)
+                            if "._" not in file:
+                                file_path = os.path.join(root, file)
+                                archive_name = os.path.join(archive_root, file)
+                                tar.add(file_path, arcname=archive_name)
+                            else:
+                                pass
                     continue 
 
                 if item == "dsc" or hex_pattern.fullmatch(item):
@@ -994,9 +997,12 @@ class MyApp(ctk.CTk):
                         tarinfo.type = tarfile.DIRTYPE
                         tar.addfile(tarinfo)
                     for file in files:
-                        file_path = os.path.join(root, file)
-                        archive_name = os.path.join(archive_root, file)
-                        tar.add(file_path, arcname=archive_name)
+                        if "._" not in file:
+                            file_path = os.path.join(root, file)
+                            archive_name = os.path.join(archive_root, file)
+                            tar.add(file_path, arcname=archive_name)
+                        else:
+                            pass
         waitul.set(1)
        
 
