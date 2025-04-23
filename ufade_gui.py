@@ -949,7 +949,7 @@ class MyApp(ctk.CTk):
         except: pass
 
 # Include Unified Logs in PRFS-Tar-archive 
-    def tar_ul(self, tar, text, waitul):
+    def zip_ul(self, zip, text, waitul):
         source_folder = f"{udid}.logarchive"
         hex_pattern = re.compile(r'^[0-9A-Fa-f]{2}$')
         
@@ -961,7 +961,7 @@ class MyApp(ctk.CTk):
         verfile = os.path.join(source_folder, "version.plist")
         with open(verfile, "wb") as file:
             plistlib.dump(ver_file, file, fmt=plistlib.FMT_BINARY)
-        tar.add(verfile, "private/var/db/diagnostics/version.plist")
+        zip.write(verfile, "private/var/db/diagnostics/version.plist")
 
         for item in os.listdir(source_folder):
             item_path = os.path.join(source_folder, item)
@@ -972,14 +972,13 @@ class MyApp(ctk.CTk):
                         rel_root = os.path.relpath(root, item_path)
                         archive_root = os.path.join("private/var/db/diagnostics", rel_root) if rel_root != "." else "private/var/db/diagnostics"
                         if not files and not dirs:
-                            tarinfo = tarfile.TarInfo(name=archive_root)
-                            tarinfo.type = tarfile.DIRTYPE
-                            tar.addfile(tarinfo)
+                            zipinfo = zipfile.ZipInfo(archive_root + '/')
+                            zip.writestr(zinfo, '')
                         for file in files:
                             if "._" not in file:
                                 file_path = os.path.join(root, file)
                                 archive_name = os.path.join(archive_root, file)
-                                tar.add(file_path, arcname=archive_name)
+                                zip.write(file_path, archive_name)
                             else:
                                 pass
                     continue 
@@ -993,14 +992,13 @@ class MyApp(ctk.CTk):
                     rel_root = os.path.relpath(root, item_path)
                     archive_root = os.path.join(target_path, rel_root) if rel_root != "." else target_path
                     if not files and not dirs:
-                        tarinfo = tarfile.TarInfo(name=archive_root)
-                        tarinfo.type = tarfile.DIRTYPE
-                        tar.addfile(tarinfo)
+                        zipinfo = zipfile.ZipInfo(archive_root + '/')
+                        zip.writestr(zipinfo, '')
                     for file in files:
                         if "._" not in file:
                             file_path = os.path.join(root, file)
                             archive_name = os.path.join(archive_root, file)
-                            tar.add(file_path, arcname=archive_name)
+                            zip.write(file_path, archive_name)
                         else:
                             pass
         waitul.set(1)
@@ -1333,7 +1331,7 @@ class MyApp(ctk.CTk):
             change.set(2)
 
 # Decrypting / "unbacking" the Backup
-    def decrypt_itunes(self, b, backupfiles, tar, progress, prog_text, line_list, line_cnt, d_nr, change, l_type="default"):
+    def decrypt_itunes(self, b, backupfiles, progress, prog_text, line_list, line_cnt, d_nr, change, l_type="default", tar=None, zip=None ):
         unback_path = {
             "KeychainDomain": "/var/Keychain",
             "CameraRollDomain": "/var/mobile",
@@ -1414,7 +1412,7 @@ class MyApp(ctk.CTk):
                     if tarfile_path == "/private/var/mobile/Media":
                         pass
                     else:
-                        tar.add(file_path, arcname=os.path.join(tarpath, file), recursive=False)
+                        zip.write(file_path, os.path.join(tarpath, file))
                 else:
                     tar.add(file_path, arcname=os.path.join("iTunes_Backup/", 
                         backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
@@ -1545,7 +1543,7 @@ class MyApp(ctk.CTk):
                                 filename = os.path.relpath(source_file, file_path)
                                 app_arc = posixpath.join(app_dest, filename)
                                 if app_arc not in unback_set and os.path.isfile(file_path):
-                                    tar.add(file_path, app_arc, recursive=False)
+                                    zip.write(file_path, app_arc)
                                 else:
                                     pass
                     else:
@@ -1556,7 +1554,7 @@ class MyApp(ctk.CTk):
                             source_file = os.path.join(root, file)
                             filename = os.path.relpath(source_file, file_path)
                             try:
-                                zip.write(source_file, arcname=os.path.join("iPhoneDump/Applications/", app, filename))
+                                zip.write(source_file, os.path.join("iPhoneDump/Applications/", app, filename))
                             except:
                                 log(f"Error zipping file {filename}")
                                 pass
@@ -1639,12 +1637,16 @@ class MyApp(ctk.CTk):
                 d_nr = 0
                 self.change.set(0)                                                                     
                 if l_type == "PRFS":
-                    tar = tarfile.open(f'{udid}_prfs_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "a:")
+                    zipname = f'{udid}_prfs_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     
+                    zip = zipfile.ZipFile(f'{zipname}.zip', "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1)
+                    tar = None
+                    decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type, zip=zip))
+                    decrypt.start()
                 else:
                     tar = tarfile.open(f'{udid}_logical_plus_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "a:")
-                zip = None
-                decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, tar, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type))
-                decrypt.start()
+                    zip = None
+                    decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type, tar=tar))
+                    decrypt.start()
 
             else:
                 self.text.configure(text="Decrypting iTunes Backup - this may take a while.")
@@ -1709,8 +1711,8 @@ class MyApp(ctk.CTk):
                 self.wait_variable(self.change)
                 self.change.set(0)
                 self.after(100, lambda: self.text.configure(text="Include Unified Logs in the archive."))
-                self.ul_tar = threading.Thread(target=lambda: self.tar_ul(tar=tar, text=self.text, waitul=self.change)) 
-                self.ul_tar.start()
+                self.ul_zip = threading.Thread(target=lambda: self.zip_ul(zip=zip, text=self.text, waitul=self.change)) 
+                self.ul_zip.start()
                 self.wait_variable(self.change)
                 shutil.rmtree(f"{udid}.logarchive") 
             except:
@@ -1734,7 +1736,10 @@ class MyApp(ctk.CTk):
 
         self.change.set(0)
         if l_type != "UFED":
-            self.tar_media = threading.Thread(target=lambda: media_export(l_type=l_type, dest=".tar_tmp/media", archive=tar, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
+            if l_type == "PRFS":
+                self.tar_media = threading.Thread(target=lambda: media_export(l_type=l_type, dest=".tar_tmp/media", archive=zip, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
+            else:
+                self.tar_media = threading.Thread(target=lambda: media_export(l_type=l_type, dest=".tar_tmp/media", archive=tar, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
             self.tar_media.start()
         else:
             self.zip_media = threading.Thread(target=lambda: media_export(l_type=l_type, dest=".tar_tmp/media", archive=zip, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
@@ -1789,7 +1794,7 @@ class MyApp(ctk.CTk):
                 tarpath = "/private/var/mobile/Library/Logs/CrashReporter"
             else:
                 tarpath = "/Crash"
-            self.crash_start = threading.Thread(target=lambda: crash_report(crash_dir=".tar_tmp/Crash", change=self.change, progress=self.progress, prog_text=self.prog_text, tar=tar, tarpath=tarpath))
+            self.crash_start = threading.Thread(target=lambda: crash_report(crash_dir=".tar_tmp/Crash", change=self.change, progress=self.progress, prog_text=self.prog_text, l_type=l_type, tar=tar, zip=zip, tarpath=tarpath))
             self.crash_start.start()
             self.wait_variable(self.change)
             self.progress.pack_forget()
@@ -1815,14 +1820,8 @@ class MyApp(ctk.CTk):
                                     metafile = os.path.join(".tar_tmp", "iTunesMetadata.plist")
                                     with open(metafile, "wb") as file:
                                         file.write(itunesplist)
-                                    tar.add(metafile, arcname=(f"{itunes_path}/iTunesMetadata.plist"))
+                                    zip.write(metafile, f"{itunes_path}/iTunesMetadata.plist")
                                     os.remove(metafile)
-
-                                    #itunes_stream = io.BytesIO(itunesplist)
-                                    #itunes_path = "/".join(list(bpath.split('/')[0:-1])) 
-                                    #tarinfo = tarfile.TarInfo(name=f"{itunes_path}/iTunesMetadata.plist")
-                                    #tarinfo.size = len(itunesplist)
-                                    #tar.addfile(tarinfo, itunes_stream)
                                 except:
                                     pass
                         except:
@@ -1872,7 +1871,10 @@ class MyApp(ctk.CTk):
         shutil.rmtree(".tar_tmp/")
         
         if l_type != 'UFED':
-            tar.close()
+            if l_type == 'PRFS':
+                zip.close()
+            else:
+                tar.close()        
         else:
             zip.close()
             self.text.configure(text="Calculate SHA256 hash. This may take a while.")
@@ -2893,11 +2895,14 @@ class MyApp(ctk.CTk):
         with zipfile.ZipFile(f'{dev_name}_{datetime.now().strftime("%Y_%m_%d")}_report.ufdr', 'w') as zip:
             for root, dirs, files in os.walk(path):
                 for file in files:
-                    filepath = os.path.abspath(os.path.join(root, file))
-                    relative_path = filepath[len_path:]
-                    with open(filepath, 'rb') as f:
-                        zipinfo = zipfile.ZipInfo(filepath)
-                        zip.write(filepath, relative_path)
+                    try:
+                        filepath = os.path.abspath(os.path.join(root, file))
+                        relative_path = filepath[len_path:]
+                        with open(filepath, 'rb') as f:
+                            zipinfo = zipfile.ZipInfo(filepath)
+                            zip.write(filepath, relative_path)
+                    except:
+                        log(f"Error zipping File: {file}")
         shutil.rmtree(path)
         log("Created UFDR Report")
         change.set(1)
@@ -4004,7 +4009,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
                 pull_file(self=AfcService(lockdown),relative_src=entry, dst=dest)
                 file_path = os.path.join(dest, pathlib.Path(entry).name)
                 arcname = os.path.join("/private/var/mobile/Media", entry.strip("/"))
-                tar.add(file_path, arcname=arcname)
+                zip.write(file_path, arcname=arcname)
                 os.remove(file_path)
                 #else:
                 #    pass
@@ -4027,26 +4032,26 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
                                     tar.add(source_file, arcname=os.path.join("Media", filename))
                     else:
                         if os.path.isfile(file_path):
-                            zip.write(file_path, arcname=os.path.join("iPhoneDump/AFC Service/", entry))                            #add the file/folder to the ZIP
+                            zip.write(file_path, os.path.join("iPhoneDump/AFC Service/", entry))                            #add the file/folder to the ZIP
                         elif os.path.isdir(file_path):
                             for root, dirs, files in os.walk(dest):
                                 for file in files:
                                     source_file = os.path.join(root, file)
                                     filename = os.path.relpath(source_file, dest)
-                                    zip.write(source_file, arcname=os.path.join("iPhoneDump/AFC Service/", filename))
+                                    zip.write(source_file, os.path.join("iPhoneDump/AFC Service/", filename))
                     try: os.remove(file_path)
                     except: shutil.rmtree(file_path)
                 else:
                     if fzip == True:
                         file_path = os.path.join(dest, entry) 
                         if os.path.isfile(file_path):
-                            zip.write(file_path, arcname=os.path.join("private/var/Media/", entry))                            #add the file/folder to the ZIP
+                            zip.write(file_path, os.path.join("private/var/Media/", entry))                            #add the file/folder to the ZIP
                         elif os.path.isdir(file_path):  
                             for root, dirs, files in os.walk(dest):
                                 for file in files:
                                     source_file = os.path.join(root, file)
                                     filename = os.path.relpath(source_file, dest)
-                                    zip.write(source_file, arcname=os.path.join("private/var/Media/", filename))
+                                    zip.write(source_file, os.path.join("private/var/Media/", filename))
                         try: os.remove(file_path)
                         except: shutil.rmtree(file_path)
                     else:
@@ -4068,7 +4073,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
 
 
 # Pull crash logs
-def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, tarpath=None):
+def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, zip=None, tarpath=None, l_type="default"):
     log("Starting crash log extraction")
     if czip == True:
         zip = zipfile.ZipFile(f'{crash_dir}.zip', 'w')
@@ -4096,7 +4101,7 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, t
                             for file in files:
                                 source_file = os.path.join(root, file)
                                 filename = os.path.relpath(source_file, crash_dir)
-                                zip.write(source_file, arcname=filename)
+                                zip.write(source_file, filename)
                     try: os.remove(file_path)
                     except: shutil.rmtree(file_path)
                 elif tar != None:
@@ -4108,7 +4113,19 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, t
                             for file in files:
                                 source_file = os.path.join(root, file)
                                 filename = os.path.relpath(source_file, crash_dir)
-                                tar.add(source_file, arcname=os.path.join(tarpath,filename))
+                                tar.add(source_file, arcname=os.path.join(tarpath, filename))
+                    try: os.remove(file_path)
+                    except: shutil.rmtree(file_path)
+                elif zip is not None and l_type == 'PRFS':
+                    file_path = os.path.join(crash_dir, entry) 
+                    if os.path.isfile(file_path):
+                        zip.write(file_path, os.path.join(tarpath, entry))
+                    elif os.path.isdir(file_path):  
+                        for root, dirs, files in os.walk(crash_dir):
+                            for file in files:
+                                source_file = os.path.join(root, file)
+                                filename = os.path.relpath(source_file, crash_dir)
+                                zip.write(source_file, os.path.join(tarpath, filename))
                     try: os.remove(file_path)
                     except: shutil.rmtree(file_path)
 
