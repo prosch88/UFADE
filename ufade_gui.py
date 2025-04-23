@@ -952,7 +952,17 @@ class MyApp(ctk.CTk):
     def tar_ul(self, tar, text, waitul):
         source_folder = f"{udid}.logarchive"
         hex_pattern = re.compile(r'^[0-9A-Fa-f]{2}$')
-    
+        
+        with open(os.path.join(source_folder, "Info.plist"), mode='rb') as infofile:
+            readinfo = plistlib.load(infofile)
+        ver_file = readinfo["SpecialMetadata"]["TTL"]
+        ver_file["Version"] = 7
+        ver_file["Identifier"] = readinfo["SourceIdentifier"]
+        verfile = os.path.join(source_folder, "version.plist")
+        with open(verfile, "wb") as file:
+            plistlib.dump(ver_file, file, fmt=plistlib.FMT_BINARY)
+        tar.add(verfile, "private/var/db/diagnostics/version.plist")
+
         for item in os.listdir(source_folder):
             item_path = os.path.join(source_folder, item)
             
