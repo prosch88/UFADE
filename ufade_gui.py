@@ -952,28 +952,48 @@ class MyApp(ctk.CTk):
     def zip_ul(self, zip, text, waitul):
         source_folder = f"{udid}.logarchive"
         hex_pattern = re.compile(r'^[0-9A-Fa-f]{2}$')
-        
-        with open(os.path.join(source_folder, "Info.plist"), mode='rb') as infofile:
-            readinfo = plistlib.load(infofile)
-        ver_file = readinfo["SpecialMetadata"]["TTL"]
-        ver_file["Version"] = 7
-        ver_file["Identifier"] = readinfo["SourceIdentifier"]
-        verfile = os.path.join(source_folder, "version.plist")
-        with open(verfile, "wb") as file:
-            plistlib.dump(ver_file, file, fmt=plistlib.FMT_BINARY)
-        zip.write(verfile, "private/var/db/diagnostics/version.plist")
+        try:
+            with open(os.path.join(source_folder, "Info.plist"), mode='rb') as infofile:
+                readinfo = plistlib.load(infofile)
+            ver_file = readinfo["SpecialMetadata"]["TTL"]
+            ver_file["Version"] = 7
+            ver_file["Identifier"] = readinfo["SourceIdentifier"]
+            verfile = os.path.join(source_folder, "version.plist")
+            with open(verfile, "wb") as file:
+                plistlib.dump(ver_file, file, fmt=plistlib.FMT_BINARY)
+            zip.write(verfile, "private/var/db/diagnostics/version.plist")
 
-        for item in os.listdir(source_folder):
-            item_path = os.path.join(source_folder, item)
-            
-            if os.path.isdir(item_path):
-                if item == "Extra":
+            for item in os.listdir(source_folder):
+                item_path = os.path.join(source_folder, item)
+                
+                if os.path.isdir(item_path):
+                    if item == "Extra":
+                        for root, dirs, files in os.walk(item_path):
+                            rel_root = os.path.relpath(root, item_path)
+                            archive_root = os.path.join("private/var/db/diagnostics", rel_root) if rel_root != "." else "private/var/db/diagnostics"
+                            if not files and not dirs:
+                                zipinfo = zipfile.ZipInfo(archive_root + '/')
+                                zip.writestr(zinfo, '')
+                            for file in files:
+                                if "._" not in file:
+                                    file_path = os.path.join(root, file)
+                                    archive_name = os.path.join(archive_root, file)
+                                    zip.write(file_path, archive_name)
+                                else:
+                                    pass
+                        continue 
+
+                    if item == "dsc" or hex_pattern.fullmatch(item):
+                        target_path = os.path.join("private/var/db/uuidtext", item)
+                    else:
+                        target_path = os.path.join("private/var/db/diagnostics", item)
+
                     for root, dirs, files in os.walk(item_path):
                         rel_root = os.path.relpath(root, item_path)
-                        archive_root = os.path.join("private/var/db/diagnostics", rel_root) if rel_root != "." else "private/var/db/diagnostics"
+                        archive_root = os.path.join(target_path, rel_root) if rel_root != "." else target_path
                         if not files and not dirs:
                             zipinfo = zipfile.ZipInfo(archive_root + '/')
-                            zip.writestr(zinfo, '')
+                            zip.writestr(zipinfo, '')
                         for file in files:
                             if "._" not in file:
                                 file_path = os.path.join(root, file)
@@ -981,26 +1001,8 @@ class MyApp(ctk.CTk):
                                 zip.write(file_path, archive_name)
                             else:
                                 pass
-                    continue 
-
-                if item == "dsc" or hex_pattern.fullmatch(item):
-                    target_path = os.path.join("private/var/db/uuidtext", item)
-                else:
-                    target_path = os.path.join("private/var/db/diagnostics", item)
-
-                for root, dirs, files in os.walk(item_path):
-                    rel_root = os.path.relpath(root, item_path)
-                    archive_root = os.path.join(target_path, rel_root) if rel_root != "." else target_path
-                    if not files and not dirs:
-                        zipinfo = zipfile.ZipInfo(archive_root + '/')
-                        zip.writestr(zipinfo, '')
-                    for file in files:
-                        if "._" not in file:
-                            file_path = os.path.join(root, file)
-                            archive_name = os.path.join(archive_root, file)
-                            zip.write(file_path, archive_name)
-                        else:
-                            pass
+        except:
+            pass
         waitul.set(1)
        
 
