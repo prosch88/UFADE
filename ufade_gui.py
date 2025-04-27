@@ -2483,8 +2483,8 @@ class MyApp(ctk.CTk):
             sign = "+"
         else:
             sign = "-"
-        output_format = "%d.%m.%Y %H:%M:%S" 
-        begin = str(now.strftime(output_format)) + " (UTC " + sign + str(int(utc_offset_hours)) + ")"
+        output_format = "%d/%m/%Y %H:%M:%S" 
+        begin = str(now.strftime(output_format)) + sign + str(int(utc_offset_hours))
 
         #End Time for UFD-Report
         end = datetime.now()
@@ -2495,7 +2495,7 @@ class MyApp(ctk.CTk):
             sign = "+"
         else:
             sign = "-" 
-        e_end = str(end.strftime(output_format)) + " (UTC " + sign + str(int(utc_offset_hours)) + ")"
+        e_end = str(end.strftime(output_format)) + sign + str(int(utc_offset_hours))
 
         reportid = str(str(uuid.uuid4()))
         project = ET.Element('project', {
@@ -2819,7 +2819,7 @@ class MyApp(ctk.CTk):
                         ET.SubElement(elev_field, 'value', {'type': 'Double'}).text = str(file_info["GPS"]["Elevation"])
                         try:
                             timestamp_field = ET.SubElement(model_elem, 'field', {'name': 'TimeStamp', 'type': 'TimeStamp'})
-                            ET.SubElement(timestamp_field, 'value', {'type': 'TimeStamp'}).text = str(file_info["Exif"]["ExifEnumDateTimeOriginal"])
+                            ET.SubElement(timestamp_field, 'value', {'type': 'TimeStamp'}).text = str(file_info["Exif"]["ExifEnumDateTimeOriginal"].replace(".","/").maketrans('()',''))
                         except:
                             pass
                         name_field = ET.SubElement(model_elem, 'field', {'name': 'Name', 'type': 'String'})               
@@ -4653,9 +4653,9 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                                 except: pass
                                 try: exifdict['ExifEnumOrientation'] = str(etags["Image Orientation"])
                                 except: pass
-                                try: exifdict['ExifEnumDateTimeOriginal'] = datetime.fromisoformat(str(etags["EXIF DateTimeOriginal"]).replace(":","").replace(" ", "T")).strftime("%d.%m.%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
+                                try: exifdict['ExifEnumDateTimeOriginal'] = datetime.fromisoformat(str(etags["EXIF DateTimeOriginal"]).replace(":","").replace(" ", "T")).strftime("%d/%m/%Y %H:%M:%S") + (f"{etags['EXIF OffsetTime']}")
                                 except: pass
-                                try: exifdict['ExifEnumDateTimeDigitized'] = datetime.fromisoformat(str(etags["EXIF DateTimeDigitized"]).replace(":","").replace(" ", "T")).strftime("%d.%m.%Y %H:%M:%S") + (f" ({etags['EXIF OffsetTime']})")
+                                try: exifdict['ExifEnumDateTimeDigitized'] = datetime.fromisoformat(str(etags["EXIF DateTimeDigitized"]).replace(":","").replace(" ", "T")).strftime("%d/%m/%Y %H:%M:%S") + (f"{etags['EXIF OffsetTime']}")
                                 except: pass
                                 try: exifdict['ExifEnumMake'] = str(etags["Image Make"])
                                 except: pass
