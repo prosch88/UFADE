@@ -4653,9 +4653,9 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                                 except: pass
                                 try: exifdict['ExifEnumOrientation'] = str(etags["Image Orientation"])
                                 except: pass
-                                try: exifdict['ExifEnumDateTimeOriginal'] = datetime.fromisoformat(str(etags["EXIF DateTimeOriginal"]).replace(":","").replace(" ", "T")).strftime("%d/%m/%Y %H:%M:%S") + (f"{etags['EXIF OffsetTime']}")
+                                try: exifdict['ExifEnumDateTimeOriginal'] = datetime.fromisoformat(str(etags["EXIF DateTimeOriginal"]).replace(":","").replace(" ", "T")).strftime("%d/%m/%Y %H:%M:%S") + (f" {etags['EXIF OffsetTime']}")
                                 except: pass
-                                try: exifdict['ExifEnumDateTimeDigitized'] = datetime.fromisoformat(str(etags["EXIF DateTimeDigitized"]).replace(":","").replace(" ", "T")).strftime("%d/%m/%Y %H:%M:%S") + (f"{etags['EXIF OffsetTime']}")
+                                try: exifdict['ExifEnumDateTimeDigitized'] = datetime.fromisoformat(str(etags["EXIF DateTimeDigitized"]).replace(":","").replace(" ", "T")).strftime("%d/%m/%Y %H:%M:%S") + (f" {etags['EXIF OffsetTime']}")
                                 except: pass
                                 try: exifdict['ExifEnumMake'] = str(etags["Image Make"])
                                 except: pass
