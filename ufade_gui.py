@@ -2819,7 +2819,7 @@ class MyApp(ctk.CTk):
                         ET.SubElement(elev_field, 'value', {'type': 'Double'}).text = str(file_info["GPS"]["Elevation"])
                         try:
                             timestamp_field = ET.SubElement(model_elem, 'field', {'name': 'TimeStamp', 'type': 'TimeStamp'})
-                            ET.SubElement(timestamp_field, 'value', {'type': 'TimeStamp'}).text = str(file_info["Exif"]["ExifEnumDateTimeOriginal"].replace(".","/").maketrans('()',''))
+                            ET.SubElement(timestamp_field, 'value', {'type': 'TimeStamp'}).text = str(file_info["Exif"]["ExifEnumDateTimeOriginal"].replace(".","/").replace("(", " ").replace(")",""))
                         except:
                             pass
                         name_field = ET.SubElement(model_elem, 'field', {'name': 'Name', 'type': 'String'})               
