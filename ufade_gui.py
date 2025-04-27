@@ -2583,14 +2583,14 @@ class MyApp(ctk.CTk):
         }).text = str(udid)
 
         if d_class == "Watch": 
-            os_type = "WatchOS"
+            os_type = "watchOS"
         elif d_class == "AppleTV":
             os_type = "tvOS"
         elif d_class == "AudioAccessory":
             os_type = "audioOS"
         metadata_device_info = ET.SubElement(project, 'metadata', {'section': 'Device Info'})
         #me_dev_info = {'Serial Number': snr, 'Device Name': name, 'WiFi Address': w_mac, 'Model Number': hardware + ", Model:" + mnr, 'Bluetooth Address': b_mac, 'Device': dev_name, 'Time Zone': d_tz, 'Unique Identifier': udid}
-        me_dev_info = {'Device Name': name, 'Device': dev_name, 'Model Number': f'{hardware} , Model: {mnr}', 'MAC (WiFi Address)': w_mac, 'MAC (Bluetooth Address)': b_mac, 'Unique Identifier': udid, 'Unique Chip ID': ecid, 'Serial Number': snr, 'Disk Capacity': f'{disk} GB', 'Software': f'{os_type}: {dversion}', 'Buildnumber': build , 'Time Zone': d_tz,}
+        me_dev_info = {'Device Name': name, 'Device': dev_name, 'Model Number': f'{hardware} , Model: {mnr}', 'MAC (WiFi Address)': w_mac, 'MAC (Bluetooth Address)': b_mac, 'Unique Identifier': udid, 'Unique Chip ID': ecid, 'Serial Number': snr, 'Disk Capacity': f'{disk} GB', 'Software': f'{os_type} {dversion}', 'Buildnumber': build , 'Time Zone': d_tz,}
         if imei != " ":
             me_dev_info['IMEI'] = imei
         else:
