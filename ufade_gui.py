@@ -948,7 +948,7 @@ class MyApp(ctk.CTk):
         try: os.rmdir("unified_logs")
         except: pass
 
-# Include Unified Logs in PRFS-Tar-archive 
+# Include Unified Logs in PRFS-Zip-archive 
     def zip_ul(self, zip, text, waitul):
         source_folder = f"{udid}.logarchive"
         hex_pattern = re.compile(r'^[0-9A-Fa-f]{2}$')
@@ -4308,6 +4308,8 @@ def dev_data():
                     udid = f"{cpid.zfill(8)}-{ecid.zfill(16)}"
                 else:
                     udid = "unavailable"
+            else:
+                udid = "unavailable"
         except:
             udid = "unavailable"
 
