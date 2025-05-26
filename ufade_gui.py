@@ -3217,7 +3217,7 @@ class MyApp(ctk.CTk):
                                 "widths": [2.1, 3.7, 1.7, 0.7],
                                 "style": {"s": 9, "border_color": "lightgrey"},
                                 "table": [
-                                    [{"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"}, ".": [{".": apps.get(d_app)['CFBundleDisplayName'].encode('cp1252', errors='ignore').decode('cp1252')[:22]}]}, 
+                                    [{"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"}, ".": [{".": apps.get(d_app)['CFBundleDisplayName'].encode('latin-1', errors='ignore').decode('latin-1')[:22]}]}, 
                                     {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": d_app}, {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": apps.get(d_app)['CFBundleVersion']}, 
                                     {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": "visible" if d_app in springboard_rep else "absent"}] for d_app in app_id_list]
                                 } if len(apps) > 0 else " "],              
