@@ -6,6 +6,7 @@ pyarrow
 playsound==1.2.2
 paramiko
 customtkinter
+tkcalendar
 crossfiledialog
 exifread<3
 pdfme

@@ -10,6 +10,7 @@ if sys.stderr is None:
 import customtkinter as ctk
 from PIL import ImageTk, Image, ExifTags, ImageDraw, ImageFont
 from tkinter import StringVar
+from tkcalendar import Calendar
 from pymobiledevice3 import usbmux, exceptions, lockdown
 from pymobiledevice3.services.mobile_image_mounter import DeveloperDiskImageMounter, MobileImageMounterService, PersonalizedImageMounter
 from pymobiledevice3.lockdown import create_using_usbmux, create_using_remote
@@ -741,25 +742,72 @@ class MyApp(ctk.CTk):
 # Unified Logs Collecting screen
     def show_collect_ul(self):
         save_info()
+        time = None
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Collect Unified Logs", height=60, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Collecting Unified Logs will take some time.\ndo you want to continue?", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(pady=25)
         self.choose = ctk.BooleanVar(self, False)
+        self.logtime = ctk.BooleanVar(self, False)
         self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
-        self.yesb.pack(side="left", pady=(0,350), padx=140)
+        self.yesb.pack(side="left", pady=(0,350), padx=(120,30))
+        self.timeb = ctk.CTkButton(self.dynamic_frame, fg_color="#2d2d35", text="Select start time ", font=self.stfont, command=lambda: [self.logtime.set(True), self.choose.set(True)])
+        self.timeb.pack(side="left", pady=(0,350), padx=(0,30))
         self.nob = ctk.CTkButton(self.dynamic_frame, text="NO", font=self.stfont, command=lambda: self.choose.set(False))
         self.nob.pack(side="left", pady=(0,350))    
         self.wait_variable(self.choose)                             
         if self.choose.get() == True:  
             self.yesb.pack_forget()
-            self.nob.pack_forget()    
-            self.text.configure(text="Collecting Unified Logs from device.\nThis may take some time.")
+            self.timeb.pack_forget()
+            self.nob.pack_forget()
+            if self.logtime.get() == True:
+                self.choose.set(False)
+                self.text.configure(text="Select a start time:", height=10, width=300)
+                self.logcal = Calendar(
+                    master= self.dynamic_frame,
+                    font=(ctk.CTkFont("default"),12),
+                    background="#2b2b2b",     # background of dates
+                    foreground="white",       # text color
+                    selectbackground="#1f6aa5",  # selected date background
+                    selectforeground="white",   # selected date text color
+                    headersbackground="#333333", # weekdays header
+                    headersforeground="white",
+                    bordercolor="#444444",
+                    normalbackground="#2b2b2b",
+                    normalforeground="white",
+                    weekendbackground="#2b2b2b",
+                    weekendforeground="#aaaaaa",
+                    othermonthbackground="#1a1a1a",
+                    othermonthforeground="#555555",
+                    othermonthwebackground="#1a1a1a",
+                    othermonthweforeground="#555555"
+                )
+                self.logcal.pack()
+                self.yesb = ctk.CTkButton(self.dynamic_frame, text="Select", font=self.stfont, command=lambda: self.choose.set(True))
+                self.yesb.pack(side="left", pady=(30,350), padx=150)
+                self.nob = ctk.CTkButton(self.dynamic_frame, text="Cancel", font=self.stfont, command=lambda: self.choose.set(False))
+                self.nob.pack(side="left", pady=(30,350))
+                self.wait_variable(self.choose)
+                self.yesb.pack_forget()
+                self.nob.pack_forget()
+                self.logcal.pack_forget()
+                if self.choose.get() == True:                             
+                    start = self.logcal.get_date()
+                    sdate = datetime.strptime(start, "%d.%m.%y")
+                    time = int(datetime.timestamp(sdate))
+                else:
+                    if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
+                        self.show_watch_menu()
+                    else:
+                        self.switch_menu("LogMenu")
+                        return()
+    
+            self.text.configure(text="Collecting Unified Logs from device.\nThis may take some time.", height=60, width=585)
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
             self.progress.pack()
             self.progress.start()
             self.waitul = ctk.IntVar(self, 0)
-            self.coll = threading.Thread(target=lambda: self.collect_ul(time=None, text=self.text, waitul=self.waitul))
+            self.coll = threading.Thread(target=lambda: self.collect_ul(time=time, text=self.text, waitul=self.waitul))
             self.coll.start()
             self.wait_variable(self.waitul)
             self.progress.stop()
