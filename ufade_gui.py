@@ -766,20 +766,22 @@ class MyApp(ctk.CTk):
                 self.logcal = Calendar(
                     master= self.dynamic_frame,
                     font=(ctk.CTkFont("default"),12),
-                    background="#2b2b2b",     # background of dates
-                    foreground="white",       # text color
-                    selectbackground="#1f6aa5",  # selected date background
-                    selectforeground="white",   # selected date text color
-                    headersbackground="#333333", # weekdays header
-                    headersforeground="white",
-                    bordercolor="#444444",
+                    locale="en_US",
+                    date_pattern="dd.mm.yy", 
+                    background="#2b2b2b",    
+                    foreground="#dce4ee",       
+                    selectbackground="#1f538d",  
+                    selectforeground="#dce4ee",   
+                    headersbackground="#333333", 
+                    headersforeground="#dce4ee",
+                    bordercolor="#212121",
                     normalbackground="#2b2b2b",
-                    normalforeground="white",
+                    normalforeground="#dce4ee",
                     weekendbackground="#2b2b2b",
                     weekendforeground="#aaaaaa",
-                    othermonthbackground="#1a1a1a",
+                    othermonthbackground="#212121",
                     othermonthforeground="#555555",
-                    othermonthwebackground="#1a1a1a",
+                    othermonthwebackground="#212121",
                     othermonthweforeground="#555555"
                 )
                 self.logcal.pack()
