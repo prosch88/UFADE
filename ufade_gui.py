@@ -882,7 +882,7 @@ class MyApp(ctk.CTk):
 
     def show_sysdiag(self):
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
-        ctk.CTkLabel(self.dynamic_frame, text="Extract Sysdiagnose", height=40, width=585, font=("standard",24), justify="left").pack(pady=15)
+        ctk.CTkLabel(self.dynamic_frame, text="Extract Sysdiagnose", height=60, width=585, font=("standard",24), justify="left").pack(pady=15)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Initiate the creation of a Sysdiagnose archive on the device and save \nit to disk afterwards. This may take some time. \nDo you want to continue?", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(pady=60)
 
