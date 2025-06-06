@@ -146,6 +146,12 @@ class MyApp(ctk.CTk):
             else:
                 self.show_recovery()
 
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    def on_close(self):
+        self.destroy()
+        os._exit(0)
+
     def show_main_menu(self):
          # Erase content of dynamic frame
         for widget in self.dynamic_frame.winfo_children():
