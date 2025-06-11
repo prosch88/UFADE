@@ -4,6 +4,7 @@ iOSbackup
 pandas
 pyarrow
 playsound==1.2.2
+NSKeyedUnArchiver==1.5
 paramiko
 customtkinter
 tkcalendar
