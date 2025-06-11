@@ -491,10 +491,19 @@ class MyApp(ctk.CTk):
                             "Devices in DFU mode might need a hard-reset.")
         self.text.pack(pady=50)
         ctk.CTkButton(self.dynamic_frame, text="Reboot", command=self.reboot_button).pack(pady=10)
+        ctk.CTkButton(self.dynamic_frame, text="Exit Recovery Mode", command=self.exit_loop_button).pack(pady=10)
 
 
 # reboot button function:
     def reboot_button(self):
+        irecv.IRecv(timeout=0.1).reboot()
+        global device
+        device = dev_data()
+        self.show_nodevice()
+
+# exit loop button function:
+    def exit_loop_button(self):
+        irecv.IRecv(timeout=0.1).set_autoboot(True)
         irecv.IRecv(timeout=0.1).reboot()
         global device
         device = dev_data()
