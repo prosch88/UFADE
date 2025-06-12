@@ -81,6 +81,8 @@ import ast
 
 ctk.set_appearance_mode("dark")  # Dark Mode
 ctk.set_default_color_theme("dark-blue") 
+ctk.set_window_scaling(1.0)
+ctk.set_widget_scaling(1.0) 
 
 class MyApp(ctk.CTk):
     def __init__(self):
