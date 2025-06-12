@@ -1880,9 +1880,7 @@ class MyApp(ctk.CTk):
                             if "Bundle" in app['Path']:
                                 bpath = app['Path']
                                 bundlepath = f'{bpath.strip("/")}/'
-                                bundle_folder = tarfile.TarInfo(name=bundlepath)
-                                bundle_folder.type = tarfile.DIRTYPE
-                                tar.addfile(bundle_folder)
+                                zip.writestr(zipfile.ZipInfo(bundlepath), '')
                                 try:
                                     itunesplist = app['iTunesMetadata']
                                     itunes_path = "/".join(list(bpath.split('/')[0:-1])) 
@@ -1891,6 +1889,17 @@ class MyApp(ctk.CTk):
                                         file.write(itunesplist)
                                     zip.write(metafile, f"{itunes_path}/iTunesMetadata.plist")
                                     os.remove(metafile)
+                                except:
+                                    pass
+                                try:
+                                    appsinf = app['ApplicationSINF']
+                                    appsinfname = f"{app['CFBundleExecutable']}.sinf"
+                                    appsinfpath = os.path.join(bundlepath, "SC_Info", appsinfname)
+                                    sinffile = os.path.join(".tar_tmp", appsinfname)
+                                    with open(sinffile, "wb") as file:
+                                        file.write(appsinf)
+                                    zip.write(sinffile, appsinfpath)
+                                    os.remove(sinffile)
                                 except:
                                     pass
                         except:
