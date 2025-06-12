@@ -1882,6 +1882,17 @@ class MyApp(ctk.CTk):
                                 bundlepath = f'{bpath.strip("/")}/'
                                 zip.writestr(zipfile.ZipInfo(bundlepath), '')
                                 try:
+                                    pkginfo = app['CFBundlePackageType']
+                                    pkginfo = f"{pkginfo:{'?'}<8}"
+                                    pkgfile = os.path.join(".tar_tmp", "PkgInfo")
+                                    pkgpath = os.path.join(bundlepath, "PkgInfo")
+                                    with open(pkgfile, "w") as file:
+                                        file.write(pkginfo)
+                                    zip.write(pkgfile, pkgpath)
+                                    os.remove(pkgfile)
+                                except:
+                                    pass                    
+                                try:
                                     itunesplist = app['iTunesMetadata']
                                     itunes_path = "/".join(list(bpath.split('/')[0:-1])) 
                                     metafile = os.path.join(".tar_tmp", "iTunesMetadata.plist")
