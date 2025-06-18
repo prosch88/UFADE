@@ -40,6 +40,7 @@ from pymobiledevice3.remote.common import TunnelProtocol
 from pymobiledevice3.remote.utils import get_rsds
 from pymobiledevice3.cli.remote import cli_tunneld
 from pymobiledevice3 import irecv
+from pymobiledevice3.irecv_devices import IRECV_DEVICES
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_pkcs12
 from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat, load_pem_public_key
 from cryptography.hazmat.primitives.serialization.pkcs7 import PKCS7SignatureBuilder
@@ -77,6 +78,7 @@ import re
 import exifread
 import uuid
 import ast
+import io
 
 
 ctk.set_appearance_mode("dark")  # Dark Mode
@@ -2366,6 +2368,23 @@ class MyApp(ctk.CTk):
         self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
         self.progress.pack()
         self.progress.start()
+        """
+        sysdiag = False
+        diag_pattern = re.compile(r'sysdiagnose_(\d{4}\.\d{2}\.\d{2}_\d{2}-\d{2}-\d{2}\+\d{4})')
+        latest_file = None
+        latest_date = ""
+        for root, dirs, filenames in os.walk(cfolder):
+            for filename in filenames:
+                if 'sysdiagnose_' in filename and not "IN_PROGRESS_" in filename and filename.endswith("tar.gz"):
+                    try:
+                        sys_date = diag_pattern.search(filename).group(1)
+                        if sys_date > latest_date:
+                            latest_date = sys_date
+                            latest_file = filename
+                    except:
+                        pass
+        diagfile = os.path.abspath(latest_file)
+        """
         diagnostics = {}
         diagnostics["Diagnostics"] = DiagnosticsService(lockdown).info()
         with open(os.path.join("Report", "files", "Diagnostics", "~Diagnostics"), "wb") as file:
@@ -4840,6 +4859,81 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                     log(f"Error pulling folder: {src_filename}")
                     pass
 
+#Parse artifacts from Sysdiagnose
+def sysdiag(tarpath):
+    wifi_date_format = "%Y-%m-%d %H:%M:%S.%f"
+    output_format = "%d/%m/%Y %H:%M:%S+00:00"
+    diagdict = {}
+    iclouddev = []
+    k_wifi_list = []
+    wifi_known = []
+    dev_events = []
+    tar = tarfile.open(tarpath)
+    members = tar.getmembers()
+    for member in members:
+        if "otctl_status.txt" in member.name:
+            otctl_file = tar.extractfile(member.name)
+            otctl_content = json.load(otctl_file)
+            for elem in otctl_content["contextDump"]["peers"]:
+                model = elem["permanentInfo"]["model_id"]
+                m_name = DEVICE_MAP.get(model, model)
+                os_bnum = elem["stableInfo"]["os_version"]
+                serial = elem["stableInfo"]["serial_number"]
+                iclouddev.append([model,m_name,os_bnum,serial])
+            diagdict["iclouddev"] = iclouddev
+        
+        if "com.apple.wifi.known-networks.plist" in member.name:
+            known_wifi = tar.extractfile(member.name)
+            k_wifi_cont = plistlib.load(known_wifi)
+            for elem in k_wifi_cont:
+                sfile = "com.apple.wifi.known-networks.plist"
+                known = k_wifi_cont.get(elem)
+                ssid = known.get("SSID").decode('UTF-8', errors='ignore')
+                end_time = datetime.strptime(str(known.get("UpdatedAt")).strip(), wifi_date_format).strftime(output_format)
+                time_stamp = datetime.strptime(str(known.get("AddedAt")).strip(), wifi_date_format).strftime(output_format)
+                last_connect = datetime.strptime(str(known.get("JoinedBySystemAt")).strip(), wifi_date_format).strftime(output_format)
+                secure = known.get("SupportedSecurityTypes")
+                os_spec = known.get("__OSSpecific__")
+                bssid = os_spec.get("BSSID")
+                k_wifi_list.append([last_connect, time_stamp, end_time, bssid, ssid, secure, sfile])
+            diagdict["known_wifi"] = k_wifi_list
+
+        if "com.apple.wifi.plist" in member.name:
+            known_wifi = tar.extractfile(member.name)
+            k_wifi_cont = plistlib.load(known_wifi)
+            if 'List of known networks' in k_wifi_cont:
+                for known in k_wifi_cont['List of known networks']:
+                    sfile = "com.apple.wifi.plist"
+                    ssid =  known.get("SSID_STR")
+                    bssid = known.get("BSSID")
+                    try: end_time = datetime.strptime(str(known.get("lastUpdated")).strip(), wifi_date_format).strftime(output_format)
+                    except: end_time = None
+                    try: time_stamp = datetime.strptime(str(known.get("addedAt")).strip(), wifi_date_format).strftime(output_format)
+                    except: time_stamp = None
+                    try: last_connect = datetime.strptime(str(known.get("lastJoined")).strip(), wifi_date_format).strftime(output_format)
+                    except: last_connect = None
+                    secure = None
+                    k_wifi_list.append([last_connect, time_stamp, end_time, bssid, ssid, secure, sfile])
+            diagdict["known_wifi"] = k_wifi_list
+
+        if "mobileactivationd.log" in member.name:
+            log_date_format = "%a %b %d %H:%M:%S %Y"
+            activation = tar.extractfile(member.name)
+            actilog = io.TextIOWrapper(activation, encoding="utf-8", errors="ignore")
+            for line in actilog:
+                if "____________________ Mobile Activation Startup _____________________" in line:
+                    startup = re.match(r'^([A-Za-z]{3} [A-Za-z]{3}\s+\d{1,2} \d{2}:\d{2}:\d{2} \d{4})', line)
+                    sfile = os.path.basename(member.name)
+                    try: 
+                        starttime_orig = startup.group(1)
+                        starttime = datetime.strptime(starttime_orig.strip(), log_date_format).strftime(output_format)
+                        dev_events.append(["Power on", starttime, sfile])
+                        print(sfile)
+                    except:
+                        pass
+            diagdict["device_events"] = dev_events
+        return(diagdict)
+
 #pull single file
 def pull_file(self, relative_src, dst, callback=None, src_dir=''):
         src = self.resolve_path(posixpath.join(src_dir, relative_src))
@@ -4969,7 +5063,7 @@ elif guiv == "1368":
     sb_button_offset_x = 655
     right_content = 500
 
-
+DEVICE_MAP = {device.product_type: device.display_name for device in IRECV_DEVICES}
 pub_key = ""
 mode = "normal"
 device = dev_data()
