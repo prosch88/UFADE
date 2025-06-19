@@ -2368,8 +2368,8 @@ class MyApp(ctk.CTk):
         self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
         self.progress.pack()
         self.progress.start()
-        """
-        sysdiag = False
+        
+        sys_diag = False
         diag_pattern = re.compile(r'sysdiagnose_(\d{4}\.\d{2}\.\d{2}_\d{2}-\d{2}-\d{2}\+\d{4})')
         latest_file = None
         latest_date = ""
@@ -2381,10 +2381,13 @@ class MyApp(ctk.CTk):
                         if sys_date > latest_date:
                             latest_date = sys_date
                             latest_file = filename
+                            diagfile = os.path.join(root, filename)
+                            sys_diag = True
                     except:
                         pass
-        diagfile = os.path.abspath(latest_file)
-        """
+        if sys_diag == True:
+            diagdict = sysdiag(diagfile)
+        
         diagnostics = {}
         diagnostics["Diagnostics"] = DiagnosticsService(lockdown).info()
         with open(os.path.join("Report", "files", "Diagnostics", "~Diagnostics"), "wb") as file:
@@ -2773,6 +2776,9 @@ class MyApp(ctk.CTk):
                 'embedded': "false",
                 'isrelated': "False"
             })
+            if sys_diag == True:
+                if latest_file in filedict[file_info]['metadata']['Local Path']:
+                    diagsize = filedict[file_info]['size']
             access_info = ET.SubElement(file_elem, 'accessInfo')
             for timestamp_name, timestamp_value in filedict[file_info]['accessInfo'].items():
                 ET.SubElement(access_info, 'timestamp', {'name': timestamp_name, 'format': 'TimeStampKnown', 'formattedTimestamp': timestamp_value}).text = timestamp_value
@@ -2834,6 +2840,7 @@ class MyApp(ctk.CTk):
                     metadata_metadata = ET.SubElement(file_elem, 'metadata', {'section': 'MetaData'})
                     ET.SubElement(metadata_metadata, 'item', {'name': "File size"}).text = ""
 
+        sysdiag_id = ""
         diagpath = os.path.join("Report", "files", "Diagnostics")
         for root, dirs, files in os.walk(diagpath):
             for filename in files:
@@ -2870,13 +2877,18 @@ class MyApp(ctk.CTk):
                         ET.SubElement(metadata_file, 'item', {'name': "Tags"}).text = "Uncategorized"
                     metadata_metadata = ET.SubElement(file_elem, 'metadata', {'section': 'MetaData'})
                     ET.SubElement(metadata_metadata, 'item', {'name': "File size"}).text = ""
+                    if sys_diag == True:
+                        if filename == latest_file:
+                            sysdiag_id = id
+                        else:
+                            pass
 
         decoded_data = ET.SubElement(project, 'decodedData')
 
         model_types = [
             "UserAccount", "Contact", "Chat", "SMS", "MMS", "Email", "Call", 
-            "CalendarEntry", "Note", "BluetoothDevice", "Cookie", "WebBookmark",
-            "VisitedPage", "SearchedItem", "WirelessNetwork", "Password", 
+            "CalendarEntry", "Note", "BluetoothDevice", "Cookie", "WebBookmark", "DeviceEvent",
+            "VisitedPage", "SearchedItem", "WirelessNetwork", "Password", "RecognizedDevice", 
             "Notification", "CellTower", "Location", "Journey", "InstalledApplication"
         ]
         index = 0
@@ -2950,6 +2962,121 @@ class MyApp(ctk.CTk):
                         ET.SubElement(jump_targets_element, 'targetid', {'ismodel': 'true'}).text = gps_id
                         index += 1
 
+            if model_type == "RecognizedDevice":
+                if sys_diag == True:
+                    try:
+                        for device in diagdict["iclouddev"]:
+                            model_elem = ET.SubElement(model_type_elem, 'model', {
+                                'type': 'RecognizedDevice', 
+                                'id': str(uuid.uuid4()),
+                                'deleted_state': 'Intact',
+                                'decoding_confidence': 'High',
+                                'isrelated': 'False',
+                                'source_index': '0',
+                                'extractionId': '0'
+                            })
+                            source_field = ET.SubElement(model_elem, 'field', {'name': 'Source', 'type': 'String'})
+                            ET.SubElement(source_field, 'value', {'type': 'String'}).text = "iCloud Keychain"
+                            name_field = ET.SubElement(model_elem, 'field', {'name': 'Name', 'type': 'String'})
+                            ET.SubElement(name_field, 'value', {'type': 'String'}).text = device[1]
+                            type_field = ET.SubElement(model_elem, 'field', {'name': 'DeviceType', 'type': 'String'})
+                            ET.SubElement(type_field, 'value', {'type': 'String'}).text = device[0]
+                            multi_model_field = ET.SubElement(model_elem, 'multiModelField', {'name': 'DeviceIdentifiers', 'type': 'KeyValueModel'})
+                            inner_model = ET.SubElement(multi_model_field, 'model', {
+                                'type': 'KeyValueModel',
+                                'id': str(uuid.uuid4()),
+                                'deleted_state': 'Intact',
+                                'decoding_confidence': 'High',
+                                'isrelated': 'False',
+                                'source_index': '0',
+                                'extractionId': '0'
+                            })
+                            key_field = ET.SubElement(inner_model, 'field', {'name': 'Key', 'type': 'String'})
+                            ET.SubElement(key_field, 'value', {'type': 'String'}).text = 'OS Build:'
+                            value_field = ET.SubElement(inner_model, 'field', {'name': 'Value', 'type': 'String'})
+                            ET.SubElement(value_field, 'value', {'type': 'String'}).text = device[2]
+                            serial_field = ET.SubElement(model_elem, 'field', {'name': 'SerialNumber', 'type': 'String'})
+                            ET.SubElement(serial_field, 'value', {'type': 'String'}).text = device[3]
+                            jumptargets = ET.SubElement(model_elem, 'jumptargets', {'name': ''})
+                            ET.SubElement(jumptargets, 'targetid', {'ismodel': 'true'}).text = sysdiag_id
+                    except:
+                        pass
+
+            if model_type == "WirelessNetwork":
+                if sys_diag == True:
+                    try:
+                        for network in diagdict["known_wifi"]:
+                            model_elem = ET.SubElement(model_type_elem, 'model', {
+                                'type': 'WirelessNetwork', 
+                                'id': str(uuid.uuid4()),
+                                'deleted_state': 'Intact',
+                                'decoding_confidence': 'High',
+                                'isrelated': 'False',
+                                'source_index': '0',
+                                'extractionId': '0'
+                            })
+                            source_field = ET.SubElement(model_elem, 'field', {'name': 'Source', 'type': 'String'})
+                            ET.SubElement(source_field, 'value', {'type': 'String'}).text = "Sysdiagnose"
+                            bssid_field = ET.SubElement(model_elem, 'field', {'name': 'BSSId', 'type': 'String'})
+                            ET.SubElement(bssid_field, 'value', {'type': 'String'}).text = network[3]
+                            ssid_field = ET.SubElement(model_elem, 'field', {'name': 'SSId', 'type': 'String'})
+                            ET.SubElement(ssid_field, 'value', {'type': 'String'}).text = network[4]
+                            sec_field = ET.SubElement(model_elem, 'field', {'name': 'SecurityMode', 'type': 'String'})
+                            ET.SubElement(sec_field, 'value', {'type': 'String'}).text = network[5]
+                            lastcon_field = ET.SubElement(model_elem, 'field', {'name': 'LastConnection', 'type': 'TimeStamp'})
+                            ET.SubElement(lastcon_field, 'value', {'type': 'TimeStamp', 'format': 'TimeStampKnown', 'formattedTimestamp':  network[0]}).text = network[0]
+                            timestamp_field = ET.SubElement(model_elem, 'field', {'name': 'TimeStamp', 'type': 'TimeStamp'})
+                            ET.SubElement(timestamp_field, 'value', {'type': 'TimeStamp', 'format': 'TimeStampKnown', 'formattedTimestamp':  network[1]}).text = network[1]
+                            endtime_field = ET.SubElement(model_elem, 'field', {'name': 'EndTime', 'type': 'TimeStamp'})
+                            ET.SubElement(endtime_field, 'value', {'type': 'TimeStamp', 'format': 'TimeStampKnown', 'formattedTimestamp':  network[2]}).text = network[2]
+                            jumptargets = ET.SubElement(model_elem, 'jumptargets', {'name': ''})
+                            ET.SubElement(jumptargets, 'targetid', {'ismodel': 'true'}).text = sysdiag_id
+                    except:
+                        pass
+        
+            if model_type == "DeviceEvent":
+                if sys_diag == True:
+                    try:
+                        for event in diagdict["device_events"]:
+                            model_elem = ET.SubElement(model_type_elem, 'model', {
+                                'type': 'DeviceEvent', 
+                                'id': str(uuid.uuid4()),
+                                'deleted_state': 'Intact',
+                                'decoding_confidence': 'High',
+                                'isrelated': 'False',
+                                'source_index': '0',
+                                'extractionId': '0'
+                            })
+                            map_field = ET.SubElement(model_elem, 'field', {'name': 'UserMapping', 'type': 'DecodingSourceOptions'})
+                            ET.SubElement(map_field, 'value', {'type': 'DecodingSourceOptions'}).text = "Decoding"
+                            source_field = ET.SubElement(model_elem, 'field', {'name': 'Source', 'type': 'String'})
+                            ET.SubElement(source_field, 'value', {'type': 'String'}).text = "Power events"
+                            timestamp_field = ET.SubElement(model_elem, 'field', {'name': 'StartTime', 'type': 'TimeStamp'})
+                            ET.SubElement(timestamp_field, 'value', {'type': 'TimeStamp', 'format': 'TimeStampKnown', 'formattedTimestamp':  event[1]}).text = event[1]
+                            type_field = ET.SubElement(model_elem, 'field', {'name': 'EventType', 'type': 'DeviceEventTypes'})
+                            ET.SubElement(type_field, 'value', {'type': 'DeviceEventTypes'}).text = "PowerEvent"
+                            value_field = ET.SubElement(model_elem, 'field', {'name': 'Value', 'type': 'String'})
+                            ET.SubElement(value_field, 'value', {'type': 'String'}).text = "Power on"
+                            multi_model_field = ET.SubElement(model_elem, 'multiModelField', {'name': 'Additional_Info', 'type': 'KeyValueModel'})
+                            inner_model = ET.SubElement(multi_model_field, 'model', {
+                                'type': 'KeyValueModel',
+                                'id': str(uuid.uuid4()),
+                                'deleted_state': 'Intact',
+                                'decoding_confidence': 'High',
+                                'isrelated': 'False',
+                                'source_index': '0',
+                                'extractionId': '0'
+                            })
+                            key_field = ET.SubElement(inner_model, 'field', {'name': 'Key', 'type': 'String'})
+                            ET.SubElement(key_field, 'value', {'type': 'String'}).text = 'File:'
+                            value_field = ET.SubElement(inner_model, 'field', {'name': 'Value', 'type': 'String'})
+                            ET.SubElement(value_field, 'value', {'type': 'String'}).text = event[2]
+                            jumptargets = ET.SubElement(model_elem, 'jumptargets', {'name': ''})
+                            ET.SubElement(jumptargets, 'targetid', {'ismodel': 'true'}).text = sysdiag_id
+                    except Exception as e:
+                        print(e)
+                        pass
+
         installed_apps_type = ET.SubElement(decoded_data, 'modelType', {'type': 'InstalledApplication'})  
 
         for app in app_report_list:
@@ -2984,7 +3111,10 @@ class MyApp(ctk.CTk):
         for node_id in file_id_list:
             extra_info = ET.SubElement(extra_infos, 'extraInfo', {'type': 'node', 'id': node_id})
             source_info = ET.SubElement(extra_info, 'sourceInfo')
-            ET.SubElement(source_info, 'nodeInfo', {'id': node_id, 'tableName': '', 'offset': ''})
+            if sys_diag == True and node_id == sysdiag_id:
+                ET.SubElement(source_info, 'nodeInfo', {'id': node_id, 'name': latest_file, 'size': diagsize,'tableName': '', 'offset': ''})
+            else:
+                ET.SubElement(source_info, 'nodeInfo', {'id': node_id, 'tableName': '', 'offset': ''})
 
         rough_string = ET.tostring(project, 'utf-8', method='xml')
         reparsed = minidom.parseString(rough_string)
@@ -4872,14 +5002,19 @@ def sysdiag(tarpath):
     members = tar.getmembers()
     for member in members:
         if "otctl_status.txt" in member.name:
+            serials = []
             otctl_file = tar.extractfile(member.name)
             otctl_content = json.load(otctl_file)
             for elem in otctl_content["contextDump"]["peers"]:
                 model = elem["permanentInfo"]["model_id"]
                 m_name = DEVICE_MAP.get(model, model)
+                if m_name == None:
+                    m_name = model
                 os_bnum = elem["stableInfo"]["os_version"]
                 serial = elem["stableInfo"]["serial_number"]
-                iclouddev.append([model,m_name,os_bnum,serial])
+                if serial not in serials:
+                    serials.append(serial)
+                    iclouddev.append([model,m_name,os_bnum,serial])
             diagdict["iclouddev"] = iclouddev
         
         if "com.apple.wifi.known-networks.plist" in member.name:
@@ -4928,11 +5063,10 @@ def sysdiag(tarpath):
                         starttime_orig = startup.group(1)
                         starttime = datetime.strptime(starttime_orig.strip(), log_date_format).strftime(output_format)
                         dev_events.append(["Power on", starttime, sfile])
-                        print(sfile)
                     except:
                         pass
             diagdict["device_events"] = dev_events
-        return(diagdict)
+    return(diagdict)
 
 #pull single file
 def pull_file(self, relative_src, dst, callback=None, src_dir=''):
