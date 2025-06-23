@@ -11,3 +11,4 @@ tkcalendar
 crossfiledialog
 exifread<3
 pdfme
+imagehash
