@@ -5014,7 +5014,7 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
 #Parse artifacts from Sysdiagnose
 def sysdiag(tarpath):
     wifi_date_format = "%Y-%m-%d %H:%M:%S.%f"
-    output_format = "%d/%m/%Y %H:%M:%S+00:00"
+    output_format = "%Y-%m-%dT%H:%M:%S+00:00"
     diagdict = {}
     iclouddev = []
     k_wifi_list = []
