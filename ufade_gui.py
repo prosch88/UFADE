@@ -3550,6 +3550,7 @@ class MyApp(ctk.CTk):
         except:
             pass
         if int(dversion.split(".")[0]) < 17:
+            v = dversion.split(".")
             try: 
                 self.after(100)
                 text.configure(text=" ", anchor="nw", justify="left")
@@ -3569,13 +3570,15 @@ class MyApp(ctk.CTk):
                 info = info + "\nVersion " + dversion + " not found"
                 text.configure(text=info)
                 self.after(1000)
-                v = dversion.split(".")
                 v_check = np.array(d_images[int(v[0])])
                 v_diff = np.absolute(v_check - int(v[1]))
                 index = v_diff.argmin()
                 ver = str(v[0]) + "." + str(d_images[int(v[0])][index])
             finally:
-                if int(v[0]) <= 12 or DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+                mounted = []
+                try: mounted = DeveloperDiskImageMounter(lockdown).copy_devices()
+                except: pass
+                if int(v[0]) <= 12 or mounted == []:
                     self.after(1000)
                     info = info + "\nClosest version is " + ver
                     text.configure(text=info)
@@ -3612,7 +3615,7 @@ class MyApp(ctk.CTk):
                             return("developer")
                         else:
                             pass
-                        if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
+                        if mounted == []:
                             text.configure(text="DeveloperDiskImage not loaded")
                             developer = False
                             change.set(1)
