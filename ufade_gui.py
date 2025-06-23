@@ -61,6 +61,7 @@ from xml.dom import minidom
 from pdfme import build_pdf
 import mimetypes
 import hashlib
+import imagehash
 import json
 import plistlib
 import posixpath
@@ -3991,18 +3992,19 @@ class MyApp(ctk.CTk):
     def chatshotthread(self, dvt, app_name, chat_name, direction, imglabel, namefield, text):
         ab_count = 0
         sc_count = 0
+        abs_count = 0
         self.upbutton.configure(state="disabled")
         self.downbutton.configure(state="disabled")
         self.abortbutton.configure(state="disabled")
         self.stop_event.clear()
-        self.doshot = threading.Thread(target=lambda: self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, text, first=True))
+        self.doshot = threading.Thread(target=lambda: self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, text, first=True))
         self.doshot.start()
         
     
     def breakshotloop(self):
         self.stop_event.set()
     
-    def shotloop(self, dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, text, png=None, first=False):
+    def shotloop(self, dvt, app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, text, png=None, first=False, seen_hashes=None, first_hash=None):
         AccessibilityAudit(lockdown).set_show_visuals(False)
         name = chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
         filename = name + ".png"
@@ -4019,6 +4021,7 @@ class MyApp(ctk.CTk):
             except: pass
             try: os.mkdir(os.path.join("screenshots", app_name, chat_name))
             except: pass
+            seen_hashes = []
             png = Screenshot(dvt).get_screenshot()
             png_bytes = BytesIO()
             png_bytes.write(png)
@@ -4040,11 +4043,13 @@ class MyApp(ctk.CTk):
                 hash_file.write(hash_sha256)
             log(f"Created screenshot {filename} with hash {hash_sha256}")
             namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
+            first_hash = imagehash.phash(shot)
+            seen_hashes.append(first_hash)
             self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, app_name=app_name, chat_name=chat_name, w=wsize, h=hsize)
-            self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, png=png, text=text)
+            self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, png=png, text=text, seen_hashes=seen_hashes, first_hash=first_hash)
         else:
             while not self.stop_event.is_set():
-                if ab_count >= 4:
+                if ab_count >= 8 or abs_count >= 16:
                     text.configure(text="Chat loop finished.")
                     self.upbutton.configure(state="enabled")
                     self.downbutton.configure(state="enabled")
@@ -4057,36 +4062,53 @@ class MyApp(ctk.CTk):
                     AccessibilityAudit(lockdown).set_show_visuals(False)
                     time.sleep(0.3)
                     png = Screenshot(dvt).get_screenshot()
+                    png_bytes = BytesIO()
+                    png_bytes.write(png)
+                    shot = Image.open(png_bytes)
+                    l_hash = imagehash.phash(shot)
                     if png != prev:
-                        png_bytes = BytesIO()
-                        png_bytes.write(png)
-                        shot = Image.open(png_bytes)
-                        hperc = (hsize/float(shot.size[1]))
-                        wsize = int((float(shot.size[0])*float(hperc)))
-                        if wsize > 300:
-                            wsize = 300
-                            wperc = (wsize/float(shot.size[0]))
-                            hsize = int((float(shot.size[1])*float(wperc)))
-                        screensh = ctk.CTkImage(dark_image=shot, size=(wsize, hsize))
-                        imglabel.configure(image=screensh)
-                        filepath = os.path.join("screenshots", app_name, chat_name, filename)
-                        hashpath = os.path.join("screenshots", app_name, chat_name, hashname)
-                        with open(os.path.join(filepath), "wb") as file:
-                            file.write(png)
-                        hash_sha256 = hashlib.sha256(png).hexdigest()
-                        with open(os.path.join(hashpath), "w") as hash_file:
-                            hash_file.write(hash_sha256)
-                        log(f"Created screenshot {filename} with hash {hash_sha256}")
-                        namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
-                        self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, app_name=app_name, chat_name=chat_name, w=wsize, h=hsize)
-                        sc_count += 1
-                        ab_count = 0
-                    else:
-                        if sc_count > 3:
-                            ab_count += 1
+                        duplicate = any(abs(l_hash - h) <= 3 for h in seen_hashes)
+                        if not duplicate:
+                            seen_hashes.append(l_hash)
+                            hperc = (hsize/float(shot.size[1]))
+                            wsize = int((float(shot.size[0])*float(hperc)))
+                            if wsize > 300:
+                                wsize = 300
+                                wperc = (wsize/float(shot.size[0]))
+                                hsize = int((float(shot.size[1])*float(wperc)))
+                            screensh = ctk.CTkImage(dark_image=shot, size=(wsize, hsize))
+                            imglabel.configure(image=screensh)
+                            filepath = os.path.join("screenshots", app_name, chat_name, filename)
+                            hashpath = os.path.join("screenshots", app_name, chat_name, hashname)
+                            with open(os.path.join(filepath), "wb") as file:
+                                file.write(png)
+                            hash_sha256 = hashlib.sha256(png).hexdigest()
+                            with open(os.path.join(hashpath), "w") as hash_file:
+                                hash_file.write(hash_sha256)
+                            log(f"Created screenshot {filename} with hash {hash_sha256}")
+                            namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
+                            self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, app_name=app_name, chat_name=chat_name, w=wsize, h=hsize)
+                            sc_count += 1
+                            ab_count = 0
+                            abs_count = 0
                         else:
-                            pass
-                    self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, direction, imglabel, namefield, png=png, text=text)
+                            print("duplicate")
+                            abs_count += 1
+                            if sc_count > 2:
+                                ab_count += 1
+                                print(ab_count)
+                            else:
+                                pass
+                    else:
+                        print("identical")
+                        abs_count += 1
+                        if sc_count > 2:
+                            ab_count += 1
+                            print(ab_count)
+                    if sc_count > 2 and abs(l_hash - first_hash) <= 2:
+                            print("is first")
+                            self.breakshotloop()
+                    self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, png=png, text=text, seen_hashes=seen_hashes, first_hash=first_hash)
             text.configure(text="Chat loop stopped.")
             self.upbutton.configure(state="enabled")
             self.downbutton.configure(state="enabled")
