@@ -4092,15 +4092,12 @@ class MyApp(ctk.CTk):
                             ab_count = 0
                             abs_count = 0
                         else:
-                            print("duplicate")
                             abs_count += 1
                             if sc_count > 2:
                                 ab_count += 1
-                                print(ab_count)
                             else:
                                 pass
                     else:
-                        print("identical")
                         abs_count += 1
                         if sc_count > 2:
                             ab_count += 1
