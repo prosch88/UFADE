@@ -154,6 +154,15 @@ class MyApp(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def on_close(self):
+        if hasattr(self, 'linux_17') and self.linux_17:
+            try: self.linux_17.kill()
+            except: pass
+        if hasattr(self, 'mac_os_17') and self.mac_os_17:
+            try: self.mac_os_17.kill()
+            except: pass
+        if hasattr(self, 'tunnel_win') and self.tunnel_win:
+            try: self.tunnel_win.kill()
+            except: pass            
         self.destroy()
         os._exit(0)
 
@@ -3818,12 +3827,27 @@ class MyApp(ctk.CTk):
 
 # Try to open a tun device
     def run_ios17_developer(self, change):
-        if platform.uname().system == 'Linux':            
-            #self.waitl = ctk.IntVar(self, 0)
-            script = create_linux_shell_script()
-            self.run_linux_script(script, change)
-            self.wait_variable(change)
-            print("Developer script run")
+        if platform.uname().system == 'Linux':
+            if getattr(sys, 'frozen', False):
+                self.waitm = ctk.IntVar(self, 0)
+                self.linux_17 = threading.Thread(target=lambda: self.linux_dev17(self.waitm))
+                self.linux_17.start()
+                self.wait_variable(self.waitm)
+                if self.waitm.get() == 1:
+                    while True:
+                        try:
+                            tun = get_tunneld_devices()
+                        except:
+                            tun = []
+                        if tun != []:
+                            break
+                else:
+                    pass
+            else:
+                script = create_linux_shell_script()
+                self.run_linux_script(script, change)
+                self.wait_variable(change)
+                print("Developer script run")
         else:
             if platform.uname().system == 'Windows':
                 from subprocess import CREATE_NO_WINDOW, CREATE_NEW_CONSOLE
@@ -3895,6 +3919,25 @@ class MyApp(ctk.CTk):
                     raise exceptions.AccessDeniedError()
             else:    
                 run(["osascript", "-e", 'do shell script \"python3 -m pymobiledevice3 remote tunneld -d\" with administrator privileges'])
+            change.set(1)
+        except exceptions.AccessDeniedError:
+            self.text.configure(text="Couldn't create a tunnel. Try again.\nYou have to run UFADE as administrator for this.")
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+            change.set(2)
+            return
+        except:
+            self.text.configure(text="Couldn't create a tunnel. Try again.")
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+            change.set(2)
+            return
+
+    def linux_dev17(self, change):
+        try:
+            try:
+                print("try")
+                run(["pkexec", sys.executable, "tunnel"])
+            except:
+                raise exceptions.AccessDeniedError()     
             change.set(1)
         except exceptions.AccessDeniedError:
             self.text.configure(text="Couldn't create a tunnel. Try again.\nYou have to run UFADE as administrator for this.")
@@ -4104,7 +4147,7 @@ class MyApp(ctk.CTk):
                         abs_count += 1
                         if sc_count > 2:
                             ab_count += 1
-                            print(ab_count)
+
                     if sc_count > 2 and abs(l_hash - first_hash) <= 2:
                             print("is first")
                             self.breakshotloop()
