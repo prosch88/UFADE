@@ -54,8 +54,8 @@ from pymobiledevice3 import exceptions
 from importlib.metadata import version
 from iOSbackup import iOSbackup
 from pyiosbackup import Backup
-from playsound import playsound
 from io import BytesIO
+import simpleaudio as sa
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from pdfme import build_pdf
@@ -92,6 +92,8 @@ class MyApp(ctk.CTk):
         super().__init__()
 
         self.stop_event = threading.Event()
+        if getattr(sys, 'frozen', False):
+            self.report_callback_exception = self.global_exception_handler
 
         # Define Window
         self.title(f"Universal Forensic Apple Device Extractor {u_version}")
@@ -281,7 +283,7 @@ class MyApp(ctk.CTk):
         elif menu_name == "NotPaired":
             self.show_notpaired()
 
-# Watch Menu
+# Watch/TV Menu
     def show_watch_menu(self):
         for widget in self.dynamic_frame.winfo_children():
             widget.destroy()
@@ -1003,7 +1005,7 @@ class MyApp(ctk.CTk):
 
 # Play a notification sound
     def notification(self):      
-        playsound(os.path.join(os.path.dirname(__file__), "assets", "notification.mp3"))
+        sa.WaveObject.from_wave_file(os.path.join(os.path.dirname(__file__), "assets", "notification.wav")).play()
 
 # Unified logs collection function
     def collect_ul(self, time, text, waitul, mode="default"):
@@ -4225,6 +4227,21 @@ class MyApp(ctk.CTk):
                 pass
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
 
+    # Print out exception
+    def global_exception_handler(self, type, value, tb):
+        try:
+            if self.text.winfo_ismapped():
+                self.text.configure(text="An error occured!")
+            else:
+                self.text = ctk.CTkLabel(self.dynamic_frame, width=400, height=180, font=self.stfont, anchor="w", justify="left")
+                self.text.configure(text=f"Error: {value}")
+                self.text.pack(pady=50)
+        except:
+            self.text = ctk.CTkLabel(self.dynamic_frame, width=400, height=180, font=self.stfont, anchor="w", justify="left")
+            self.text.configure(text=f"Error: {value}")
+            self.text.pack(pady=50)
+        log(f"Error: {value}")
+
 def unmount_abort_timer():
     raise exceptions.UnsupportedCommandError()
 
@@ -4372,7 +4389,8 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         shutil.rmtree(dest)
     log("Extracted AFC-Media files")
     change.set(1)   
-    return(archive)    
+    return(archive)  
+
 
 
 # Pull crash logs
@@ -5208,6 +5226,13 @@ def create_linux_shell_script():
     os.chmod(script_file.name, 0o755)
     return script_file.name
 
+def thread_exception_handler(args):
+    error = exc_info=(args.exc_type, args.exc_value, args.exc_traceback)
+    log(f"Error: {error}")
+
+if getattr(sys, 'frozen', False):
+    threading.excepthook = thread_exception_handler
+
 tunnel = False
 try:
     if sys.argv[1] == "tunnel":
@@ -5274,6 +5299,7 @@ elif guiv == "1368":
     b_button_offset_y = 460
     sb_button_offset_x = 655
     right_content = 500
+
 
 DEVICE_MAP = {device.product_type: device.display_name for device in IRECV_DEVICES}
 pub_key = ""
