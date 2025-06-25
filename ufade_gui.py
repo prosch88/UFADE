@@ -5234,6 +5234,8 @@ guiv = "default"
 try:
     if sys.argv[1] == "1368":
         guiv = "1368"
+    elif sys.argv[1] == "1024":
+        guiv = "1024"
     else:
         pass
 except:
@@ -5250,6 +5252,17 @@ if guiv == "default":
     b_button_offset_y = 410
     sb_button_offset_x = 525
     right_content = 400
+
+elif guiv == "1024":
+    resx = 1024
+    resy = 600
+    leftx = 330
+    rightx = 694
+    fsize = 13
+    b_button_offset_x = 355
+    b_button_offset_y = 410
+    sb_button_offset_x = 525
+    right_content = 360
 
 elif guiv == "1368":
     resx = 1358
