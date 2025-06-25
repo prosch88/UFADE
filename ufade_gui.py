@@ -290,7 +290,7 @@ class MyApp(ctk.CTk):
         self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
         self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
         self.menu_buttons = [
-            ctk.CTkButton(self.dynamic_frame, text="Reporting Options", command=lambda: self.switch_menu("ReportMenu"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Reporting and\nAcquisition Options", command=lambda: self.switch_menu("ReportMenu"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Collect Unified Logs", command=lambda: self.switch_menu("CollectUL"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Extract crash reports", command=lambda: self.switch_menu("CrashReport"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Initiate Sysdiagnose", command=lambda: self.switch_menu("SysDiag"), width=200, height=70, font=self.stfont),
@@ -325,10 +325,12 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="Save device info", command=lambda: self.switch_menu("DevInfo"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Create PDF Report", command=lambda: self.switch_menu("PDF"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Create UFDR Report", command=lambda: self.switch_menu("Report"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Partially Restored\nFilesystem Backup", command=lambda: self.switch_menu("PRFS"), width=200, height=70, font=self.stfont),
         ]
         self.menu_text = ["Save informations about the device, installed apps,\nSIM and companion devices. (as .txt)",
                           "Create a printable PDF device report",
-                          "Create a UFDR-Zip container viewable\nin the Cellebrite Reader application"]
+                          "Create a UFDR-Zip container viewable\nin the Cellebrite Reader application",
+                          "Try to reconstruct parts of the device-filesystem\nincluding Logs and Media.",]
         self.menu_textbox = []
         for btn in self.menu_buttons:
             self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=70, font=self.stfont, anchor="w", justify="left"))
@@ -1687,78 +1689,98 @@ class MyApp(ctk.CTk):
         try: os.mkdir(".tar_tmp")                                                                                               
         except: pass
         #create folder for decrypted backup
-        try: os.mkdir(".tar_tmp/itunes_bu")                                                                                     
-        except: pass
+        if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
+            self.change = ctk.IntVar(self, 0)
+            ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+            ctk.CTkLabel(self.dynamic_frame, text="PRFS Backup", height=60, width=585, font=("standard",24), justify="left").pack(pady=20)
+            self.text = ctk.CTkLabel(self.dynamic_frame, text="Performing PRFS-Extraction without Backup.", width=585, height=60, font=self.stfont, anchor="w", justify="left")
+            self.text.pack(anchor="center", pady=25)
+            self.prog_text = ctk.CTkLabel(self.dynamic_frame, text="0%", width=585, height=20, font=self.stfont, anchor="w", justify="left")
+            self.prog_text.pack() 
+            self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
+            self.progress.set(0)
+            self.progress.pack() 
+        else:
+            try: os.mkdir(".tar_tmp/itunes_bu")                                                                                     
+            except: pass
         now = datetime.now()
         if l_type == "PRFS":
             bu_name = "PRFS"
         else:
             bu_name = "Logical+"
-        self.perf_iTunes_bu(bu_name)
-        if self.pw_found.get() == 2:
-            return()                                                                                                  
+        if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
+            pass
+        else:
+            self.perf_iTunes_bu(bu_name)
+            if self.pw_found.get() == 2:
+                return()                                                                                                  
         
         if l_type != "UFED":
-            self.after(10, lambda: self.text.configure(text="Decrypting iTunes Backup: "))
-            self.prog_text = ctk.CTkLabel(self.dynamic_frame, text="0%", width=585, height=20, font=self.stfont, anchor="w", justify="left")
-            self.prog_text.pack() 
-            self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
-            self.progress.set(0)
-            self.progress.pack()
-            self.change.set(0)
-            panda_backup = threading.Thread(target=lambda: self.init_backup_decrypt(self.change))
-            panda_backup.start()
-            self.wait_variable(self.change)
-            if self.change.get() == 1:
-                #get amount of lines (files) of backup
-                line_list = []
-                line_cnt = 0
-                for line in backupfiles['relativePath']:                                                                        
-                    if(line not in line_list):
-                        line_cnt += 1
-                        line_list.append(line)
-                d_nr = 0
-                self.change.set(0)                                                                     
-                if l_type == "PRFS":
-                    zipname = f'{udid}_prfs_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     
-                    zip = zipfile.ZipFile(f'{zipname}.zip', "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1)
-                    tar = None
-                    decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type, zip=zip))
-                    decrypt.start()
-                else:
-                    tar = tarfile.open(f'{udid}_logical_plus_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "a:")
-                    zip = None
-                    decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type, tar=tar))
-                    decrypt.start()
-
+            if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
+                zipname = f'{udid}_prfs_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     
+                zip = zipfile.ZipFile(f'{zipname}.zip', "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1)
+                tar = None
             else:
-                self.text.configure(text="Decrypting iTunes Backup - this may take a while.")
-                self.text.update()
-                self.prog_text.configure(text=" ")
-                self.progress.pack_forget()
-                self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
+                self.after(10, lambda: self.text.configure(text="Decrypting iTunes Backup: "))
+                self.prog_text = ctk.CTkLabel(self.dynamic_frame, text="0%", width=585, height=20, font=self.stfont, anchor="w", justify="left")
+                self.prog_text.pack() 
+                self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
+                self.progress.set(0)
                 self.progress.pack()
-                self.progress.start()
                 self.change.set(0)
-                tar = tarfile.open(udid + "_logical_plus.tar", "w:") 
-                zip = None
-                self.decrypt = threading.Thread(target=lambda: self.decrypt_old_itunes(tar, self.change))
-                self.decrypt.start()
-            
-            self.wait_variable(self.change)
-             #remove the backup folder
-            try: shutil.rmtree(".tar_tmp/itunes_bu")
-            except: pass                                                                                
-            try: shutil.rmtree(udid)
-            except: pass
-            if self.change.get() == 2:
-                self.after(50)
-                self.text.configure(text="An error occured.\nTry again and make sure the device stays unlocked.")
-                self.text.update()
-                self.progress.pack_forget()
-                self.prog_text.pack_forget()
-                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
-                return
+                panda_backup = threading.Thread(target=lambda: self.init_backup_decrypt(self.change))
+                panda_backup.start()
+                self.wait_variable(self.change)
+                if self.change.get() == 1:
+                    #get amount of lines (files) of backup
+                    line_list = []
+                    line_cnt = 0
+                    for line in backupfiles['relativePath']:                                                                        
+                        if(line not in line_list):
+                            line_cnt += 1
+                            line_list.append(line)
+                    d_nr = 0
+                    self.change.set(0)                                                                     
+                    if l_type == "PRFS":
+                        zipname = f'{udid}_prfs_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     
+                        zip = zipfile.ZipFile(f'{zipname}.zip', "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1)
+                        tar = None
+                        decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type, zip=zip))
+                        decrypt.start()
+                    else:
+                        tar = tarfile.open(f'{udid}_logical_plus_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "a:")
+                        zip = None
+                        decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type, tar=tar))
+                        decrypt.start()
+
+                else:
+                    self.text.configure(text="Decrypting iTunes Backup - this may take a while.")
+                    self.text.update()
+                    self.prog_text.configure(text=" ")
+                    self.progress.pack_forget()
+                    self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
+                    self.progress.pack()
+                    self.progress.start()
+                    self.change.set(0)
+                    tar = tarfile.open(udid + "_logical_plus.tar", "w:") 
+                    zip = None
+                    self.decrypt = threading.Thread(target=lambda: self.decrypt_old_itunes(tar, self.change))
+                    self.decrypt.start()
+                
+                self.wait_variable(self.change)
+                #remove the backup folder
+                try: shutil.rmtree(".tar_tmp/itunes_bu")
+                except: pass                                                                                
+                try: shutil.rmtree(udid)
+                except: pass
+                if self.change.get() == 2:
+                    self.after(50)
+                    self.text.configure(text="An error occured.\nTry again and make sure the device stays unlocked.")
+                    self.text.update()
+                    self.progress.pack_forget()
+                    self.prog_text.pack_forget()
+                    self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
+                    return
                         
         else:
             #create ZIP-File for CLB PA (TAR-handling isn't as good here)
@@ -1998,17 +2020,23 @@ class MyApp(ctk.CTk):
                 hardware.upper() + " " + dev_name + "\nGUID=" + udid + "\nInternalBuild=\nIsEncrypted=True\nIsEncryptedBySystem=True\nMachineName=\nModel=" + hardware.upper() + " " + dev_name + "\nUfdVer=1.2\nUnitId=\nUserName=\nVendor=Apple\nVersion=other\n\n[SHA256]\n" + zipname + ".zip=" + z_hash.upper() + "")
             self.progress.pack_forget()
 
-        self.text.configure(text="Backup complete!\nTrying to deactivate Backup Encryption again. \nUnlock device with PIN/PW if prompted")
-        self.change.set(0)
-        beep_timer = threading.Timer(13.0,self.notification)  
-        beep_timer.start()
-        remove_enc = threading.Thread(target=lambda: self.deactivate_encryption(change=self.change, text=self.text))
-        remove_enc.start()
-        self.wait_variable(self.change)
-        beep_timer.cancel()   
+        if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
+            pass
+        else:
+            self.text.configure(text="Backup complete!\nTrying to deactivate Backup Encryption again. \nUnlock device with PIN/PW if prompted")
+            self.change.set(0)
+            beep_timer = threading.Timer(13.0,self.notification)  
+            beep_timer.start()
+            remove_enc = threading.Thread(target=lambda: self.deactivate_encryption(change=self.change, text=self.text))
+            remove_enc.start()
+            self.wait_variable(self.change)
+            beep_timer.cancel()   
         self.text.configure(text="Logical+ Backup completed!")
         log("Logical+ Backup completed!")
-        self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
+        if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
+            self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("ReportMenu")).pack(pady=40))
+        else:
+            self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
 
 #Gather devinfo for plist
     def devinfo_plist(self):
