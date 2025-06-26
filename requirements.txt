@@ -3,7 +3,7 @@ pyiosbackup
 iOSbackup
 pandas
 pyarrow
-playsound==1.2.2
+simpleaudio
 NSKeyedUnArchiver==1.5
 paramiko
 customtkinter
