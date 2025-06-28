@@ -3,7 +3,7 @@ pyiosbackup
 iOSbackup
 pandas
 pyarrow
-simpleaudio
+simpleaudio-patched
 NSKeyedUnArchiver==1.5
 paramiko
 customtkinter
