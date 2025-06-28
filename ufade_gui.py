@@ -794,6 +794,10 @@ class MyApp(ctk.CTk):
             self.timeb.pack_forget()
             self.nob.pack_forget()
             if self.logtime.get() == True:
+                if platform.system() == "Darwin":
+                    select_col = "#3d7cc9"
+                else: 
+                    select_col = "#1f538d" 
                 self.choose.set(False)
                 self.text.configure(text="Select a start time:", height=10, width=300)
                 self.logcal = Calendar(
@@ -803,7 +807,7 @@ class MyApp(ctk.CTk):
                     date_pattern="dd.mm.yy", 
                     background="#2b2b2b",    
                     foreground="#dce4ee",       
-                    selectbackground="#1f538d",  
+                    selectbackground=select_col,  
                     selectforeground="#dce4ee",   
                     headersbackground="#333333", 
                     headersforeground="#dce4ee",
