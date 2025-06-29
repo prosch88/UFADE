@@ -6202,7 +6202,8 @@ class MyApp(ctk.CTk):
                         self.switch_menu("LogMenu")
                         return()
     
-            self.text.configure(text="Collecting Unified Logs from device.\nThis may take some time.", height=60, width=585)
+            if self.text.winfo_exists():
+                self.text.configure(text="Collecting Unified Logs from device.\nThis may take some time.", height=60, width=585)
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
             self.progress.pack()
             self.progress.start()
