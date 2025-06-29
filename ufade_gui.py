@@ -837,12 +837,12 @@ class MyApp(ctk.CTk):
                 else:
                     if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
                         self.show_watch_menu()
+                        return()
                     else:
                         self.switch_menu("LogMenu")
                         return()
     
-            if self.text.winfo_exists():
-                self.text.configure(text="Collecting Unified Logs from device.\nThis may take some time.", height=60, width=585)
+            self.text.configure(text="Collecting Unified Logs from device.\nThis may take some time.", height=60, width=585)
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
             self.progress.pack()
             self.progress.start()
