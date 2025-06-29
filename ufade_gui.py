@@ -9,6 +9,7 @@ if sys.stderr is None:
     sys.stderr = open(os.devnull, "w")
 import customtkinter as ctk
 from PIL import ImageTk, Image, ExifTags, ImageDraw, ImageFont
+import tkinter.ttk as ttk
 from tkinter import StringVar
 from tkcalendar import Calendar
 from pymobiledevice3 import usbmux, exceptions, lockdown
@@ -109,6 +110,9 @@ class MyApp(ctk.CTk):
         # Font:
         self.stfont = ctk.CTkFont("default")
         self.stfont.configure(size=fsize)
+
+        style = ttk.Style()
+        style.theme_use("clam")
 
         # Create frames
         self.left_frame = ctk.CTkFrame(self, width=leftx, corner_radius=0, fg_color="#2c353e", bg_color="#2c353e")
