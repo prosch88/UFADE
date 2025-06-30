@@ -3622,7 +3622,7 @@ class MyApp(ctk.CTk):
                 mounted = []
                 try: mounted = DeveloperDiskImageMounter(lockdown).copy_devices()
                 except: pass
-                if int(v[0]) <= 12 or mounted == []:
+                if int(v[0]) <= 13 or mounted == []:
                     self.after(1000)
                     info = info + "\nClosest version is " + ver
                     text.configure(text=info)
@@ -3653,12 +3653,14 @@ class MyApp(ctk.CTk):
                                 break
                             except:
                                 pass
-                        if int(v[0]) <= 12:
+                        if int(v[0]) <= 13:
                             developer = True
                             change.set(1)
                             return("developer")
                         else:
                             pass
+                        try: mounted = DeveloperDiskImageMounter(lockdown).copy_devices()
+                        except: pass
                         if mounted == []:
                             text.configure(text="DeveloperDiskImage not loaded")
                             developer = False
