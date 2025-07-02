@@ -2776,6 +2776,11 @@ class MyApp(ctk.CTk):
                     me_dev_info['MNC'] = entry["MNC"]
                 except:
                     pass
+        
+        if sys_diag == True:
+            if diagdict["seid"] != None:
+                 me_dev_info['SEID'] = diagdict["seid"]
+
         #i = 0
         for key, value in me_dev_info.items():
              #if i < 9:
@@ -2783,7 +2788,7 @@ class MyApp(ctk.CTk):
              #else:
              #    group = 'Software'
              #i += 1 
-            if key in ['Device Name', 'Device', 'Model Number', 'MAC (WiFi Address)', 'MAC (Bluetooth Address)', 'Unique Identifier', 'Unique Chip ID', 'Serial Number', 'Disk Capacity']:
+            if key in ['Device Name', 'Device', 'Model Number', 'MAC (WiFi Address)', 'MAC (Bluetooth Address)', 'Unique Identifier', 'Unique Chip ID', 'Serial Number', 'Disk Capacity', 'SEID']:
                 group = 'Hardware'
             elif key in ['Software', 'Buildnumber', 'Time Zone', 'Apple-ID']:
                 group = 'Software'
@@ -5123,17 +5128,24 @@ def sysdiag(tarpath):
             serials = []
             otctl_file = tar.extractfile(member.name)
             otctl_content = json.load(otctl_file)
-            for elem in otctl_content["contextDump"]["peers"]:
-                model = elem["permanentInfo"]["model_id"]
-                m_name = DEVICE_MAP.get(model, model)
-                if m_name == None:
-                    m_name = model
-                os_bnum = elem["stableInfo"]["os_version"]
-                serial = elem["stableInfo"]["serial_number"]
-                if serial not in serials:
-                    serials.append(serial)
-                    iclouddev.append([model,m_name,os_bnum,serial])
-            diagdict["iclouddev"] = iclouddev
+            try:
+                if otctl_content.get("contextDump") != None:
+                    peers = otctl_content["contextDump"]["peers"]
+                else:
+                    peers = otctl_content["peers"]
+                for elem in peers:
+                    model = elem["permanentInfo"]["model_id"]
+                    m_name = DEVICE_MAP.get(model, model)
+                    if m_name == None:
+                        m_name = model
+                    os_bnum = elem["stableInfo"]["os_version"]
+                    serial = elem["stableInfo"]["serial_number"]
+                    if serial not in serials:
+                        serials.append(serial)
+                        iclouddev.append([model,m_name,os_bnum,serial])
+                diagdict["iclouddev"] = iclouddev
+            except:
+                pass
         
         if "com.apple.wifi.known-networks.plist" in member.name:
             known_wifi = tar.extractfile(member.name)
@@ -5205,6 +5217,13 @@ def sysdiag(tarpath):
                     except:
                         pass
             diagdict["device_events"] = dev_events
+
+        if "FDRDiagnosticReport.plist" in member.name:
+            fdrdiag = tar.extractfile(member.name)
+            fdr = plistlib.load(fdrdiag)
+            seid = next((elem["seid"]["LiveProperty"] for elem in fdr["VerifiedProperties"] if "seid" in elem), None)
+            diagdict["seid"] = seid
+
     return(diagdict)
 
 #pull single file
@@ -5372,6 +5391,7 @@ case_name = ""
 evidence_number = ""
 examiner = ""
 u_version = "0.9.9"
+
 
 
 
