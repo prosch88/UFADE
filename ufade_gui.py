@@ -95,6 +95,8 @@ class MyApp(ctk.CTk):
         self.stop_event = threading.Event()
         if getattr(sys, 'frozen', False):
             self.report_callback_exception = self.global_exception_handler
+            threading.excepthook = lambda args: self.global_exception_handler(args.exc_type, args.exc_value, args.exc_traceback)
+            sys.excepthook = lambda exc_type, exc_value, exc_traceback: self.global_exception_handler(exc_type, exc_value, exc_traceback)
 
         # Define Window
         self.title(f"Universal Forensic Apple Device Extractor {u_version}")
@@ -4271,7 +4273,7 @@ class MyApp(ctk.CTk):
     def global_exception_handler(self, type, value, tb):
         try:
             if self.text.winfo_ismapped():
-                self.text.configure(text="An error occured!")
+                self.text.configure(text=f"Uh-Oh, An error was raised! Check the file:\nufade_log_{udid}.log")
             else:
                 self.text = ctk.CTkLabel(self.dynamic_frame, width=400, height=180, font=self.stfont, anchor="w", justify="left")
                 self.text.configure(text=f"Error: {value}")
