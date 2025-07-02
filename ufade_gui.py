@@ -937,7 +937,7 @@ class MyApp(ctk.CTk):
                 self.text.configure(text="To trigger the creation of the Sysdiagnose files,\npress: Play/Pause + Volume Down for 6 seconds on the remote.")
             else:
                 self.text.configure(text="To trigger the creation of the Sysdiagnose files,\npress: Power/Side + VolUp + VolDown for 0.215 seconds.")
-            self.text.pack(pady=10)
+            self.text.pack()
             if d_class == "Watch":
                 self.diag_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "diag_watch.png")), size=(600, 300))
             elif d_class == "iPad":
@@ -974,7 +974,7 @@ class MyApp(ctk.CTk):
             self.diaglabel.pack_forget()
             text.pack_forget()
             text.configure(text="Creation of Sysdiagnose archive has been started.")
-            text.pack(pady=60)
+            text.pack(pady=30)
             progress.pack()
             progress.start()
             self.diagsrv._wait_for_sysdiagnose_to_finish()
