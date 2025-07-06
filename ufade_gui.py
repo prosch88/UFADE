@@ -1032,7 +1032,7 @@ class MyApp(ctk.CTk):
                 log(f"Collected Unified Logs in PRFS-flow")
             waitul.set(1)  
         except:
-            text.configure(text="Error: \nCoud not collect logs - Maybe the device or its iOS version is too old.")
+            text.configure(text="Error: \nCould not collect logs - Maybe the device or its iOS version is too old.")
             log("Error collecting Unified Logs")
             waitul.set(2)
         try: os.rmdir("unified_logs")
