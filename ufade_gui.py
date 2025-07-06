@@ -1034,7 +1034,7 @@ class MyApp(ctk.CTk):
         except:
             text.configure(text="Error: \nCoud not collect logs - Maybe the device or its iOS version is too old.")
             log("Error collecting Unified Logs")
-            waitul.set(1)
+            waitul.set(2)
         try: os.rmdir("unified_logs")
         except: pass
 
@@ -1177,6 +1177,7 @@ class MyApp(ctk.CTk):
 
 # Progress output for iTunes Backup
     def show_process(self,x, progress, text, change, beep_timer, setext):
+        global bu_fin
         beep_timer.cancel()
         setext.configure(text="Backup in progress.\nDo not disconnect the device.") 
         proc = x / 100
@@ -1184,6 +1185,8 @@ class MyApp(ctk.CTk):
         text.configure(text=f"{int(x)}%")
         progress.update()
         text.update()
+        if x >= 99:
+            bu_fin = True
         #if x == 100:
         #    change.set(1)
 
@@ -1267,6 +1270,7 @@ class MyApp(ctk.CTk):
         log("Started iTunes Backup")
         m = mode
         global notify
+        global bu_fin
         self.pw_found = ctk.IntVar(self,0)
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text=f"{m} Backup", height=60, width=585, font=("standard",24), justify="left").pack(pady=20)
@@ -1383,27 +1387,33 @@ class MyApp(ctk.CTk):
                 startbu = threading.Thread(target=lambda:UFADEMobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, beep_timer, self.text)))
             else:
                 startbu = threading.Thread(target=lambda:Mobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, beep_timer, self.text)))
-
             startbu.start()
             self.check_if_done(startbu, self.change)
             self.wait_variable(self.change)
             self.after(500, save_info())
             self.prog_text.pack_forget()
             self.progress.pack_forget()
-            if m == "iTunes" or m == "PuMA":
-                self.text.configure(text="iTunes Backup complete!\nTrying to deactivate Backup Encryption again. \nUnlock device with PIN/PW if prompted")
-                self.change.set(0)
-                beep_timer = threading.Timer(13.0,self.notification)  
-                beep_timer.start()
-                remove_enc = threading.Thread(target=lambda: self.deactivate_encryption(change=self.change, text=self.text))
-                remove_enc.start()
-                self.wait_variable(self.change)
-                beep_timer.cancel()
-                if m == "iTunes":
-                    shutil.move(udid, f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}')
-                    self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
+            if bu_fin == True:
+                if m == "iTunes" or m == "PuMA":
+                    self.text.configure(text="iTunes Backup complete!\nTrying to deactivate Backup Encryption again. \nUnlock device with PIN/PW if prompted")
+                    self.change.set(0)
+                    beep_timer = threading.Timer(13.0,self.notification)  
+                    beep_timer.start()
+                    remove_enc = threading.Thread(target=lambda: self.deactivate_encryption(change=self.change, text=self.text))
+                    remove_enc.start()
+                    self.wait_variable(self.change)
+                    beep_timer.cancel()
+                    if m == "iTunes":
+                        shutil.move(udid, f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}')
+                        self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
+                else:
+                    pass
+                bu_fin = False
             else:
-                pass
+                self.text.configure(text="Error while performing iTunes Backup!\nPlease try again.")
+                self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
+                self.change.set(0)
+                return()        
         else:
             pass
 
@@ -1821,6 +1831,13 @@ class MyApp(ctk.CTk):
                 self.prfs_ul = threading.Thread(target=lambda: self.collect_ul(time=None, text=self.text, waitul=self.change, mode="PRFS"))
                 self.prfs_ul.start() 
                 self.wait_variable(self.change)
+                if self.change.get() == 2:
+                    self.progress.pack_forget()
+                    self.text.configure(text="Error while collecting Unified Logs!\nPlease try again.")
+                    self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
+                    zip.close()
+                    self.change.set(0)
+                    return() 
                 self.change.set(0)
                 self.after(100, lambda: self.text.configure(text="Include Unified Logs in the archive."))
                 self.ul_zip = threading.Thread(target=lambda: self.zip_ul(zip=zip, text=self.text, waitul=self.change)) 
@@ -5381,6 +5398,7 @@ elif guiv == "1368":
 DEVICE_MAP = {device.product_type: device.display_name for device in IRECV_DEVICES}
 pub_key = ""
 mode = "normal"
+bu_fin = False
 device = dev_data()
 bu_pass = "12345"
 developer = False
