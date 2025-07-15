@@ -4014,10 +4014,10 @@ class MyApp(ctk.CTk):
 # Device screenshot
     def screen_device(self, dvt):
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
-        ctk.CTkLabel(self.dynamic_frame, text="Take Screenshots", height=40, width=585, font=("standard",24), justify="left").pack(pady=10)
+        ctk.CTkLabel(self.dynamic_frame, text="Take Screenshots", height=30, width=585, font=("standard",24), justify="left").pack(pady=10)
         self.shotframe = ctk.CTkFrame(self.dynamic_frame, width=400, corner_radius=0, fg_color="transparent")
         self.textframe = ctk.CTkFrame(self.dynamic_frame, width=200, corner_radius=0, fg_color="transparent")
-        self.shotframe.pack(side="left", pady=20, padx=40, fill="y", expand=True)
+        self.shotframe.pack(side="left", pady=20, padx=30, fill="y", expand=True)
         self.textframe.pack(side="left", pady=20, fill="both", expand=True)
         self.placeholder_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "screen_ufade.png")), size=(240, 426))
         self.imglabel = ctk.CTkLabel(self.shotframe, image=self.placeholder_image, text=" ", width=240, height=426, font=self.stfont, anchor="w", justify="left")
@@ -4036,7 +4036,7 @@ class MyApp(ctk.CTk):
         self.doshot.start()
 
     def shot(self, dvt, imglabel, namefield):
-        hsize = 400
+        hsize = 426
         try:
             png = Screenshot(dvt).get_screenshot()
         except: 
@@ -4070,10 +4070,10 @@ class MyApp(ctk.CTk):
         try: os.mkdir("screenshots")
         except: pass
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
-        ctk.CTkLabel(self.dynamic_frame, text="Chat Capture", height=40, width=585, font=("standard",24), justify="left").pack(pady=10)
+        ctk.CTkLabel(self.dynamic_frame, text="Chat Capture", height=30, width=585, font=("standard",24), justify="left").pack(pady=10)
         self.shotframe = ctk.CTkFrame(self.dynamic_frame, width=400, corner_radius=0, fg_color="transparent")
         self.textframe = ctk.CTkFrame(self.dynamic_frame, width=200, corner_radius=0, fg_color="transparent")
-        self.shotframe.pack(side="left", pady=20, padx=40, fill="y", expand=True)
+        self.shotframe.pack(side="left", pady=20, padx=30, fill="y", expand=True)
         self.textframe.pack(side="left", pady=20, fill="both", expand=True)
         self.placeholder_image = ctk.CTkImage(dark_image=Image.open(os.path.join(os.path.dirname(__file__), "assets" , "screen_ufade.png")), size=(240, 426))
         self.imglabel = ctk.CTkLabel(self.shotframe, image=self.placeholder_image, text=" ", width=240, height=426, font=self.stfont, anchor="w", justify="left")
@@ -4116,7 +4116,7 @@ class MyApp(ctk.CTk):
         name = chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
         filename = name + ".png"
         hashname = name + ".txt"
-        hsize = 400
+        hsize = 426
         if direction == "down":
             ch_direction = Direction.Next
         else:
