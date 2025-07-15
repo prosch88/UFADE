@@ -387,10 +387,10 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="Filesystem Backup\n(jailbroken)", command=lambda: self.switch_menu("ffs_jail"), width=200, height=70, font=self.stfont),
         ]
         self.menu_text = ["Perform a backup as iTunes would do it.", 
-                          "Perform and decrypt an iTunes backup, gather\nAFC-media files, shared App folders and crash reports.", 
-                          "Creates an advanced Logical Backup as ZIP with an\nUFD File for PA.",
+                          "Perform and decrypt an iTunes backup,\ngather AFC-media files, shared App\nfolders and crash reports.", 
+                          "Creates an advanced Logical Backup as ZIP\nwith an UFD File for PA.",
                           "Try to reconstruct parts of the device-filesystem\nincluding a decrypted Backup, Logs and Media.",
-                          "Creates a FFS Backup of an already jailbroken Device"]
+                          "Creates a FFS Backup of an already\njailbroken Device"]
         self.menu_textbox = []
         for btn in self.menu_buttons:
             self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=70, font=self.stfont, anchor="w", justify="left"))
