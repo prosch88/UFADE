@@ -5377,7 +5377,7 @@ elif guiv == "1024":
     resy = 600
     leftx = 330
     rightx = 694
-    fsize = 13
+    fsize = 14
     b_button_offset_x = 355
     b_button_offset_y = 410
     sb_button_offset_x = 525
