@@ -199,7 +199,7 @@ class MyApp(ctk.CTk):
         ]
         self.menu_text = ["Save informations about the device, installed apps,\nSIM and companion devices.", 
                           "Allows logical, advanced logical and filesystem\nextractions.", 
-                          "Collect the AUL, Crash Logs, Sysdiagnose and Live Syslogs",
+                          "Collect the AUL, Crash Logs, Sysdiagnose\nand Live Syslogs",
                           "Access developer mode for further options.\nMainly screenshotting options.",
                           "More specific options for data handling."]
         self.menu_textbox = []
@@ -4036,7 +4036,7 @@ class MyApp(ctk.CTk):
         self.doshot.start()
 
     def shot(self, dvt, imglabel, namefield):
-        hsize = 426
+        hsize = 400
         try:
             png = Screenshot(dvt).get_screenshot()
         except: 
@@ -4116,7 +4116,7 @@ class MyApp(ctk.CTk):
         name = chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
         filename = name + ".png"
         hashname = name + ".txt"
-        hsize = 426
+        hsize = 400
         if direction == "down":
             ch_direction = Direction.Next
         else:
