@@ -446,10 +446,10 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="Capture filesystem\nto text", command=lambda: self.switch_menu("FileLS"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Unmount\nDeveloperDiskImage", command=lambda: self.switch_menu("umount"), width=200, height=70, font=self.stfont),
         ]
-        self.menu_text = ["Take screenshots from device screen.\nScreenshots will be saved under \"screenshots\" as PNG.", 
+        self.menu_text = ["Take screenshots from device screen.\nScreenshots will be saved under \"screenshots\"\nas PNG.", 
                           "Loop through a chat taking screenshots.\nOne screenshot is taken per message.", 
-                          "Write a filesystem list to a textfile. (iOS < 16)\nStarting from /var Folder. This may take some time.",
-                          "Try to unmount the image. Reboot the device if this fails"]
+                          "Write a filesystem list to a textfile. (iOS < 16)\nStarting from /var Folder.\nThis may take some time.",
+                          "Try to unmount the image.\nReboot the device if this fails"]
         self.menu_textbox = []
         for btn in self.menu_buttons:
             self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=70, font=self.stfont, anchor="w", justify="left"))
@@ -475,10 +475,10 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="Extract AFC Media files", command=lambda: self.switch_menu("Media"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Remove UFADE Backup\nPassword", command=lambda: self.switch_menu("enc_off"), width=200, height=70, font=self.stfont)
         ]
-        self.menu_text = ["Perform an iTunes-style backup and extract Whatsapp\nfiles for PuMA (LE-tool).", 
+        self.menu_text = ["Perform an iTunes-style backup and extract\nWhatsapp files for PuMA (LE-tool).", 
                           "Captures the device network traffic as a pcap file.",
                           "Pull the \"Media\"-folder from the device\n(pictures, videos, recordings)",
-                          "Try to remove the encryption password set by UFADE"
+                          "Try to remove the encryption password\nset by UFADE"
                           ]
         self.menu_textbox = []
         for btn in self.menu_buttons:
