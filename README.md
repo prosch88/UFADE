@@ -143,5 +143,5 @@ This script utilizes the following projects:
 
 [crossfiledialog](https://github.com/maikelwever/crossfiledialog) by [maikelwever](https://github.com/maikelwever)
 
-[paramiko](https://github.com/paramiko/paramiko), [pandas](https://github.com/pandas-dev/pandas), [pyarrow](https://github.com/apache/arrow), [playsound](https://github.com/TaylorSMarks/playsound), [pdfme](https://github.com/aFelipeSP/pdfme)
+[paramiko](https://github.com/paramiko/paramiko), [pandas](https://github.com/pandas-dev/pandas), [pyarrow](https://github.com/apache/arrow), [simpleaudio](https://github.com/hamiltron/py-simple-audio), [pdfme](https://github.com/aFelipeSP/pdfme)
 
