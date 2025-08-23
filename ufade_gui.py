@@ -4254,8 +4254,9 @@ class MyApp(ctk.CTk):
         cnt = 0
         pathlist = set()
         pathlist = fileloop(dvt, "/var", pathlist, fcount, cnt, folder_text, progress, prog_text)
+        s_pathlist = sorted(pathlist)
         with open(udid + "_var_filesystem.txt", "w") as files:
-            for line in pathlist:
+            for line in s_pathlist:
                 files.write("\n" + line)
         prog_text.configure(text="100%")
         progress.set(1)
@@ -4339,7 +4340,6 @@ def fileloop(dvt, start, lista, fcount, cnt, folder_text, progress, prog_text):
                 break
             else:
                 pathlist.add(next_path)
-                print(next_path)
                 fileloop(dvt, next_path, pathlist, fcount, cnt, folder_text, progress, prog_text) 
     except: 
         pass
