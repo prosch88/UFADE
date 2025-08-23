@@ -3666,7 +3666,6 @@ class MyApp(ctk.CTk):
                         change.set(1)
                         return("developer")            
                     except:
-                        print("except") 
                         for i in range(index)[::-1]:
                             ver = str(v[0]) + "." + str(d_images[int(v[0])][i])
                             try:
@@ -4253,7 +4252,7 @@ class MyApp(ctk.CTk):
             folders.append(line)
         fcount = len(folders)
         cnt = 0
-        pathlist = []
+        pathlist = set()
         pathlist = fileloop(dvt, "/var", pathlist, fcount, cnt, folder_text, progress, prog_text)
         with open(udid + "_var_filesystem.txt", "w") as files:
             for line in pathlist:
@@ -4334,8 +4333,13 @@ def fileloop(dvt, start, lista, fcount, cnt, folder_text, progress, prog_text):
                 folder_text.configure(text="Folder: " + next_path)
             if next_path in pathlist:
                 break
+            elif "/_refs/" in next_path:
+                break
+            elif "/AssetsV2/" in next_path:
+                break
             else:
-                pathlist.append(next_path)
+                pathlist.add(next_path)
+                print(next_path)
                 fileloop(dvt, next_path, pathlist, fcount, cnt, folder_text, progress, prog_text) 
     except: 
         pass
