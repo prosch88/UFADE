@@ -215,7 +215,7 @@ class MyApp(ctk.CTk):
             r+=1
             i+=1
 
-    def switch_menu(self, menu_name):
+    def switch_menu(self, menu_name, **kwargs):
         # Erase content of dynamic frame
         for widget in self.dynamic_frame.winfo_children():
             widget.destroy()
@@ -244,12 +244,20 @@ class MyApp(ctk.CTk):
             self.show_save_device_info()
         elif menu_name == "iTunes":
             self.show_iTunes_bu()
+        elif menu_name == "CustMenue":
+            self.show_cust_menu()
         elif menu_name == "advanced":
-            self.show_logicalplus()
+            self.show_logicalplus(**kwargs)
+        elif menu_name == "advanced_cust":
+            self.show_advanced_logicalplus()
+        elif menu_name == "advanced_cust_ufed":
+            self.show_advanced_ufed()
         elif menu_name == "advanced_ufed":
-            self.show_ufed()
+            self.show_ufed(**kwargs)
+        elif menu_name == "advanced_cust_prfs":
+            self.show_advanced_prfs()            
         elif menu_name == "PRFS":
-            self.show_prfs()
+            self.show_prfs(**kwargs)
         elif menu_name == "ffs_jail":
             self.perf_jailbreak_ssh_dump()
         elif menu_name == "tess":
@@ -381,16 +389,16 @@ class MyApp(ctk.CTk):
         self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
         self.menu_buttons = [
             ctk.CTkButton(self.dynamic_frame, text="Logical Backup", command=lambda: self.switch_menu("iTunes"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Logical+ Backup", command=lambda: self.switch_menu("advanced"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Logical+ Backup\n(UFED-Style)", command=lambda: self.switch_menu("advanced_ufed"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Partially Restored\nFilesystem Backup", command=lambda: self.switch_menu("PRFS"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Filesystem Backup\n(jailbroken)", command=lambda: self.switch_menu("ffs_jail"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Customize Backup", fg_color="#2d2d35", command=lambda: self.switch_menu("CustMenue"), width=200, height=70, font=self.stfont),
         ]
         self.menu_text = ["Perform a backup as iTunes would do it.", 
-                          "Perform and decrypt an iTunes backup,\ngather AFC-media files, shared App\nfolders and crash reports.", 
                           "Creates an advanced Logical Backup as ZIP\nwith an UFD File for PA.",
                           "Try to reconstruct parts of the device-filesystem\nincluding a decrypted Backup, Logs and Media.",
-                          "Creates a FFS Backup of an already\njailbroken Device"]
+                          "Creates a FFS Backup of an already\njailbroken Device",
+                          "Create backups and decide what\ncontent to include."]
         self.menu_textbox = []
         for btn in self.menu_buttons:
             self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=70, font=self.stfont, anchor="w", justify="left"))
@@ -405,6 +413,112 @@ class MyApp(ctk.CTk):
             i+=1
 
         ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_main_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
+
+# Individual Acquisition Menu
+    def show_cust_menu(self):
+        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
+        self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
+        self.menu_buttons = [
+            ctk.CTkButton(self.dynamic_frame, text="Logical+ Backup", command=lambda: self.switch_menu("advanced_cust"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Logical+ Backup\n(UFED-Style)", command=lambda: self.switch_menu("advanced_cust_ufed"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Partially Restored\nFilesystem Backup", command=lambda: self.switch_menu("advanced_cust_prfs"), width=200, height=70, font=self.stfont),
+        ]
+        self.menu_text = ["Perform and decrypt an iTunes backup,\ngather AFC-media files, shared App\nfolders and crash reports.", 
+                          "Creates an advanced Logical Backup as ZIP\nwith an UFD File for PA.",
+                          "Try to reconstruct parts of the device-filesystem\nincluding a decrypted Backup, Logs and Media."]
+        self.menu_textbox = []
+        for btn in self.menu_buttons:
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=70, font=self.stfont, anchor="w", justify="left"))
+
+        r=1
+        i=0
+        for btn in self.menu_buttons:
+            btn.grid(row=r,column=0, padx=30, pady=10)
+            self.menu_textbox[i].grid(row=r,column=1, padx=10, pady=10)
+            self.menu_textbox[i].configure(text=self.menu_text[i])
+            r+=1
+            i+=1
+
+        ctk.CTkButton(self.dynamic_frame, text="Back", command=lambda: self.switch_menu("AcqMenu")).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
+
+# Advanced Backup Option Menues
+
+    def show_advanced_logicalplus(self):
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text="Customize Logical+ Backup", height=60, width=585, font=("standard",24), justify="left").pack(pady=20)
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Select the content to be created and retained:", width=585, height=20, font=self.stfont, anchor="w", justify="left")
+        self.text.pack(pady=15)
+        self.incl_media = ctk.StringVar(value="on")
+        self.incl_media_box = ctk.CTkCheckBox(self.dynamic_frame, text="Include AFC-Media Files.", variable=self.incl_media, onvalue="on", offvalue="off")
+        self.incl_media_box.pack(anchor="w", padx= 80, pady=5)
+        self.incl_apps = ctk.StringVar(value="on")
+        self.incl_apps_box = ctk.CTkCheckBox(self.dynamic_frame, text="Include shared App Files.", variable=self.incl_apps, onvalue="on", offvalue="off")
+        self.incl_apps_box.pack(anchor="w", padx= 80, pady=5)
+        self.incl_crash = ctk.StringVar(value="on")
+        self.incl_crash_box = ctk.CTkCheckBox(self.dynamic_frame, text="Include Crash-Logs.", variable=self.incl_crash, onvalue="on", offvalue="off")
+        self.incl_crash_box.pack(anchor="w", padx= 80, pady=5)
+        self.keep_bu = ctk.StringVar(value="off")
+        self.keep_bu_box = ctk.CTkCheckBox(self.dynamic_frame, text="Don't delete the iTunes Backup Folder.", variable=self.keep_bu, onvalue="on", offvalue="off")
+        self.keep_bu_box.pack(anchor="w", padx=80, pady=5)
+        self.incl_ul = ctk.StringVar(value="off")
+        self.incl_ul = ctk.CTkCheckBox(self.dynamic_frame, text="Additionally extract Unified Logs.", variable=self.incl_ul, onvalue="on", offvalue="off")
+        self.incl_ul.pack(anchor="w", padx= 80, pady=5)
+        self.startb = ctk.CTkButton(self.dynamic_frame, text="Start", font=self.stfont, command=lambda: self.switch_menu("advanced", incl_ul=self.incl_ul.get(), keep_bu=self.keep_bu.get(), incl_crash=self.incl_crash.get(), incl_media=self.incl_media.get(), incl_apps=self.incl_apps.get(), keep_ul="on"))
+        self.startb.pack(pady=20) 
+        self.backb = ctk.CTkButton(self.dynamic_frame, text="Back", font=self.stfont, fg_color="#8c2c27", command=lambda: self.switch_menu("CustMenue"))
+        self.backb.pack(pady=5)
+
+    def show_advanced_ufed(self):
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text="Customize Logical+ Backup (UFED-Style)", height=60, width=585, font=("standard",24), justify="left").pack(pady=20)
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Select the content to be created and retained:", width=585, height=20, font=self.stfont, anchor="w", justify="left")
+        self.text.pack(pady=15)
+        self.incl_crash = ctk.StringVar(value="off")
+        self.incl_media = ctk.StringVar(value="on")
+        self.incl_media_box = ctk.CTkCheckBox(self.dynamic_frame, text="Include AFC-Media Files.", variable=self.incl_media, onvalue="on", offvalue="off")
+        self.incl_media_box.pack(anchor="w", padx= 80, pady=5)
+        self.incl_apps = ctk.StringVar(value="on")
+        self.incl_apps_box = ctk.CTkCheckBox(self.dynamic_frame, text="Include shared App Files.", variable=self.incl_apps, onvalue="on", offvalue="off")
+        self.incl_apps_box.pack(anchor="w", padx= 80, pady=5)
+        self.keep_bu = ctk.StringVar(value="off")
+        self.keep_bu_box = ctk.CTkCheckBox(self.dynamic_frame, text="Don't delete the iTunes Backup Folder.", variable=self.keep_bu, onvalue="on", offvalue="off")
+        self.keep_bu_box.pack(anchor="w", padx=80, pady=5)
+        self.incl_ul = ctk.StringVar(value="off")
+        self.incl_ul = ctk.CTkCheckBox(self.dynamic_frame, text="Additionally extract Unified Logs.", variable=self.incl_ul, onvalue="on", offvalue="off")
+        self.incl_ul.pack(anchor="w", padx= 80, pady=5)
+        self.startb = ctk.CTkButton(self.dynamic_frame, text="Start", font=self.stfont, command=lambda: self.switch_menu("advanced_ufed", incl_ul=self.incl_ul.get(), keep_bu=self.keep_bu.get(), incl_crash=self.incl_crash.get(), incl_media=self.incl_media.get(), incl_apps=self.incl_apps.get(), keep_ul="on"))
+        self.startb.pack(pady=20) 
+        self.backb = ctk.CTkButton(self.dynamic_frame, text="Back", font=self.stfont, fg_color="#8c2c27", command=lambda: self.switch_menu("CustMenue"))
+        self.backb.pack(pady=5)
+
+    def show_advanced_prfs(self):
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text="Customize PRFS Backup", height=60, width=585, font=("standard",24), justify="left").pack(pady=20)
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Select the content to be created and retained:", width=585, height=20, font=self.stfont, anchor="w", justify="left")
+        self.text.pack(pady=15)
+        self.incl_media = ctk.StringVar(value="on")
+        self.incl_media_box = ctk.CTkCheckBox(self.dynamic_frame, text="Include AFC-Media Files.", variable=self.incl_media, onvalue="on", offvalue="off")
+        self.incl_media_box.pack(anchor="w", padx= 80, pady=5)
+        self.incl_apps = ctk.StringVar(value="on")
+        self.incl_apps_box = ctk.CTkCheckBox(self.dynamic_frame, text="Include shared App Files.", variable=self.incl_apps, onvalue="on", offvalue="off")
+        self.incl_apps_box.pack(anchor="w", padx= 80, pady=5)
+        self.incl_crash = ctk.StringVar(value="on")
+        self.incl_crash_box = ctk.CTkCheckBox(self.dynamic_frame, text="Include Crash-Logs.", variable=self.incl_crash, onvalue="on", offvalue="off")
+        self.incl_crash_box.pack(anchor="w", padx= 80, pady=5)
+        self.keep_bu = ctk.StringVar(value="off")
+        self.keep_bu_box = ctk.CTkCheckBox(self.dynamic_frame, text="Don't delete the iTunes Backup Folder.", variable=self.keep_bu, onvalue="on", offvalue="off")
+        self.keep_bu_box.pack(anchor="w", padx=80, pady=5)
+        self.incl_ul = ctk.StringVar(value="on")
+        self.incl_ul = ctk.CTkCheckBox(self.dynamic_frame, text="Include Unified Logs.", variable=self.incl_ul, onvalue="on", offvalue="off")
+        self.incl_ul.pack(anchor="w", padx= 80, pady=5)
+        self.keep_ul = ctk.StringVar(value="off")
+        self.keep_ul = ctk.CTkCheckBox(self.dynamic_frame, text="Don't delete the Unified Logs Folder.", variable=self.keep_ul, onvalue="on", offvalue="off")
+        self.keep_ul.pack(anchor="w", padx= 80, pady=5)
+        self.startb = ctk.CTkButton(self.dynamic_frame, text="Start", font=self.stfont, command=lambda: self.switch_menu("PRFS", incl_ul=self.incl_ul.get(), keep_bu=self.keep_bu.get(), incl_crash=self.incl_crash.get(), incl_media=self.incl_media.get(), incl_apps=self.incl_apps.get(), keep_ul=self.keep_ul.get()))
+        self.startb.pack(pady=20) 
+        self.backb = ctk.CTkButton(self.dynamic_frame, text="Back", font=self.stfont, fg_color="#8c2c27", command=lambda: self.switch_menu("CustMenue"))
+        self.backb.pack(pady=5)
+
 
 # Logging Options Menu
     def show_log_menu(self):
@@ -1029,7 +1143,7 @@ class MyApp(ctk.CTk):
                 log(f"Collected Unified Logs as {uname}")
             else:
                 OsTraceService(lockdown).collect(out=f"{udid}.logarchive", start_time=time) 
-                log(f"Collected Unified Logs in PRFS-flow")
+                log(f"Collected Unified Logs with a Backup.")
             waitul.set(1)  
         except:
             text.configure(text="Error: \nCould not collect logs - Maybe the device or its iOS version is too old.")
@@ -1126,16 +1240,25 @@ class MyApp(ctk.CTk):
         self.perf_iTunes_bu("iTunes")
 
 # Call the advanced Backup in UFADE-Mode
-    def show_logicalplus(self):
-        self.perf_logical_plus("UFADE")
+    def show_logicalplus(self, **kwargs):
+        # Defaults
+        params = {"incl_ul": "off", "keep_bu": "off", "incl_crash": "on", "incl_media": "on", "incl_apps": "on", "keep_ul": "off"}
+        params.update(kwargs)
+        self.perf_logical_plus("UFADE", **params)
 
 # Call the advanced Backup in UFED-Mode
-    def show_ufed(self):
-        self.perf_logical_plus("UFED")
+    def show_ufed(self, **kwargs):
+        # Defaults
+        params = {"incl_ul": "off", "keep_bu": "off", "incl_crash": "off", "incl_media": "on", "incl_apps": "on", "keep_ul": "off"}
+        params.update(kwargs)
+        self.perf_logical_plus("UFED", **params)
 
 # Call the advanced Backup in UFADE-Mode
-    def show_prfs(self):
-        self.perf_logical_plus("PRFS")
+    def show_prfs(self, **kwargs):
+        # Defaults
+        params = {"incl_ul": "on", "keep_bu": "off", "incl_crash": "on", "incl_media": "on", "incl_apps": "on", "keep_ul": "off"}
+        params.update(kwargs)
+        self.perf_logical_plus("PRFS", **params)
 
 # Check, if the device has a backup password and set one
     def check_encryption(self, change):
@@ -1433,7 +1556,7 @@ class MyApp(ctk.CTk):
             change.set(2)
 
 # Decrypting / "unbacking" the Backup
-    def decrypt_itunes(self, b, backupfiles, progress, prog_text, line_list, line_cnt, d_nr, change, l_type="default", tar=None, zip=None ):
+    def decrypt_itunes(self, b, backupfiles, progress, prog_text, line_list, line_cnt, d_nr, change, l_type="default", tar=None, zip=None):
         unback_path = {
             "KeychainDomain": "/var/Keychain",
             "CameraRollDomain": "/var/mobile",
@@ -1698,7 +1821,7 @@ class MyApp(ctk.CTk):
             return()
 
 # Actually perform the advanced logical backup
-    def perf_logical_plus(self, t):
+    def perf_logical_plus(self, t, incl_ul, keep_bu, incl_crash, incl_media, incl_apps, keep_ul):
         global lockdown
         l_type = t
         log(f"Starting logical+ backup (type={l_type})")
@@ -1787,9 +1910,13 @@ class MyApp(ctk.CTk):
                 self.wait_variable(self.change)
                 #remove the backup folder
                 try: shutil.rmtree(".tar_tmp/itunes_bu")
-                except: pass                                                                                
-                try: shutil.rmtree(udid)
-                except: pass
+                except: pass    
+                if keep_bu == "off":                                                                            
+                    try: shutil.rmtree(udid)
+                    except: pass
+                else:
+                    try: os.rename(udid, f"{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}")
+                    except: pass
                 if self.change.get() == 2:
                     self.after(50)
                     self.text.configure(text="An error occured.\nTry again and make sure the device stays unlocked.")
@@ -1814,10 +1941,14 @@ class MyApp(ctk.CTk):
             self.zip_start.start()
             self.wait_variable(self.change)        
             #delete the backup after zipping
-            try: shutil.rmtree(udid)   
-            except: pass
+            if keep_bu == "off":
+                try: shutil.rmtree(udid)   
+                except: pass
+            else:
+                try: os.rename(udid, f"{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}")
+                except: pass
 
-        if l_type == "PRFS":
+        if incl_ul == "on":
             try:
                 self.after(100, lambda: self.text.configure(text="Collecting Unified Logs - this may take a while."))
                 self.change.set(0)
@@ -1839,97 +1970,103 @@ class MyApp(ctk.CTk):
                     self.change.set(0)
                     return() 
                 self.change.set(0)
-                self.after(100, lambda: self.text.configure(text="Include Unified Logs in the archive."))
-                self.ul_zip = threading.Thread(target=lambda: self.zip_ul(zip=zip, text=self.text, waitul=self.change)) 
-                self.ul_zip.start()
-                self.wait_variable(self.change)
-                shutil.rmtree(f"{udid}.logarchive") 
+                if l_type == "PRFS":
+                    self.after(100, lambda: self.text.configure(text="Include Unified Logs in the archive."))
+                    self.ul_zip = threading.Thread(target=lambda: self.zip_ul(zip=zip, text=self.text, waitul=self.change)) 
+                    self.ul_zip.start()
+                    self.wait_variable(self.change)
+                    if keep_ul == "off":
+                        try: shutil.rmtree(f"{udid}.logarchive") 
+                        except: pass
             except:
                 pass                                                                                            
 
         #Gather Media Directory
-        try: os.mkdir(".tar_tmp/media")
-        except: pass
-        self.change.set(0)
-        self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
-        self.lockcheck.start()
-        self.wait_variable(self.change)
-        self.after(200)
-        if self.change.get() == 2:
-            lockdown = create_using_usbmux()
-        self.prog_text.configure(text="0%")
-        self.progress.pack_forget()
-        self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
-        self.progress.set(0)
-        self.progress.pack()
-
-        self.change.set(0)
-        if l_type != "UFED":
-            if l_type == "PRFS":
-                self.tar_media = threading.Thread(target=lambda: media_export(l_type=l_type, dest=".tar_tmp/media", archive=zip, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
-            else:
-                self.tar_media = threading.Thread(target=lambda: media_export(l_type=l_type, dest=".tar_tmp/media", archive=tar, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
-            self.tar_media.start()
-        else:
-            self.zip_media = threading.Thread(target=lambda: media_export(l_type=l_type, dest=".tar_tmp/media", archive=zip, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
-            self.zip_media.start()
-        self.wait_variable(self.change)
-        #remove media-folder
-        shutil.rmtree(".tar_tmp/media")                                                                                       
-
-        #Gather Shared App-Folders
-        self.change.set(0)
-        self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
-        self.lockcheck.start()
-        self.wait_variable(self.change)
-        self.after(100)
-        if self.change.get() == 2:
-            lockdown = create_using_usbmux()
-        media_count = 0
-        self.text.configure(text="Performing Extraction of Shared App-Files")
-        for app in doc_list:
-            if app == 'yes':
-                media_count += 1
-
-        try: os.mkdir(".tar_tmp/app_doc")
-        except: pass
-        self.change.set(0)
-        self.prog_text.configure(text="0%")
-        self.progress.pack_forget()
-        self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
-        self.progress.set(0)
-        self.progress.pack()
-        self.app_pull = threading.Thread(target=lambda: self.shared_app_files(prog_text=self.prog_text, progress=self.progress, change=self.change, media_count=media_count, tar=tar, zip=zip, l_type=l_type))
-        self.app_pull.start()
-        self.wait_variable(self.change)
-        shutil.rmtree(".tar_tmp/app_doc")
-
-        #Gather Crash-Reports
-        if l_type != "UFED":
+        if incl_media == "on":
+            try: os.mkdir(".tar_tmp/media")
+            except: pass
             self.change.set(0)
             self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
             self.lockcheck.start()
             self.wait_variable(self.change)
-            self.text.configure(text="Performing Extraction of Crash Reports")
+            self.after(200)
+            if self.change.get() == 2:
+                lockdown = create_using_usbmux()
             self.prog_text.configure(text="0%")
-            self.progress.pack_forget() 
+            self.progress.pack_forget()
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
             self.progress.set(0)
             self.progress.pack()
-            self.after(100)
-            lockdown = create_using_usbmux()
+
             self.change.set(0)
-            if l_type == "PRFS":
-                tarpath = "/private/var/mobile/Library/Logs/CrashReporter"
+            if l_type != "UFED":
+                if l_type == "PRFS":
+                    self.tar_media = threading.Thread(target=lambda: media_export(l_type=l_type, dest=".tar_tmp/media", archive=zip, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
+                else:
+                    self.tar_media = threading.Thread(target=lambda: media_export(l_type=l_type, dest=".tar_tmp/media", archive=tar, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
+                self.tar_media.start()
             else:
-                tarpath = "/Crash"
-            self.crash_start = threading.Thread(target=lambda: crash_report(crash_dir=".tar_tmp/Crash", change=self.change, progress=self.progress, prog_text=self.prog_text, l_type=l_type, tar=tar, zip=zip, tarpath=tarpath))
-            self.crash_start.start()
+                self.zip_media = threading.Thread(target=lambda: media_export(l_type=l_type, dest=".tar_tmp/media", archive=zip, text=self.text, prog_text=self.prog_text, progress=self.progress, change=self.change))
+                self.zip_media.start()
             self.wait_variable(self.change)
-            self.progress.pack_forget()
-            self.prog_text.pack_forget()
+            #remove media-folder
+            shutil.rmtree(".tar_tmp/media")                                                                                       
+
+        #Gather Shared App-Folders
+        if incl_apps == "on":
+            self.change.set(0)
+            self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
+            self.lockcheck.start()
+            self.wait_variable(self.change)
             self.after(100)
-            shutil.rmtree(".tar_tmp/Crash")
+            if self.change.get() == 2:
+                lockdown = create_using_usbmux()
+            media_count = 0
+            self.text.configure(text="Performing Extraction of Shared App-Files")
+            for app in doc_list:
+                if app == 'yes':
+                    media_count += 1
+
+            try: os.mkdir(".tar_tmp/app_doc")
+            except: pass
+            self.change.set(0)
+            self.prog_text.configure(text="0%")
+            self.progress.pack_forget()
+            self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
+            self.progress.set(0)
+            self.progress.pack()
+            self.app_pull = threading.Thread(target=lambda: self.shared_app_files(prog_text=self.prog_text, progress=self.progress, change=self.change, media_count=media_count, tar=tar, zip=zip, l_type=l_type))
+            self.app_pull.start()
+            self.wait_variable(self.change)
+            shutil.rmtree(".tar_tmp/app_doc")
+
+        #Gather Crash-Reports
+        if l_type != "UFED":
+            if incl_crash == "on":
+                self.change.set(0)
+                self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
+                self.lockcheck.start()
+                self.wait_variable(self.change)
+                self.text.configure(text="Performing Extraction of Crash Reports")
+                self.prog_text.configure(text="0%")
+                self.progress.pack_forget() 
+                self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
+                self.progress.set(0)
+                self.progress.pack()
+                self.after(100)
+                lockdown = create_using_usbmux()
+                self.change.set(0)
+                if l_type == "PRFS":
+                    tarpath = "/private/var/mobile/Library/Logs/CrashReporter"
+                else:
+                    tarpath = "/Crash"
+                self.crash_start = threading.Thread(target=lambda: crash_report(crash_dir=".tar_tmp/Crash", change=self.change, progress=self.progress, prog_text=self.prog_text, l_type=l_type, tar=tar, zip=zip, tarpath=tarpath))
+                self.crash_start.start()
+                self.wait_variable(self.change)
+                self.progress.pack_forget()
+                self.prog_text.pack_forget()
+                self.after(100)
+                shutil.rmtree(".tar_tmp/Crash")
 
         #Add Bundle Files for PRFS
             if l_type == "PRFS":
@@ -1985,6 +2122,7 @@ class MyApp(ctk.CTk):
             with open("device_values.plist", "wb") as file:
                 plistlib.dump(de_va_di, file)
             
+            
         #Begin Time for UFD-Report
             local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
             utc_offset = now.astimezone().utcoffset()
@@ -2018,6 +2156,9 @@ class MyApp(ctk.CTk):
             os.remove("PhoneInfo.xml")
             os.remove("device_values.plist")
         shutil.rmtree(".tar_tmp/")
+
+        self.progress.pack_forget()
+        self.prog_text.pack_forget()
         
         if l_type != 'UFED':
             if l_type == 'PRFS':
@@ -2259,17 +2400,24 @@ class MyApp(ctk.CTk):
         self.packetbox.bind(sequence="<Return>", command=lambda x: self.call_ncapture(self.packetbox, self.okbutton, self.text, self.change))
         self.packetbox.insert(0, string="0")
         self.packetbox.pack(side="left", pady=(0,370), padx=(230,0))  
-        self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.call_ncapture(self.packetbox, self.okbutton, self.text, self.change))
-        self.okbutton.pack(side="left", pady=(0,370), padx=(10,120))
+        self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.call_ncapture(self.packetbox, self.okbutton, self.backb, self.text, self.change))
+        self.okbutton.pack(side="left", pady=(0,370), padx=(20, 0))
+        self.backb = ctk.CTkButton(self.dynamic_frame, text="Back", font=self.stfont, fg_color="#8c2c27", command=lambda: self.change.set(2))
+        self.backb.pack(pady=(0,370), padx=(10,100))
         self.waitvar(self.change)
+        if self.change.get() == 2:
+            self.after(100, lambda: self.switch_menu("AdvMenu"))
+            return 
+
         self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AdvMenu")).pack(pady=40))   
 
 # Call the sniffing function as a thread with provided user input
-    def call_ncapture(self, packetbox, okbutton, text, change):
+    def call_ncapture(self, packetbox, okbutton, backb, text, change):
         self.stop_event.clear()
         packnum = packetbox.get()
         packetbox.pack_forget()
         okbutton.pack_forget()
+        backb.pack_forget()
         self.ncap = threading.Thread(target=lambda: self.network_capture(packnum, text, change))
         self.ncap.start()
         self.wait_variable(change)
@@ -5400,6 +5548,7 @@ elif guiv == "1368":
 
 
 DEVICE_MAP = {device.product_type: device.display_name for device in IRECV_DEVICES}
+doc_list = []
 pub_key = ""
 mode = "normal"
 bu_fin = False
