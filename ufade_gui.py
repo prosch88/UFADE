@@ -1915,7 +1915,7 @@ class MyApp(ctk.CTk):
                     try: shutil.rmtree(udid)
                     except: pass
                 else:
-                    try: os.rename(udid, f"{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}")
+                    try: os.rename(udid, f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}')
                     except: pass
                 if self.change.get() == 2:
                     self.after(50)
