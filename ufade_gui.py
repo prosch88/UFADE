@@ -12,6 +12,7 @@ from PIL import ImageTk, Image, ExifTags, ImageDraw, ImageFont
 import tkinter.ttk as ttk
 from tkinter import StringVar
 from tkcalendar import Calendar
+from tkextrafont import Font
 from pymobiledevice3 import usbmux, exceptions, lockdown
 from pymobiledevice3.services.mobile_image_mounter import DeveloperDiskImageMounter, MobileImageMounterService, PersonalizedImageMounter
 from pymobiledevice3.lockdown import create_using_usbmux, create_using_remote
@@ -110,7 +111,14 @@ class MyApp(ctk.CTk):
         self.iconphoto(False, self.iconpath)
 
         # Font:
-        self.stfont = ctk.CTkFont("default")
+        if platform.uname().system == 'Windows':
+            noto_font_path = os.path.join(os.path.dirname(__file__), "assets" , "NotoSans-Medium.ttf")
+            win_noto_font = Font(file=noto_font_path, family="Noto Sans Medium")
+            noto_mono_font_path = os.path.join(os.path.dirname(__file__), "assets" , "NotoSansMono-Medium.ttf")
+            win_noto_mono_font = Font(file=noto_mono_font_path, family="Noto Sans Mono Medium")
+            self.stfont = ctk.CTkFont(win_noto_font.actual("family"))
+        else:
+            self.stfont = ctk.CTkFont("default")
         self.stfont.configure(size=fsize)
 
         style = ttk.Style()
@@ -126,7 +134,10 @@ class MyApp(ctk.CTk):
 
         # Widgets (left Frame))
         if platform.uname().system == 'Windows':
-            self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=("Consolas", fsize), activate_scrollbars=False)
+            try:
+                self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=(win_noto_mono_font.actual("family"), fsize), activate_scrollbars=False)
+            except:
+                self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=("Consolas", fsize), activate_scrollbars=False)
         elif platform.uname().system == 'Darwin':
             self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=("Menlo", fsize), activate_scrollbars=False)
         else:

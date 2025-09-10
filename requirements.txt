@@ -8,6 +8,7 @@ NSKeyedUnArchiver==1.5
 paramiko
 customtkinter
 tkcalendar
+tkextrafont
 crossfiledialog
 exifread<3
 pdfme
