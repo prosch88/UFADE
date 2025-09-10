@@ -114,8 +114,8 @@ class MyApp(ctk.CTk):
         if platform.uname().system == 'Windows':
             noto_font_path = os.path.join(os.path.dirname(__file__), "assets" , "NotoSans-Medium.ttf")
             win_noto_font = Font(file=noto_font_path, family="Noto Sans Medium")
-            noto_mono_font_path = os.path.join(os.path.dirname(__file__), "assets" , "NotoSansMono-Medium.ttf")
-            win_noto_mono_font = Font(file=noto_mono_font_path, family="Noto Sans Mono Medium")
+            noto_mono_font_path = os.path.join(os.path.dirname(__file__), "assets" , "NotoSansMono_SemiCondensed-Medium.ttf")
+            win_noto_mono_font = Font(file=noto_mono_font_path, family="Noto Sans Mono SemiCondensed Medium")
             self.stfont = ctk.CTkFont(win_noto_font.actual("family"))
         else:
             self.stfont = ctk.CTkFont("default")
