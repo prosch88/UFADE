@@ -12,7 +12,6 @@ from PIL import ImageTk, Image, ExifTags, ImageDraw, ImageFont
 import tkinter.ttk as ttk
 from tkinter import StringVar
 from tkcalendar import Calendar
-from tkextrafont import Font
 from pymobiledevice3 import usbmux, exceptions, lockdown
 from pymobiledevice3.services.mobile_image_mounter import DeveloperDiskImageMounter, MobileImageMounterService, PersonalizedImageMounter
 from pymobiledevice3.lockdown import create_using_usbmux, create_using_remote
@@ -111,12 +110,9 @@ class MyApp(ctk.CTk):
         self.iconphoto(False, self.iconpath)
 
         # Font:
+        
         if platform.uname().system == 'Windows':
-            noto_font_path = os.path.join(os.path.dirname(__file__), "assets" , "NotoSans-Medium.ttf")
-            win_noto_font = Font(file=noto_font_path, family="Noto Sans Medium")
-            noto_mono_font_path = os.path.join(os.path.dirname(__file__), "assets" , "NotoSansMono_SemiCondensed-Medium.ttf")
-            win_noto_mono_font = Font(file=noto_mono_font_path, family="Noto Sans Mono SemiCondensed Medium")
-            self.stfont = ctk.CTkFont(win_noto_font.actual("family"))
+            self.stfont = ctk.CTkFont("Tamoha")
         else:
             self.stfont = ctk.CTkFont("default")
         self.stfont.configure(size=fsize)
@@ -134,10 +130,7 @@ class MyApp(ctk.CTk):
 
         # Widgets (left Frame))
         if platform.uname().system == 'Windows':
-            try:
-                self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=(win_noto_mono_font.actual("family"), fsize), activate_scrollbars=False)
-            except:
-                self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=("Consolas", fsize), activate_scrollbars=False)
+            self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=("Consolas", fsize), activate_scrollbars=False)
         elif platform.uname().system == 'Darwin':
             self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=("Menlo", fsize), activate_scrollbars=False)
         else:
@@ -2358,8 +2351,10 @@ class MyApp(ctk.CTk):
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Provide the SSH parameters. The default values are suitable for Checkra1n and Palera1n: ", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
         self.change = ctk.IntVar(self, 0)
-        self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.choose_jb_params(self.text, self.portbox, self.userbox, self.pwbox, self.pathbox))
-        self.okbutton.pack(side="bottom", pady=(0,400))
+        self.backb = ctk.CTkButton(self.dynamic_frame, text="Back", font=self.stfont, fg_color="#8c2c27", command=lambda: (self.switch_menu("AcqMenu"), self.change.set(2)))
+        self.backb.pack(side="bottom", pady=(0,400))
+        self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.choose_jb_params(self.text, self.portbox, self.userbox, self.pwbox, self.pathbox, self.backb))
+        self.okbutton.pack(side="bottom", pady=(10))
         self.porttext = ctk.CTkLabel(self.dynamic_frame, text="Port: ", width=40, height=20, font=self.stfont, anchor="w", justify="left")
         self.porttext.pack(pady=(0,50), padx=(100,0), side="left")
         self.portbox = ctk.CTkEntry(self.dynamic_frame, width=80, height=20, corner_radius=0, placeholder_text="44")
@@ -2381,9 +2376,11 @@ class MyApp(ctk.CTk):
         self.pathbox.insert(0, string="/private")
         self.pathbox.pack(pady=(0,50), padx=(0,0), side="left")
         self.wait_variable(self.change)
+        if self.change.get() == 2:
+            return
         self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))   
 
-    def choose_jb_params(self, text, portbox, userbox, pwbox, pathbox):
+    def choose_jb_params(self, text, portbox, userbox, pwbox, pathbox, backb):
         scr_prt = int(portbox.get())
         user = userbox.get()
         pwd = pwbox.get()
@@ -2397,6 +2394,7 @@ class MyApp(ctk.CTk):
         self.pwtext.pack_forget()
         self.pathtext.pack_forget()
         self.okbutton.pack_forget() 
+        self.backb.pack_forget()
         perfssh = threading.Thread(target=lambda: self.ssh_dump(text, scr_prt, remote_folder, user, pwd))
         perfssh.start()
 
