@@ -4538,7 +4538,7 @@ class MyApp(ctk.CTk):
         self.browsebutton.pack(anchor="w", padx= 80, pady = 10)
         self.pw_text = ctk.CTkLabel(self.dynamic_frame, text="Enter the Backup Password: ", width=585, height=30, font=self.stfont, anchor="w", justify="left")
         self.pw_text.pack(anchor="center")
-        self.passwordbox = ctk.CTkEntry(self.dynamic_frame, width=200, height=20, corner_radius=0)
+        self.passwordbox = ctk.CTkEntry(self.dynamic_frame, width=200, height=20, corner_radius=0, show="*")
         self.passwordbox.bind(sequence="<Return>", command=lambda x: self.perf_unback(self.bu_folder))
         self.passwordbox.pack(anchor="w", padx= 80, pady = 10)
         self.passwordbox.configure(state="disabled")
