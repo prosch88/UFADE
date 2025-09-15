@@ -4671,6 +4671,8 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.change)
             self.after(10, lambda: self.text.configure(text=f"The iTunes backup has been decrypted successfully.\nOutput: {zipname}.zip"))
             zip.close()
+            try: shutil.rmtree(".tar_tmp")
+            except: pass  
             self.after(50)
             self.text.update()
             self.progress.pack_forget()
