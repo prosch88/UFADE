@@ -300,6 +300,8 @@ class MyApp(ctk.CTk):
             self.show_nodevice()
         elif menu_name == "NotPaired":
             self.show_notpaired()
+        elif menu_name == "Data":
+            self.show_data_menu()
 
 # Watch/TV Menu
     def show_watch_menu(self):
@@ -591,12 +593,14 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="WhatsApp export\n(PuMA)", command=lambda: self.switch_menu("tess"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Sniff device traffic", command=lambda: self.switch_menu("sniff"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Extract AFC Media files", command=lambda: self.switch_menu("Media"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Remove UFADE Backup\nPassword", command=lambda: self.switch_menu("enc_off"), width=200, height=70, font=self.stfont)
+            ctk.CTkButton(self.dynamic_frame, text="Remove UFADE Backup\nPassword", command=lambda: self.switch_menu("enc_off"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Switch to\nFile Operations", fg_color="#2d2d35", command=lambda: self.switch_menu("Data"), width=200, height=70, font=self.stfont)
         ]
         self.menu_text = ["Perform an iTunes-style backup and extract\nWhatsapp files for PuMA (LE-tool).", 
                           "Captures the device network traffic as a pcap file.",
                           "Pull the \"Media\"-folder from the device\n(pictures, videos, recordings)",
-                          "Try to remove the encryption password\nset by UFADE"
+                          "Try to remove the encryption password\nset by UFADE",
+                          "Show options for operations with\nexisting backups."
                           ]
         self.menu_textbox = []
         for btn in self.menu_buttons:
@@ -612,6 +616,56 @@ class MyApp(ctk.CTk):
             i+=1
 
         ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_main_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
+
+# Data Options Menu
+    def show_data_menu(self):
+        for widget in self.dynamic_frame.winfo_children():
+            widget.destroy()
+        self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
+        self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
+        self.menu_buttons = [
+            ctk.CTkButton(self.dynamic_frame, text="Decrypt and Unback\nBackup", command=self.show_unback, width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Switch to\nLive Operations", fg_color="#2d2d35", command=self.show_nodevice, width=200, height=70, font=self.stfont)
+        ]
+        self.menu_text = ["Decrypt an iTunes Backup and try to restore\nthe original Filesystem Structure. ", 
+                          "Restart UFADE to work with a Device."
+                          ]
+        self.menu_textbox = []
+        for btn in self.menu_buttons:
+            self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=50, font=self.stfont, anchor="w", justify="left"))
+
+        r=1
+        i=0
+        for btn in self.menu_buttons:
+            btn.grid(row=r,column=0, padx=30, pady=10)
+            self.menu_textbox[i].grid(row=r,column=1, padx=10, pady=10)
+            self.menu_textbox[i].configure(text=self.menu_text[i])
+            r+=1
+            i+=1
+
+        device = ("\n   These options are intended\n" +
+                  "   for encrypted backups with\n" + 
+                  "   a known backup password." + "\n\n" +
+                  "   The following modules are\n" + 
+                  "   used for decryption:" + "\n" +
+                "\n   " + '{:13}'.format("pyiosbackup: ") + "\t" + version('pyiosbackup') +
+                "\n   " + '{:13}'.format("pandas: ") + "\t" + version('pandas') +
+                "\n\n" + 
+                "   41 6E 64 20 77 65 20 73 68 6F 75 \n" +
+                "   6C 64 6E 27 74 20 62 65 20 68 65 \n" +
+                "   72 65 20 61 74 20 61 6C 6C 2C 20 \n" +
+                "   69 66 20 77 65 27 64 20 6B 6E 6F \n" +
+                "   77 6E 20 6D 6F 72 65 20 61 62 6F \n" +
+                "   75 74 20 69 74 20 62 65 66 6F 72 \n" +
+                "   65 20 77 65 20 73 74 61 72 74 65 \n" +
+                "   64 2E")
+
+        self.info_text.configure(state="normal")
+        self.info_text.delete("0.0", "end")
+        self.info_text.configure(text_color="#4d5760")
+        self.info_text.insert("0.0", device)
+        self.info_text.configure(state="disabled")
+
 
 # device is in recovery or dfu mode:
     def show_recovery(self):
@@ -672,7 +726,13 @@ class MyApp(ctk.CTk):
                             "On a Windows-system, make sure \"Apple Devices\" \nor \"iTunes\" is installed.")
             self.text.pack(pady=50)
             ctk.CTkButton(self.dynamic_frame, text="Check again", command=self.show_nodevice).pack(pady=10)
+            ctk.CTkButton(self.dynamic_frame, text="Data Operations", fg_color="#2d2d35", command=lambda: self.show_cwd(data=True)).pack(pady=10)
+            device = nodevice_text
+            self.info_text.configure(state="normal")
+            self.info_text.delete("0.0", "end")
             self.info_text.configure(text_color="#4d5760")
+            self.info_text.insert("0.0", device)
+            self.info_text.configure(state="disabled")
         else:
             device = dev_data()
             self.info_text.configure(state="normal")
@@ -772,9 +832,8 @@ class MyApp(ctk.CTk):
             text.configure(text="\n\n\n\n\n\nNo file selected!")
             ctk.CTkButton(self.dynamic_frame, text="OK", command=self.show_nodevice).pack(pady=50)
 
-
 # Select the working directory
-    def show_cwd(self):
+    def show_cwd(self, data=False):
         for widget in self.dynamic_frame.winfo_children():
             widget.destroy()
         global dir
@@ -790,11 +849,11 @@ class MyApp(ctk.CTk):
         self.outputbox.bind(sequence="<Return>", command=lambda x: self.choose_cwd(self.outputbox))
         self.outputbox.insert(0, string=dir)
         self.outputbox.pack(side="left", pady=(110,0), padx=(130,0))  
-        self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.choose_cwd(self.outputbox))
+        self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.choose_cwd(self.outputbox, data))
         self.okbutton.pack(side="left", pady=(110,0), padx=(10,120))
         
 # Function to choose the working directoy
-    def choose_cwd(self, outputbox):
+    def choose_cwd(self, outputbox, data=False):
         global dir
         global dir_top
         user_input = outputbox.get()
@@ -812,10 +871,13 @@ class MyApp(ctk.CTk):
             dir_top = f"{dir[:45]}..."
         else:
             dir_top = dir
-        if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
-            self.show_watch_menu()
+        if data == False:
+            if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
+                self.show_watch_menu()
+            else:
+                self.show_main_menu()
         else:
-            self.show_main_menu()
+            self.show_data_menu()
 
 # Filebrowser for working direcory
     def browse_cwd(self, outputbox):
@@ -1163,9 +1225,9 @@ class MyApp(ctk.CTk):
         try:
             with open(os.path.join(source_folder, "Info.plist"), mode='rb') as infofile:
                 readinfo = plistlib.load(infofile)
-            ver_file = readinfo["SpecialMetadata"]["TTL"]
+            ver_file = readinfo.get("SpecialMetadata", "")["TTL"]
             ver_file["Version"] = 7
-            ver_file["Identifier"] = readinfo["SourceIdentifier"]
+            ver_file["Identifier"] = readinfo.get("SourceIdentifier", "")
             verfile = os.path.join(source_folder, "version.plist")
             with open(verfile, "wb") as file:
                 plistlib.dump(ver_file, file, fmt=plistlib.FMT_BINARY)
@@ -1547,11 +1609,11 @@ class MyApp(ctk.CTk):
 # Advanced Logical Backup Fuctions
 
 # Prepare for Backup decryption
-    def init_backup_decrypt(self, change):
+    def init_backup_decrypt(self, change, udid, bu_pass="12345", backuproot="./"):
         global b
         global backupfiles
         try:
-            b = iOSbackup(udid=udid, cleartextpassword="12345", derivedkey=None, backuproot="./")                           #Load Backup with Password
+            b = iOSbackup(udid=udid, cleartextpassword=bu_pass, derivedkey=None, backuproot=backuproot)                           #Load Backup with Password
             key = b.getDecryptionKey()                                                                                      #Get decryption Key
             b = iOSbackup(udid=udid, derivedkey=key, backuproot="./")                                                       #Load Backup again with Key
             backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])
@@ -1872,7 +1934,7 @@ class MyApp(ctk.CTk):
                 self.progress.set(0)
                 self.progress.pack()
                 self.change.set(0)
-                panda_backup = threading.Thread(target=lambda: self.init_backup_decrypt(self.change))
+                panda_backup = threading.Thread(target=lambda: self.init_backup_decrypt(self.change, udid))
                 panda_backup.start()
                 self.wait_variable(self.change)
                 if self.change.get() == 1:
@@ -2276,7 +2338,7 @@ class MyApp(ctk.CTk):
             self.progress.pack()
             self.progress.start()
             self.change = ctk.IntVar(self, 0)
-            self.tess_init = threading.Thread(target=lambda: self.init_backup_decrypt(self.change))
+            self.tess_init = threading.Thread(target=lambda: self.init_backup_decrypt(self.change, udid))
             self.tess_init.start()
             self.waitvar(self.change)
             if self.change.get() == 1:
@@ -4458,6 +4520,174 @@ class MyApp(ctk.CTk):
             self.text.pack(pady=50)
         log(f"Error: {value}")
 
+    #Unback given Backup
+    def show_unback(self):
+        for widget in self.dynamic_frame.winfo_children():
+            widget.destroy()
+        valid_bu = False
+        self.bu_folder = None
+        self.bu_udid = ""
+        bu_pass = ""
+        ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
+        ctk.CTkLabel(self.dynamic_frame, text="Unback Backup", height=60, width=585, font=("standard",24), justify="left").pack(pady=20)
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Choose an iTunes Backup directory (encrypted) and\nprovide the correct Backup Password:", width=585, height=40, font=self.stfont, anchor="w", justify="left")
+        self.text.pack(anchor="center", pady=25)
+        self.backup_text = ctk.CTkLabel(self.dynamic_frame, text="Chosen Backup:    < no backup chosen >", width=585, height=30, font=self.stfont, anchor="w", justify="left")
+        self.backup_text.pack(anchor="center")
+        self.browsebutton = ctk.CTkButton(self.dynamic_frame, text="Browse", font=self.stfont, command=lambda: self.choose_bu_folder())
+        self.browsebutton.pack(anchor="w", padx= 80, pady = 10)
+        self.pw_text = ctk.CTkLabel(self.dynamic_frame, text="Enter the Backup Password: ", width=585, height=30, font=self.stfont, anchor="w", justify="left")
+        self.pw_text.pack(anchor="center")
+        self.passwordbox = ctk.CTkEntry(self.dynamic_frame, width=200, height=20, corner_radius=0)
+        self.passwordbox.bind(sequence="<Return>", command=lambda x: self.perf_unback(self.bu_folder))
+        self.passwordbox.pack(anchor="w", padx= 80, pady = 10)
+        self.passwordbox.configure(state="disabled")
+        self.okbutton = ctk.CTkButton(self.dynamic_frame, text="Unback", font=self.stfont, command=lambda: self.perf_unback(self.bu_folder))
+        self.okbutton.pack(anchor="w", padx= 80, pady = 10)
+        self.okbutton.configure(state="disabled")
+
+        
+        self.backbutton = ctk.CTkButton(self.dynamic_frame, text="Back", command=lambda: [self.switch_menu("Data")])
+        self.backbutton.pack(anchor="e", pady=20, padx=(0,65))
+
+    def choose_bu_folder(self):
+        self.browsebutton.configure(state="disabled")
+        if platform.uname().system == 'Linux':
+            try:
+                import crossfiledialog
+                bu_f = crossfiledialog.choose_folder()
+            except:
+                bu_f = ctk.filedialog.askdirectory()
+        else:
+            bu_f = ctk.filedialog.askdirectory()
+        if not bu_f:
+            self.browsebutton.configure(state="enabled")
+            return    
+
+        manifest = os.path.join(bu_f, "Manifest.plist")    
+        if os.path.isfile(manifest):
+            self.bu_folder = bu_f
+            try:
+                with open(os.path.join(bu_f, "Info.plist"), mode='rb') as infofile:
+                    readinfo = plistlib.load(infofile)
+                    bu_name = readinfo.get("Device Name", "")
+                    bu_product = readinfo.get("Product Type", "")
+                    bu_version = readinfo.get("Product Version", "")
+                    bu_build = readinfo.get("Build Version", "")
+                    bu_snr = readinfo.get("Serial Number", "")
+                    bu_imei = readinfo.get("IMEI", "")
+                    bu_iccid = readinfo.get("ICCID", "")
+                    bu_udid = readinfo.get("Unique Identifier", "")
+                    bu_phone = readinfo.get("Phone Number", "")
+                    bu_itunes = readinfo.get("iTunes Version", "")
+
+                if len(bu_udid) > 26:
+                    bu_udid_s = bu_udid[:25] + "\n" + '{:13}'.format(" ") + "\t" + bu_udid[25:]
+                else:
+                    bu_udid_s = bu_udid
+                if len(bu_name) > 26:
+                    wordnames = bu_name.split()
+                    if len(' '.join(wordnames[:-1])) < 27:
+                        bu_name_s = ' '.join(wordnames[:-1]) + "\n" + '{:13}'.format(" ") + "\t" + wordnames[-1]
+                    else:
+                        bu_name_s = ' '.join(wordnames[:-2]) + "\n" + '{:13}'.format(" ") + "\t" + ' '.join(wordnames[-2:])
+                else:
+                    bu_name_s = bu_name
+
+                device = ("Chosen Backup: \n\n" +
+                '{:13}'.format("Dev-Name: ") + "\t" + bu_name_s +
+                "\n" + '{:13}'.format("Product: ") + "\t" + bu_product +
+                "\n" + '{:13}'.format("Software: ") + "\t" + bu_version +
+                "\n" + '{:13}'.format("Build-Nr: ") + "\t" + bu_build +
+                "\n" + '{:13}'.format("Serialnr: ") + "\t" + bu_snr +
+                "\n" + '{:13}'.format("IMEI: ") + "\t" + bu_imei +
+                "\n" + '{:13}'.format("ICCID:: ") + "\t" + bu_iccid +
+                "\n" + '{:13}'.format("Number: ") + "\t" + bu_phone +
+                "\n" + '{:13}'.format("UDID: ") + "\t" + bu_udid_s +
+                "\n" + '{:13}'.format("iTunes: ") + "\t" + bu_itunes)
+                
+                self.info_text.configure(state="normal")
+                self.info_text.delete("0.0", "end")
+                self.info_text.configure(text_color="#abb3bd")
+                self.info_text.insert("0.0", device)
+                self.info_text.configure(state="disabled")
+                
+
+                self.backup_text.configure(text=f"Chosen Backup:    {bu_udid}")
+                self.bu_udid = bu_udid
+                self.passwordbox.configure(state="normal")
+                self.okbutton.configure(state="enabled")
+            
+            except:
+                self.backup_text.configure(text=f"Chosen Backup:    {os.path.basename(bu_f)}")
+                self.bu_udid = os.path.basename(bu_f)
+                self.passwordbox.configure(state="normal")
+                self.okbutton.configure(state="enabled")
+
+
+
+        else: 
+            self.backup_text.configure(text="Chosen Backup:    < no backup chosen / or invalid folder >")
+            self.browsebutton.configure(state="enabled")
+            self.passwordbox.configure(state="disabled")
+            self.okbutton.configure(state="disabled")
+    
+    def perf_unback(self, bu_folder):
+        self.text.configure(text="Checking Backup. This might take a while.", height=60)
+        self.backup_text.pack_forget()
+        self.okbutton.pack_forget()
+        bu_pass = self.passwordbox.get()
+        self.passwordbox.pack_forget()
+        self.pw_text.pack_forget()
+        self.browsebutton.pack_forget()
+        self.backbutton.pack_forget()
+        bu_root = os.path.dirname(bu_folder)
+        bu_udid = os.path.basename(bu_folder)
+
+        self.change = ctk.IntVar(self, 0)
+        panda_backup = threading.Thread(target=lambda: self.init_backup_decrypt(self.change, udid=bu_udid, bu_pass=bu_pass, backuproot=bu_root))
+        panda_backup.start()
+        self.wait_variable(self.change)
+        if self.change.get() == 1:
+            self.after(10, lambda: self.text.configure(text="Decrypting iTunes Backup: "))
+            self.prog_text = ctk.CTkLabel(self.dynamic_frame, text="0%", width=585, height=20, font=self.stfont, anchor="w", justify="left")
+            self.prog_text.pack() 
+            self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
+            self.progress.set(0)
+            self.progress.pack()
+            line_list = []
+            line_cnt = 0
+            for line in backupfiles['relativePath']:                                                                        
+                if(line not in line_list):
+                    line_cnt += 1
+                    line_list.append(line)
+            d_nr = 0
+            self.change.set(0)                                                                     
+            zipname = f'{self.bu_udid}_unback_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     
+            zip = zipfile.ZipFile(f'{zipname}.zip', "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1)
+            decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type="PRFS", zip=zip))
+            decrypt.start()
+            self.wait_variable(self.change)
+            self.after(10, lambda: self.text.configure(text=f"The iTunes backup has been decrypted successfully.\nOutput: {zipname}.zip"))
+            zip.close()
+            self.after(50)
+            self.text.update()
+            self.progress.pack_forget()
+            self.prog_text.pack_forget()
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("Data")).pack(pady=40))
+            return
+
+
+        else:
+            self.after(50)
+            self.text.configure(text="An error occured.\nMake sure you enter the correct backup password.")
+            self.text.update()
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("Data")).pack(pady=40))
+            return
+
+
+
+
 def unmount_abort_timer():
     raise exceptions.UnsupportedCommandError()
 
@@ -4815,6 +5045,7 @@ def dev_data():
     global ecid
     global snr
     global udid
+    global nodevice_text
     try: 
         r_mode = irecv.IRecv(timeout=0.01).mode
         if "RECOVERY" in str(r_mode):
@@ -5035,28 +5266,7 @@ def dev_data():
                     "\n" + '{:13}'.format("ECID: ") + "\t" + ecid)  
 
         except: 
-            device = ("No device detected!\n" +
-                "\n" + '{:13}'.format("Python: ") + "\t" + platform.python_version() +
-                "\n" + '{:13}'.format("PMD3: ") + "\t" + version('pymobiledevice3') +
-                "\n" + '{:13}'.format("pyiosbackup: ") + "\t" + version('pyiosbackup') +
-                "\n" + '{:13}'.format("iOSbackup: ") + "\t" + version('iOSbackup') +
-                "\n" + '{:13}'.format("paramiko: ") + "\t" + version('paramiko') +
-                "\n" + '{:13}'.format("pandas: ") + "\t" + version('pandas') +
-                "\n\n" + 
-                "   59 65 74 20 73 75 63 68 20 69 73 \n" +
-                "   20 6F 66 74 20 74 68 65 20 63 6F \n" +
-                "   75 72 73 65 20 6F 66 20 64 65 65 \n" +
-                "   64 73 20 74 68 61 74 20 6D 6F 76 \n" +
-                "   65 20 74 68 65 20 77 68 65 65 6C \n" + 
-                "   73 20 6F 66 20 74 68 65 20 77 6F \n" +
-                "   72 6C 64 3A 20 73 6D 61 6C 6C 20 \n" + 
-                "   68 61 6E 64 73 20 64 6F 20 74 68 \n" +
-                "   65 6D 20 62 65 63 61 75 73 65 20 \n" +
-                "   74 68 65 79 20 6D 75 73 74 2C 20 \n" +
-                "   77 68 69 6C 65 20 74 68 65 20 65 \n" +
-                "   79 65 73 20 6F 66 20 74 68 65 20 \n" +
-                "   67 72 65 61 74 20 61 72 65 20 65 \n" +
-                "   6C 73 65 77 68 65 72 65 2E")
+            device = nodevice_text
 
         #Get installed Apps
         if lockdown != None and ispaired != False:
@@ -5444,6 +5654,8 @@ def pull_file(self, relative_src, dst, callback=None, src_dir=''):
 
 #UFADE "logging"
 def log(text):
+    try: udid = udid
+    except: udid = "data_operations"
     with open(f"ufade_log_{udid}.log", 'a', encoding="utf-8") as logfile:
         logtime = str(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
         logfile.write(f"{logtime}: {text}\n")
@@ -5555,6 +5767,28 @@ elif guiv == "1368":
     sb_button_offset_x = 655
     right_content = 500
 
+nodevice_text = ("No device detected!\n" +
+"\n" + '{:13}'.format("Python: ") + "\t" + platform.python_version() +
+"\n" + '{:13}'.format("PMD3: ") + "\t" + version('pymobiledevice3') +
+"\n" + '{:13}'.format("pyiosbackup: ") + "\t" + version('pyiosbackup') +
+"\n" + '{:13}'.format("iOSbackup: ") + "\t" + version('iOSbackup') +
+"\n" + '{:13}'.format("paramiko: ") + "\t" + version('paramiko') +
+"\n" + '{:13}'.format("pandas: ") + "\t" + version('pandas') +
+"\n\n" + 
+"   59 65 74 20 73 75 63 68 20 69 73 \n" +
+"   20 6F 66 74 20 74 68 65 20 63 6F \n" +
+"   75 72 73 65 20 6F 66 20 64 65 65 \n" +
+"   64 73 20 74 68 61 74 20 6D 6F 76 \n" +
+"   65 20 74 68 65 20 77 68 65 65 6C \n" + 
+"   73 20 6F 66 20 74 68 65 20 77 6F \n" +
+"   72 6C 64 3A 20 73 6D 61 6C 6C 20 \n" + 
+"   68 61 6E 64 73 20 64 6F 20 74 68 \n" +
+"   65 6D 20 62 65 63 61 75 73 65 20 \n" +
+"   74 68 65 79 20 6D 75 73 74 2C 20 \n" +
+"   77 68 69 6C 65 20 74 68 65 20 65 \n" +
+"   79 65 73 20 6F 66 20 74 68 65 20 \n" +
+"   67 72 65 61 74 20 61 72 65 20 65 \n" +
+"   6C 73 65 77 68 65 72 65 2E")
 
 DEVICE_MAP = {device.product_type: device.display_name for device in IRECV_DEVICES}
 doc_list = []
@@ -5573,6 +5807,7 @@ case_name = ""
 evidence_number = ""
 examiner = ""
 u_version = "1.0"
+
 
 
 
