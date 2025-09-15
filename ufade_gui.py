@@ -5654,8 +5654,8 @@ def pull_file(self, relative_src, dst, callback=None, src_dir=''):
 
 #UFADE "logging"
 def log(text):
-    try: udid = udid
-    except: udid = "data_operations"
+    try: log_udid = udid
+    except: log_udid = "data_operations"
     with open(f"ufade_log_{udid}.log", 'a', encoding="utf-8") as logfile:
         logtime = str(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
         logfile.write(f"{logtime}: {text}\n")
