@@ -4617,6 +4617,7 @@ class MyApp(ctk.CTk):
                 self.bu_udid = bu_udid
                 self.passwordbox.configure(state="normal")
                 self.okbutton.configure(state="enabled")
+                self.browsebutton.configure(state="enabled")
             
             except:
                 self.backup_text.configure(text=f"Chosen Backup:    {os.path.basename(bu_f)}")
