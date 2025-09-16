@@ -4532,23 +4532,23 @@ class MyApp(ctk.CTk):
         ctk.CTkLabel(self.dynamic_frame, text="Unback Backup", height=60, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Choose an iTunes Backup directory (encrypted) and\nprovide the correct Backup Password:", width=585, height=40, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
-        self.backup_text = ctk.CTkLabel(self.dynamic_frame, text="Chosen Backup:    < no backup chosen >", width=585, height=30, font=self.stfont, anchor="w", justify="left")
-        self.backup_text.pack(anchor="center")
+        self.backup_text = ctk.CTkLabel(self.dynamic_frame, text="Chosen Backup:    < no backup chosen >", width=585, height=20, font=self.stfont, anchor="w", justify="left")
+        self.backup_text.pack(anchor="center", pady= 5)
         self.browsebutton = ctk.CTkButton(self.dynamic_frame, text="Browse", font=self.stfont, command=lambda: self.choose_bu_folder())
-        self.browsebutton.pack(anchor="w", padx= 80, pady = 10)
-        self.pw_text = ctk.CTkLabel(self.dynamic_frame, text="Enter the Backup Password: ", width=585, height=30, font=self.stfont, anchor="w", justify="left")
-        self.pw_text.pack(anchor="center")
+        self.browsebutton.pack(anchor="w", padx= 80, pady = 15)
+        self.pw_text = ctk.CTkLabel(self.dynamic_frame, text="Enter the Backup Password: ", width=585, height=15, font=self.stfont, anchor="w", justify="left")
+        self.pw_text.pack(anchor="center", pady=15)
         self.passwordbox = ctk.CTkEntry(self.dynamic_frame, width=200, height=20, corner_radius=0, show="*")
         self.passwordbox.bind(sequence="<Return>", command=lambda x: self.perf_unback(self.bu_folder))
-        self.passwordbox.pack(anchor="w", padx= 80, pady = 10)
+        self.passwordbox.pack(anchor="w", padx= 80, pady = 5)
         self.passwordbox.configure(state="disabled")
         self.okbutton = ctk.CTkButton(self.dynamic_frame, text="Unback", font=self.stfont, command=lambda: self.perf_unback(self.bu_folder))
-        self.okbutton.pack(anchor="w", padx= 80, pady = 10)
+        self.okbutton.pack(anchor="w", padx= 80, pady = 15)
         self.okbutton.configure(state="disabled")
 
         
         self.backbutton = ctk.CTkButton(self.dynamic_frame, text="Back", command=lambda: [self.switch_menu("Data")])
-        self.backbutton.pack(anchor="e", pady=20, padx=(0,65))
+        self.backbutton.pack(anchor="e", pady=10, padx=(0,65))
 
     def choose_bu_folder(self):
         self.browsebutton.configure(state="disabled")
@@ -4570,16 +4570,16 @@ class MyApp(ctk.CTk):
             try:
                 with open(os.path.join(bu_f, "Info.plist"), mode='rb') as infofile:
                     readinfo = plistlib.load(infofile)
-                    bu_name = readinfo.get("Device Name", "")
-                    bu_product = readinfo.get("Product Type", "")
-                    bu_version = readinfo.get("Product Version", "")
-                    bu_build = readinfo.get("Build Version", "")
-                    bu_snr = readinfo.get("Serial Number", "")
-                    bu_imei = readinfo.get("IMEI", "")
-                    bu_iccid = readinfo.get("ICCID", "")
-                    bu_udid = readinfo.get("Unique Identifier", "")
-                    bu_phone = readinfo.get("Phone Number", "")
-                    bu_itunes = readinfo.get("iTunes Version", "")
+                    bu_name = readinfo.get("Device Name", "-")
+                    bu_product = readinfo.get("Product Type", "-")
+                    bu_version = readinfo.get("Product Version", "-")
+                    bu_build = readinfo.get("Build Version", "-")
+                    bu_snr = readinfo.get("Serial Number", "-")
+                    bu_imei = readinfo.get("IMEI", "-")
+                    bu_iccid = readinfo.get("ICCID", "-")
+                    bu_udid = readinfo.get("Unique Identifier", "-")
+                    bu_phone = readinfo.get("Phone Number", "-")
+                    bu_itunes = readinfo.get("iTunes Version", "-")
 
                 if len(bu_udid) > 26:
                     bu_udid_s = bu_udid[:25] + "\n" + '{:13}'.format(" ") + "\t" + bu_udid[25:]
@@ -4604,7 +4604,12 @@ class MyApp(ctk.CTk):
                 "\n" + '{:13}'.format("ICCID:: ") + "\t" + bu_iccid +
                 "\n" + '{:13}'.format("Number: ") + "\t" + bu_phone +
                 "\n" + '{:13}'.format("UDID: ") + "\t" + bu_udid_s +
-                "\n" + '{:13}'.format("iTunes: ") + "\t" + bu_itunes)
+                "\n" + '{:13}'.format("iTunes: ") + "\t" + bu_itunes +
+                "\n\n\n" + 
+                "   52 65 6E 65 77 65 64 20 73 68 61 \n" +
+                "   6C 6C 20 62 65 20 62 6C 61 64 65 \n" +
+                "   20 74 68 61 74 20 77 61 73 20 62 \n" +
+                "   72 6F 6b 65 6E 2E ")
                 
                 self.info_text.configure(state="normal")
                 self.info_text.delete("0.0", "end")
