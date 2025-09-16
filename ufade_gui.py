@@ -110,9 +110,14 @@ class MyApp(ctk.CTk):
         self.iconphoto(False, self.iconpath)
 
         # Font:
+
+        ctk.FontManager.load_font(os.path.join(os.path.dirname(__file__), "assets" , "NotoSansMono-UFADE.ttf" ))
+        ctk.FontManager.load_font(os.path.join(os.path.dirname(__file__), "assets" , "NotoSans-Medium.ttf" ))
         
         if platform.uname().system == 'Windows':
-            self.stfont = ctk.CTkFont("Tamoha")
+            self.stfont = ctk.CTkFont("Noto Sans Medium")
+            self.monofont = ctk.CTkFont("Noto Sans Mono UFADE")
+            self.monofont.configure(size=fsize)
         else:
             self.stfont = ctk.CTkFont("default")
         self.stfont.configure(size=fsize)
@@ -130,7 +135,8 @@ class MyApp(ctk.CTk):
 
         # Widgets (left Frame))
         if platform.uname().system == 'Windows':
-            self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=("Consolas", fsize), activate_scrollbars=False)
+            self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=self.monofont, activate_scrollbars=False)
+            
         elif platform.uname().system == 'Darwin':
             self.info_text = ctk.CTkTextbox(self.left_frame, height=resy, width=leftx, fg_color="#2c353e", corner_radius=0, font=("Menlo", fsize), activate_scrollbars=False)
         else:
