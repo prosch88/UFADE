@@ -1,10 +1,12 @@
 # UFADE
-**Universal Forensic Apple Device Extractor**
 
 <div align="center">
 <img src="./assets/ufade.png" alt="UFADE Logo" width="200"/>
 </div>
 <br>
+
+**Universal Forensic Apple Device Extractor**
+
 This is a python script written for my masters thesis in IT-Security and Forensics at the [Wismar University](https://www.hs-wismar.de/).
 
 It utilizes the awesome projects: [pymobiledevice3](https://github.com/doronz88/pymobiledevice3) and [iOSbackup](https://github.com/avibrazil/iOSbackup) to automate the acquisition of Apple mobile devices. Options can be selected via a dialog. The SSH access is realized via [Paramiko](https://github.com/paramiko/paramiko).
