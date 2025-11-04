@@ -1344,7 +1344,7 @@ class MyApp(ctk.CTk):
             e = str(e)
             if "device is locked" in e or "PasswordProtected" in e:
                 change.set(3)
-            elif "Cannot parse a NULL" in e:
+            elif "Cannot parse a NULL" in str(e):
                 change.set(1)
             else:
                 print(e)
@@ -1420,7 +1420,7 @@ class MyApp(ctk.CTk):
             log(f"Provided correct backup password: {pw}")
             pw_found.set(1)
         except Exception as e:
-            if "Cannot parse a NULL" in e:
+            if "Cannot parse a NULL" in str(e):
                 text.configure(text=f"Backup password: 12345 \nStarting Backup.\nUnlock device with PIN/PW")
                 log(f"Provided correct backup password: {pw}")
                 pw_found.set(1)
