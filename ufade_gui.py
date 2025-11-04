@@ -1420,11 +1420,15 @@ class MyApp(ctk.CTk):
             log(f"Provided correct backup password: {pw}")
             pw_found.set(1)
         except Exception as e:
-            print(e)
-            text.configure(text="Wrong password.\nProvide the correct backup password:\n(UFADE sets this to \"12345\")")
-            log(f"Provided incorrect backup password: {pw} or device error (MDM)")
-            okbutton.configure(state="normal")
-            return()
+            if "Cannot parse a NULL" in e:
+                text.configure(text=f"Backup password: 12345 \nStarting Backup.\nUnlock device with PIN/PW")
+                log(f"Provided correct backup password: {pw}")
+                pw_found.set(1)
+            else:
+                text.configure(text="Wrong password.\nProvide the correct backup password:\n(UFADE sets this to \"12345\")")
+                log(f"Provided incorrect backup password: {pw} or device error (MDM)")
+                okbutton.configure(state="normal")
+                return()
 
 # Filedialog for selecting the password-list for the backup password
     def pw_file_call(self):
