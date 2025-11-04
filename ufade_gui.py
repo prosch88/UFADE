@@ -1425,6 +1425,7 @@ class MyApp(ctk.CTk):
                 log(f"Provided correct backup password: {pw}")
                 pw_found.set(1)
             else:
+                print(e)
                 text.configure(text="Wrong password.\nProvide the correct backup password:\n(UFADE sets this to \"12345\")")
                 log(f"Provided incorrect backup password: {pw} or device error (MDM)")
                 okbutton.configure(state="normal")
