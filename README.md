@@ -1,4 +1,10 @@
 # UFADE
+
+<div align="center">
+<img src="./assets/ufade.png" alt="UFADE Logo" width="200"/>
+</div>
+<br>
+
 **Universal Forensic Apple Device Extractor**
 
 This is a python script written for my masters thesis in IT-Security and Forensics at the [Wismar University](https://www.hs-wismar.de/).
