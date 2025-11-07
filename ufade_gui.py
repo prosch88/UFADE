@@ -3784,22 +3784,34 @@ class MyApp(ctk.CTk):
     def mount_developer(self, change, text):
         global developer
         global lockdown
-        d_images = {4:[2,3], 5:[0,1], 6:[0,1], 7:[0,1], 8:[0,1,2,3,4], 9:[0,1,2,3],
-                    10:[0,1,2,3], 11:[0,1,2,3,4], 12:[0,1,2,3,4], 13:[0,1,1.2,2,3,4,5,6,7],
-                    14:[0,1,2,3,4,5,6,7,7.1,8], 15:[0,1,2,3,3.1,4,5,6,6.1,7],
-                    16:[0,1,2,3,3.1,4,4.1,5,6,7]}
+        if d_class == "Watch":
+            d_images = {2:[0,1,2], 3:[0,1,2], 4:[0,1,2,3], 5:[0,1,2], 6:[0,1,2], 7:[0,1,2,3,4],
+                        8:[0,3,5,7], 9:[0,1,4]}
+        else:
+            d_images = {4:[2,3], 5:[0,1], 6:[0,1], 7:[0,1], 8:[0,1,2,3,4], 9:[0,1,2,3],
+                        10:[0,1,2,3], 11:[0,1,2,3,4], 12:[0,1,2,3,4], 13:[0,1,1.2,2,3,4,5,6,7],
+                        14:[0,1,2,3,4,5,6,7,7.1,8], 15:[0,1,2,3,3.1,4,5,6,6.1,7],
+                        16:[0,1,2,3,3.1,4,4.1,5,6,7]}
         try:
             if DeveloperDiskImageMounter(lockdown).copy_devices() != []:
                 developer = True
                 change.set(1)
                 return("developer")
         except exceptions.MessageNotSupportedError:
-            if int(dversion.split(".")[0]) < 15:
-                pass
-            else:
-                text.configure(text="Something went wrong. Make sure the device is unlocked.")
-                change.set(1)
-                return("nope")
+            if d_class == "Watch":
+                if int(dversion.split(".")[0]) < 8:
+                    pass
+                else:
+                    text.configure(text="Something went wrong. Make sure the device is unlocked.")
+                    change.set(1)
+                    return("nope")
+            else:  
+                if int(dversion.split(".")[0]) < 15:
+                    pass
+                else:
+                    text.configure(text="Something went wrong. Make sure the device is unlocked.")
+                    change.set(1)
+                    return("nope")
         except:
             pass
         try:
@@ -3848,7 +3860,16 @@ class MyApp(ctk.CTk):
                     return
         except:
             pass
-        if int(dversion.split(".")[0]) < 17:
+        ddin = False
+        if d_class == "Watch":
+            if int(dversion.split(".")[0]) < 10:
+                ddin = True
+        else:
+            if int(dversion.split(".")[0]) < 17:
+                ddin = True
+        print(ddin)
+        
+        if ddin == True:
             v = dversion.split(".")
             try: 
                 self.after(100)
@@ -3858,10 +3879,17 @@ class MyApp(ctk.CTk):
                 info = ("Looking for version " + dversion)
                 text.configure(text=info)
                 self.after(1000)
-                if not os.path.isdir(os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", dversion)):
-                    raise Exception("Version not found!") 
+                if d_class == "Watch":
+                    if not os.path.isdir(os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", dversion)):
+                        raise Exception("Version not found!") 
+                else:
+                    if not os.path.isdir(os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", dversion)):
+                        raise Exception("Version not found!") 
                 lockdown = create_using_usbmux()
-                DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", dversion, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", dversion, "DeveloperDiskImage.dmg.signature"))
+                if d_class == "Watch":
+                    DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", dversion, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", dversion, "DeveloperDiskImage.dmg.signature"))
+                else:
+                    DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", dversion, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", dversion, "DeveloperDiskImage.dmg.signature"))
                 developer = True
                 change.set(1)
                 return("developer")   
@@ -3885,7 +3913,10 @@ class MyApp(ctk.CTk):
                     self.after(1000)
                     try:
                         self.after(50)
-                        DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
+                        if d_class == "Watch":
+                            DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg.signature"))
+                        else:
+                            DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
                         info = info + "\nVersion: " + ver + " was used"
                         text.configure(text=info)
                         self.after(1000)
@@ -3900,7 +3931,10 @@ class MyApp(ctk.CTk):
                         for i in range(index)[::-1]:
                             ver = str(v[0]) + "." + str(d_images[int(v[0])][i])
                             try:
-                                DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
+                                if d_class == "Watch":
+                                    DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg.signature"))
+                                else:
+                                    DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
                                 info = info + "\nVersion: " + ver + " was used"
                                 text.configure(text=info)
                                 self.after(1000)
