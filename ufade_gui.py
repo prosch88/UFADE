@@ -4029,8 +4029,14 @@ class MyApp(ctk.CTk):
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
             return
 
-
-        if int(dversion.split(".")[0]) >= 17:
+        new_dev = False
+        if d_class == "Watch":
+            if int(dversion.split(".")[0]) >= 10:
+                new_dev = True
+        else:
+            if int(dversion.split(".")[0]) >= 17:
+                new_dev = True
+        if new_dev == True:
             try:
                 if lockdown.developer_mode_status == True:
                     pass
