@@ -4114,9 +4114,16 @@ class MyApp(ctk.CTk):
 
         if developer == True:
             try:
-                if int(dversion.split(".")[0]) >= 17:
-                    lockdown = get_tunneld_devices()[0]
-                else:
+                new_dev == False
+                if d_class == "Watch":
+                    if int(dversion.split(".")[0]) >= 10:
+                        lockdown = get_tunneld_devices()[0]
+                        new_dev == True
+                else:    
+                    if int(dversion.split(".")[0]) >= 17:
+                        lockdown = get_tunneld_devices()[0]
+                        new_dev == True
+                if new_dev == False:
                     lockdown = create_using_usbmux()
                 dvt = DvtSecureSocketProxyService(lockdown)
                 dvt.__enter__()
@@ -4142,7 +4149,13 @@ class MyApp(ctk.CTk):
             self.start_developer.start()
             self.wait_variable(self.change)
             if developer == True:
-                if int(dversion.split(".")[0]) >= 17:
+                if d_class == "Watch":
+                    if int(dversion.split(".")[0]) >= 10:
+                        new_dev = True
+                else:
+                    if int(dversion.split(".")[0]) >= 17:
+                        new_dev = True
+                if new_dev == True:
                     try:
                         lockdown = get_tunneld_devices()[0]
                     except:
@@ -5908,7 +5921,7 @@ case_number = ""
 case_name = ""
 evidence_number = ""
 examiner = ""
-u_version = "1.0.1"
+u_version = "1.0.2"
 
 
 
