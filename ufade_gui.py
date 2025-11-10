@@ -315,18 +315,30 @@ class MyApp(ctk.CTk):
             widget.destroy()
         self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
         self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
-        self.menu_buttons = [
-            ctk.CTkButton(self.dynamic_frame, text="Reporting and\nAcquisition Options", command=lambda: self.switch_menu("ReportMenu"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Collect Unified Logs", command=lambda: self.switch_menu("CollectUL"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Extract crash reports", command=lambda: self.switch_menu("CrashReport"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Initiate Sysdiagnose", command=lambda: self.switch_menu("SysDiag"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Extract AFC Media files", command=lambda: self.switch_menu("Media"), width=200, height=70, font=self.stfont),
-        ]
-        self.menu_text = ["Extract device informations and content.", 
-                          "Collects the AUL from the device and saves\nthem as a logarchive.", 
-                          "Pull the crash report folder from the device.",
-                          "Create a Sysdiagnose archive on the device and\npull it to the disk afterwards.", 
-                          "Pull the \"Media\"-folder from the device\n(pictures, videos, recordings)"]
+        if d_class == "Watch":
+            self.menu_buttons = [
+                ctk.CTkButton(self.dynamic_frame, text="Reporting and\nAcquisition Options", command=lambda: self.switch_menu("ReportMenu"), width=200, height=70, font=self.stfont),
+                ctk.CTkButton(self.dynamic_frame, text="Logging Options", command=lambda: self.switch_menu("LogMenu"), width=200, height=70, font=self.stfont),
+                ctk.CTkButton(self.dynamic_frame, text="Developer Options", command=lambda: self.switch_menu("CheckDev"), width=200, height=70, font=self.stfont),
+                ctk.CTkButton(self.dynamic_frame, text="Extract AFC Media files", command=lambda: self.switch_menu("Media"), width=200, height=70, font=self.stfont),
+            ]
+            self.menu_text = ["Extract device informations and content.", 
+                            "Collect the AUL, Crash Logs, Sysdiagnose\nand Live Syslogs",
+                            "Access developer mode for further options.\nMainly screenshotting options.", 
+                            "Pull the \"Media\"-folder from the device\n(pictures, videos, recordings)"]
+        else:
+            self.menu_buttons = [
+                ctk.CTkButton(self.dynamic_frame, text="Reporting and\nAcquisition Options", command=lambda: self.switch_menu("ReportMenu"), width=200, height=70, font=self.stfont),
+                ctk.CTkButton(self.dynamic_frame, text="Collect Unified Logs", command=lambda: self.switch_menu("CollectUL"), width=200, height=70, font=self.stfont),
+                ctk.CTkButton(self.dynamic_frame, text="Extract crash reports", command=lambda: self.switch_menu("CrashReport"), width=200, height=70, font=self.stfont),
+                ctk.CTkButton(self.dynamic_frame, text="Initiate Sysdiagnose", command=lambda: self.switch_menu("SysDiag"), width=200, height=70, font=self.stfont),
+                ctk.CTkButton(self.dynamic_frame, text="Extract AFC Media files", command=lambda: self.switch_menu("Media"), width=200, height=70, font=self.stfont),
+            ]
+            self.menu_text = ["Extract device informations and content.", 
+                            "Collects the AUL from the device and saves\nthem as a logarchive.", 
+                            "Pull the crash report folder from the device.",
+                            "Create a Sysdiagnose archive on the device and\npull it to the disk afterwards.", 
+                            "Pull the \"Media\"-folder from the device\n(pictures, videos, recordings)"]
         if d_class == "AudioAccessory":
             self.menu_buttons.pop(3)
             self.menu_text.pop(3)
@@ -559,7 +571,10 @@ class MyApp(ctk.CTk):
             r+=1
             i+=1
 
-        ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_main_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
+        if d_class == "Watch":
+            ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_watch_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
+        else:
+            ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_main_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
 
 
 # Developer Options Menu
@@ -589,7 +604,10 @@ class MyApp(ctk.CTk):
             r+=1
             i+=1
 
-        ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_main_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
+        if d_class == "Watch":
+            ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_watch_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
+        else:
+            ctk.CTkButton(self.dynamic_frame, text="Back", command=self.show_main_menu).grid(row=r, column=1, padx=10, pady=10, sticky="e" )
 
 # Advanced Options Menu
     def show_adv_menu(self):
@@ -4301,10 +4319,16 @@ class MyApp(ctk.CTk):
 
     def shot(self, dvt, imglabel, namefield):
         hsize = 426
-        try:
-            png = Screenshot(dvt).get_screenshot()
-        except: 
-            png = ScreenshotService(lockdown).take_screenshot()
+        if d_class == "Watch":
+            try:
+                png = ScreenshotService(lockdown).take_screenshot()
+            except:
+                png = Screenshot(dvt).get_screenshot()
+        else:
+            try:
+                png = Screenshot(dvt).get_screenshot()
+            except: 
+                png = ScreenshotService(lockdown).take_screenshot()
         png_bytes = BytesIO()
         png_bytes.write(png)
         shot = Image.open(png_bytes)
@@ -4393,7 +4417,16 @@ class MyApp(ctk.CTk):
             try: os.mkdir(os.path.join("screenshots", app_name, chat_name))
             except: pass
             seen_hashes = []
-            png = Screenshot(dvt).get_screenshot()
+            if d_class == "Watch":
+                try:
+                    png = ScreenshotService(lockdown).take_screenshot()
+                except:
+                    png = Screenshot(dvt).get_screenshot()
+            else:
+                try:
+                    png = Screenshot(dvt).get_screenshot()
+                except: 
+                    png = ScreenshotService(lockdown).take_screenshot()
             png_bytes = BytesIO()
             png_bytes.write(png)
             shot = Image.open(png_bytes)
@@ -4432,7 +4465,16 @@ class MyApp(ctk.CTk):
                     AccessibilityAudit(lockdown).move_focus(ch_direction)
                     AccessibilityAudit(lockdown).set_show_visuals(False)
                     time.sleep(0.3)
-                    png = Screenshot(dvt).get_screenshot()
+                    if d_class == "Watch":
+                        try:
+                            png = ScreenshotService(lockdown).take_screenshot()
+                        except:
+                            png = Screenshot(dvt).get_screenshot()
+                    else:
+                        try:
+                            png = Screenshot(dvt).get_screenshot()
+                        except: 
+                            png = ScreenshotService(lockdown).take_screenshot()
                     png_bytes = BytesIO()
                     png_bytes.write(png)
                     shot = Image.open(png_bytes)
