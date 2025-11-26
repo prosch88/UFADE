@@ -3046,8 +3046,11 @@ class MyApp(ctk.CTk):
                     pass
         
         if sys_diag == True:
-            if diagdict["seid"] != None:
-                 me_dev_info['SEID'] = diagdict["seid"]
+            try:
+                if diagdict["seid"] != None:
+                    me_dev_info['SEID'] = diagdict["seid"]
+            except:
+                pass
 
         #i = 0
         for key, value in me_dev_info.items():
