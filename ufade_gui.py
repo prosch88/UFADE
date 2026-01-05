@@ -1217,8 +1217,11 @@ class MyApp(ctk.CTk):
         self.show_notpaired()
 
 # Play a notification sound
-    def notification(self):      
-        sa.WaveObject.from_wave_file(os.path.join(os.path.dirname(__file__), "assets", "notification.wav")).play()
+    def notification(self):
+        try:      
+            sa.WaveObject.from_wave_file(os.path.join(os.path.dirname(__file__), "assets", "notification.wav")).play()
+        except Exception as e:
+            log(f"Error playing notification: {e}")
 
 # Unified logs collection function
     def collect_ul(self, time, text, waitul, mode="default"):
