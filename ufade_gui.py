@@ -1682,8 +1682,9 @@ class MyApp(ctk.CTk):
             "SysSharedContainerDomain": "/var/containers/Shared/SystemGroup"
         }
         #all_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
+        global all_apps
         if "all_apps" in globals():
-            all_apps = all_apps
+            pass
         else:
             all_apps = []
         log("Starting Backup decryption")
@@ -1751,7 +1752,7 @@ class MyApp(ctk.CTk):
                 try: os.remove(file_path)                                                                                       #remove the file after adding
                 except: pass
             except Exception as e:
-                print(e)
+                #print(e)
                 log(f"Error while decrypting file:{file.encode('cp1252', errors='ignore').decode('cp1252')}")
         change.set(1) 
 
