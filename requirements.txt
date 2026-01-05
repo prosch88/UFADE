@@ -10,5 +10,5 @@ customtkinter
 tkcalendar
 crossfiledialog
 exifread<3
-pdfme
+pdfme==0.4.12
 imagehash
