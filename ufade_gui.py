@@ -1682,7 +1682,12 @@ class MyApp(ctk.CTk):
             "SysSharedContainerDomain": "/var/containers/Shared/SystemGroup"
         }
         #all_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
+        if "all_apps" in globals():
+            all_apps = all_apps
+        else:
+            all_apps = []
         log("Starting Backup decryption")
+        MIN_TS = time.mktime((1980, 1, 1, 0, 0, 0, 0, 1, -1))
         for file in line_list:
             fileout = file
             if platform.uname().system == 'Windows':
@@ -1699,6 +1704,9 @@ class MyApp(ctk.CTk):
             try:
                 b.getFileDecryptedCopy(relativePath=file, targetName=fileout, targetFolder=os.path.join(".tar_tmp", "itunes_bu"))               #actually decrypt the backup-files
                 file_path = os.path.join('.tar_tmp', 'itunes_bu', fileout)
+                stat = os.stat(file_path)
+                if stat.st_mtime < MIN_TS:
+                    os.utime(file_path, (stat.st_atime, MIN_TS))
                 if l_type == "PRFS":
                     if "AppDomain-" in filedomain:
                         appfile = filedomain.split("-", 1)[1]
@@ -1708,7 +1716,7 @@ class MyApp(ctk.CTk):
                             tarpath = f"/private{unback_path['AppDomain']}/{appfile}"
                     elif "AppDomainGroup-" in filedomain:
                         appfile = filedomain.split("-")[1]
-                        tarpath = ""
+                        tarpath = tarpath = f"/private{unback_path['AppDomainGroup']}/{appfile}"
                         for app in all_apps:
                             try:
                                 if all_apps[app]['GroupContainers'].get(appfile) is not None:
@@ -1742,7 +1750,8 @@ class MyApp(ctk.CTk):
                         backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
                 try: os.remove(file_path)                                                                                       #remove the file after adding
                 except: pass
-            except:
+            except Exception as e:
+                print(e)
                 log(f"Error while decrypting file:{file.encode('cp1252', errors='ignore').decode('cp1252')}")
         change.set(1) 
 
