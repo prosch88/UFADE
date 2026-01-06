@@ -3674,6 +3674,30 @@ class MyApp(ctk.CTk):
             ]
         }
         else:
+
+            apps_content = []
+            if len(apps) > 0:
+                for i, d_app in enumerate(app_id_list):
+                    row_bg = u_grey if (i % 2) != 0 else "white"
+                    mini_table = {
+                        "keepTogether": True, 
+                        "widths": [2.1, 3.7, 1.7, 0.7],
+                        "style": {
+                            "s": 9,
+                            "border_color": "lightgrey", 
+                            "margin_bottom": 0 
+                        },
+                        "table": [
+                            [
+                                {"style": {"cell_fill": row_bg}, ".": apps.get(d_app)['CFBundleDisplayName'].encode('latin-1', errors='ignore').decode('latin-1')[:22]},
+                                {"style": {"cell_fill": row_bg}, ".": d_app},
+                                {"style": {"cell_fill": row_bg}, ".": apps.get(d_app)['CFBundleVersion']},
+                                {"style": {"cell_fill": row_bg}, ".": "visible" if d_app in springboard_rep else "absent"}
+                            ]
+                        ]
+                    }
+                    apps_content.append(mini_table)
+
             document = {
                 "style": {"margin_bottom": 15, "text_align": "j", "page_size": "a4", "margin": [52, 70]},
                 "formats": {
@@ -3785,15 +3809,7 @@ class MyApp(ctk.CTk):
                                 ]
                             },
 
-                            *[
-                                {
-                                "widths": [2.1, 3.7, 1.7, 0.7],
-                                "style": {"s": 9, "border_color": "lightgrey"},
-                                "table": [
-                                    [{"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"}, ".": [{".": apps.get(d_app)['CFBundleDisplayName'].encode('latin-1', errors='ignore').decode('latin-1')[:22]}]}, 
-                                    {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": d_app}, {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": apps.get(d_app)['CFBundleVersion']}, 
-                                    {"style": {"cell_fill": u_grey if (app_id_list.index(d_app) % 2) != 0 else "white"},".": "visible" if d_app in springboard_rep else "absent"}] for d_app in app_id_list]
-                                } if len(apps) > 0 else " "],              
+                            *apps_content,              
 
                             {".": "", "style": "title", "label": "title0", "outline": {}},
                         ] 
