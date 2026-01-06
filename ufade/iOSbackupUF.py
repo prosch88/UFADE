@@ -79,6 +79,25 @@ def getFileDecryptedCopy(self, relativePath=None, manifestEntry=None,
                     outFile.write(decryptor.decrypt(chunk))
                     chunkIndex+=1
 
+                written_size = outFile.tell()
+                do_truncate = True
+
+                if written_size > info['size']:
+                    with open(targetFileName, "rb") as f:
+                        header = f.read(32)
+
+                    if header.startswith(b"SQLite format 3"):
+                        do_truncate = False
+
+                    elif header[:4] in (b"\x82\x15\x02\x13", b"\x37\x7f\x06\x82"):
+                        do_truncate = False
+
+                    elif b"leveldb" in header.lower():
+                        do_truncate = False
+
+                if do_truncate:
+                    outFile.truncate(info['size'])
+
     elif info['isFolder']:
         Path(targetFileName).mkdir(parents=True, exist_ok=True)
     else:
