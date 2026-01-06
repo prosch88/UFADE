@@ -1251,6 +1251,7 @@ class MyApp(ctk.CTk):
 # Include Unified Logs in PRFS-Zip-archive 
     def zip_ul(self, zip, text, waitul):
         source_folder = f"{udid}.logarchive"
+        MIN_TS = time.mktime((1980, 1, 1, 0, 0, 0, 0, 1, -1))
         hex_pattern = re.compile(r'^[0-9A-Fa-f]{2}$')
         try:
             with open(os.path.join(source_folder, "Info.plist"), mode='rb') as infofile:
@@ -1270,38 +1271,45 @@ class MyApp(ctk.CTk):
                     if item == "Extra":
                         for root, dirs, files in os.walk(item_path):
                             rel_root = os.path.relpath(root, item_path)
-                            archive_root = os.path.join("private/var/db/diagnostics", rel_root) if rel_root != "." else "private/var/db/diagnostics"
+                            archive_root = posixpath.join("private/var/db/diagnostics", rel_root) if rel_root != "." else "private/var/db/diagnostics"
                             if not files and not dirs:
                                 zipinfo = zipfile.ZipInfo(archive_root + '/')
-                                zip.writestr(zinfo, '')
+                                zip.writestr(zipinfo, '')
                             for file in files:
                                 if "._" not in file:
                                     file_path = os.path.join(root, file)
-                                    archive_name = os.path.join(archive_root, file)
+                                    stat = os.stat(file_path)
+                                    if stat.st_mtime < MIN_TS:
+                                        os.utime(file_path, (stat.st_atime, MIN_TS))
+                                    archive_name = posixpath.join(archive_root, file)
                                     zip.write(file_path, archive_name)
                                 else:
                                     pass
                         continue 
 
                     if item == "dsc" or hex_pattern.fullmatch(item):
-                        target_path = os.path.join("private/var/db/uuidtext", item)
+                        target_path = posixpath.join("private/var/db/uuidtext", item)
                     else:
-                        target_path = os.path.join("private/var/db/diagnostics", item)
+                        target_path = posixpath.join("private/var/db/diagnostics", item)
 
                     for root, dirs, files in os.walk(item_path):
                         rel_root = os.path.relpath(root, item_path)
-                        archive_root = os.path.join(target_path, rel_root) if rel_root != "." else target_path
+                        archive_root = posixpath.join(target_path, rel_root) if rel_root != "." else target_path
                         if not files and not dirs:
                             zipinfo = zipfile.ZipInfo(archive_root + '/')
                             zip.writestr(zipinfo, '')
                         for file in files:
                             if "._" not in file:
                                 file_path = os.path.join(root, file)
-                                archive_name = os.path.join(archive_root, file)
+                                stat = os.stat(file_path)
+                                if stat.st_mtime < MIN_TS:
+                                    os.utime(file_path, (stat.st_atime, MIN_TS))
+                                archive_name = posixpath.join(archive_root, file)
                                 zip.write(file_path, archive_name)
                             else:
                                 pass
-        except:
+        except Exception as e:
+            print(e)
             pass
         waitul.set(1)
        
