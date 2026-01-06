@@ -54,6 +54,7 @@ from subprocess import Popen, PIPE, check_call, run
 from pymobiledevice3 import exceptions
 from importlib.metadata import version
 from iOSbackup import iOSbackup
+from ufade import iOSbackupUF
 from pyiosbackup import Backup
 from io import BytesIO
 import simpleaudio as sa
@@ -81,6 +82,8 @@ import exifread
 import uuid
 import ast
 import io
+
+iOSbackup.getFileDecryptedCopy = iOSbackupUF.getFileDecryptedCopy
 
 
 ctk.set_appearance_mode("dark")  # Dark Mode
@@ -1681,6 +1684,7 @@ class MyApp(ctk.CTk):
             "SysContainerDomain": "/var/containers/Data/System",
             "SysSharedContainerDomain": "/var/containers/Shared/SystemGroup"
         }
+
         #all_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
         global all_apps
         if "all_apps" in globals():
@@ -1752,8 +1756,7 @@ class MyApp(ctk.CTk):
                 try: os.remove(file_path)                                                                                       #remove the file after adding
                 except: pass
             except Exception as e:
-                #print(e)
-                log(f"Error while decrypting file:{file.encode('cp1252', errors='ignore').decode('cp1252')}")
+                log(f"Error while decrypting file:{file.encode('cp1252', errors='ignore').decode('cp1252')} - {e}")
         change.set(1) 
 
 # Fallback decryption function for older devices
