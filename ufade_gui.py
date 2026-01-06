@@ -5621,7 +5621,12 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                 except: pass
                 if os.path.isdir(dst):
                     dst = os.path.join(dst, os.path.basename(relative_src))
-                try:    
+                try:
+                    fileout = dst
+                    if platform.uname().system == 'Windows':
+                        dst = re.sub(r"[?%*:|\"<>\x7F\x00-\x1F]", "-", dst)
+                        if dst != fileout:
+                            log(f"Renamed {fileout} to {dst}")    
                     with open(dst, 'wb') as f:
                         f.write(filecontent)
                     try:
