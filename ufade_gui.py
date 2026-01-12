@@ -61,6 +61,7 @@ import simpleaudio as sa
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from pdfme import build_pdf
+import base64
 import mimetypes
 import hashlib
 import imagehash
@@ -2183,57 +2184,98 @@ class MyApp(ctk.CTk):
                 self.crash_start = threading.Thread(target=lambda: crash_report(crash_dir=".tar_tmp/Crash", change=self.change, progress=self.progress, prog_text=self.prog_text, l_type=l_type, tar=tar, zip=zip, tarpath=tarpath))
                 self.crash_start.start()
                 self.wait_variable(self.change)
-                self.progress.pack_forget()
-                self.prog_text.pack_forget()
+                if l_type != "PRFS":
+                    self.progress.pack_forget()
+                    self.prog_text.pack_forget()
                 self.after(100)
                 shutil.rmtree(".tar_tmp/Crash")
 
         #Add Bundle Files for PRFS
             if l_type == "PRFS":
+
+                def bytes_to_base64(obj):
+                    if isinstance(obj, bytes):
+                        return base64.b64encode(obj).decode("ascii")
+                    raise TypeError
+
                 try:
-                    appfile = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier', 'iTunesMetadata', 'ApplicationDSID', 'ApplicationSINF', 'ApplicationType', 'CFBundleDisplayName', 'CFBundleExecutable', 'CFBundleName', 'CFBundlePackageType', 'CFBundleShortVersionString', 'CFBundleVersion', 'Container', 'GroupContainers', 'MinimumOSVersion', 'Path', 'UIDeviceFamily', 'DynamicDiskUsage', 'StaticDiskUsage', 'UIFileSharingEnabled'])
-                    for app in appfile:
-                        try:
-                            if "Bundle" in app['Path']:
-                                bpath = app['Path']
-                                bundlepath = f'{bpath.strip("/")}/'
-                                zip.writestr(zipfile.ZipInfo(bundlepath), '')
-                                try:
-                                    pkginfo = app['CFBundlePackageType']
-                                    pkginfo = f"{pkginfo:{'?'}<8}"
-                                    pkgfile = os.path.join(".tar_tmp", "PkgInfo")
-                                    pkgpath = os.path.join(bundlepath, "PkgInfo")
-                                    with open(pkgfile, "w") as file:
-                                        file.write(pkginfo)
-                                    zip.write(pkgfile, pkgpath)
-                                    os.remove(pkgfile)
-                                except:
-                                    pass                    
-                                try:
-                                    itunesplist = app['iTunesMetadata']
-                                    itunes_path = "/".join(list(bpath.split('/')[0:-1])) 
-                                    metafile = os.path.join(".tar_tmp", "iTunesMetadata.plist")
-                                    with open(metafile, "wb") as file:
-                                        file.write(itunesplist)
-                                    zip.write(metafile, f"{itunes_path}/iTunesMetadata.plist")
-                                    os.remove(metafile)
-                                except:
-                                    pass
-                                try:
-                                    appsinf = app['ApplicationSINF']
-                                    appsinfname = f"{app['CFBundleExecutable']}.sinf"
-                                    appsinfpath = os.path.join(bundlepath, "SC_Info", appsinfname)
-                                    sinffile = os.path.join(".tar_tmp", appsinfname)
-                                    with open(sinffile, "wb") as file:
-                                        file.write(appsinf)
-                                    zip.write(sinffile, appsinfpath)
-                                    os.remove(sinffile)
-                                except:
-                                    pass
-                        except:
-                            pass
+                    self.progress.pack_forget()
+                    self.prog_text.pack_forget()
                 except:
                     pass
+                self.prog_text = ctk.CTkLabel(self.dynamic_frame, text=" ", width=585, height=20, font=self.stfont, anchor="w", justify="left")
+                self.prog_text.pack()
+                self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
+                self.progress.pack()
+                self.progress.start()
+
+                self.text.configure(text="Performing Extraction of additional Files via Live-Commands")
+                self.text.update()
+                self.change.set(0)
+
+                def additional_prfs():
+                    appinfo = installation_proxy.InstallationProxyService(lockdown).get_apps(application_type="Any", calculate_sizes=True)
+
+                    try:
+                        json_bytes = json.dumps(appinfo, default=bytes_to_base64)
+                        zip.writestr("_ufade_extra/app_info.json", json_bytes)
+                    except Exception as e:
+                        print(e)
+                    try:
+                        appfile = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier', 'iTunesMetadata', 'ApplicationDSID', 'ApplicationSINF', 'ApplicationType', 'CFBundleDisplayName', 'CFBundleExecutable', 'CFBundleName', 'CFBundlePackageType', 'CFBundleShortVersionString', 'CFBundleVersion', 'Container', 'GroupContainers', 'MinimumOSVersion', 'Path', 'UIDeviceFamily', 'DynamicDiskUsage', 'StaticDiskUsage', 'UIFileSharingEnabled'])
+                        for app in appfile:
+                            try:
+                                if "Bundle" in app['Path']:
+                                    bpath = app['Path']
+                                    bundlepath = f'{bpath.strip("/")}/'
+                                    zip.writestr(zipfile.ZipInfo(bundlepath), '')
+                                    try:
+                                        pkginfo = app['CFBundlePackageType']
+                                        pkginfo = f"{pkginfo:{'?'}<8}"
+                                        pkgfile = os.path.join(".tar_tmp", "PkgInfo")
+                                        pkgpath = os.path.join(bundlepath, "PkgInfo")
+                                        with open(pkgfile, "w") as file:
+                                            file.write(pkginfo)
+                                        zip.write(pkgfile, pkgpath)
+                                        os.remove(pkgfile)
+                                    except:
+                                        pass                    
+                                    try:
+                                        itunesplist = app['iTunesMetadata']
+                                        itunes_path = "/".join(list(bpath.split('/')[0:-1])) 
+                                        metafile = os.path.join(".tar_tmp", "iTunesMetadata.plist")
+                                        with open(metafile, "wb") as file:
+                                            file.write(itunesplist)
+                                        zip.write(metafile, f"{itunes_path}/iTunesMetadata.plist")
+                                        os.remove(metafile)
+                                    except:
+                                        pass
+                                    try:
+                                        appsinf = app['ApplicationSINF']
+                                        appsinfname = f"{app['CFBundleExecutable']}.sinf"
+                                        appsinfpath = os.path.join(bundlepath, "SC_Info", appsinfname)
+                                        sinffile = os.path.join(".tar_tmp", appsinfname)
+                                        with open(sinffile, "wb") as file:
+                                            file.write(appsinf)
+                                        zip.write(sinffile, appsinfpath)
+                                        os.remove(sinffile)
+                                    except:
+                                        pass
+                                try:
+                                    iconname = f"{app['CFBundleIdentifier']}.png"
+                                    png_data = SpringBoardServicesService(lockdown).get_icon_pngdata(app['CFBundleIdentifier'])
+                                    zip.writestr(f"_ufade_extra/icons/{iconname}", png_data)
+                                except Exception as e:
+                                    print(e)
+                            except:
+                                pass
+                    except:
+                        pass
+                    self.change.set(1)
+                prfs_additional = threading.Thread(target=additional_prfs)
+                prfs_additional.start()
+                self.wait_variable(self.change)
+
 
         #Gather device information as device_values.plist for UFD-ZIP
         else:
