@@ -1660,7 +1660,7 @@ class MyApp(ctk.CTk):
         try:
             b = iOSbackup(udid=udid, cleartextpassword=bu_pass, derivedkey=None, backuproot=backuproot)                           #Load Backup with Password
             key = b.getDecryptionKey()                                                                                      #Get decryption Key
-            b = iOSbackup(udid=udid, derivedkey=key, backuproot="./")                                                       #Load Backup again with Key
+            b = iOSbackup(udid=udid, derivedkey=key, backuproot=backuproot)                                                       #Load Backup again with Key
             backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])
             change.set(1)
         except:
