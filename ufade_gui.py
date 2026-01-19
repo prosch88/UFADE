@@ -2084,21 +2084,17 @@ class MyApp(ctk.CTk):
                 self.prfs_ul.start() 
                 self.wait_variable(self.change)
                 if self.change.get() == 2:
-                    self.progress.pack_forget()
-                    self.text.configure(text="Error while collecting Unified Logs!\nPlease try again.")
-                    self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
-                    zip.close()
+                    log("Error while collecting Unified Logs.")
                     self.change.set(0)
-                    return() 
-                self.change.set(0)
-                if l_type == "PRFS":
-                    self.after(100, lambda: self.text.configure(text="Include Unified Logs in the archive."))
-                    self.ul_zip = threading.Thread(target=lambda: self.zip_ul(zip=zip, text=self.text, waitul=self.change)) 
-                    self.ul_zip.start()
-                    self.wait_variable(self.change)
-                    if keep_ul == "off":
-                        try: shutil.rmtree(f"{udid}.logarchive") 
-                        except: pass
+                else:
+                    if l_type == "PRFS":
+                        self.after(100, lambda: self.text.configure(text="Include Unified Logs in the archive."))
+                        self.ul_zip = threading.Thread(target=lambda: self.zip_ul(zip=zip, text=self.text, waitul=self.change)) 
+                        self.ul_zip.start()
+                        self.wait_variable(self.change)
+                        if keep_ul == "off":
+                            try: shutil.rmtree(f"{udid}.logarchive") 
+                            except: pass
             except:
                 pass                                                                                            
 
@@ -2220,7 +2216,8 @@ class MyApp(ctk.CTk):
                         json_bytes = json.dumps(appinfo, default=bytes_to_base64)
                         zip.writestr("_ufade_extra/app_info.json", json_bytes)
                     except Exception as e:
-                        print(e)
+                        pass
+                        #print(e)
                     try:
                         appfile = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier', 'iTunesMetadata', 'ApplicationDSID', 'ApplicationSINF', 'ApplicationType', 'CFBundleDisplayName', 'CFBundleExecutable', 'CFBundleName', 'CFBundlePackageType', 'CFBundleShortVersionString', 'CFBundleVersion', 'Container', 'GroupContainers', 'MinimumOSVersion', 'Path', 'UIDeviceFamily', 'DynamicDiskUsage', 'StaticDiskUsage', 'UIFileSharingEnabled'])
                         for app in appfile:
@@ -2266,7 +2263,9 @@ class MyApp(ctk.CTk):
                                     png_data = SpringBoardServicesService(lockdown).get_icon_pngdata(app['CFBundleIdentifier'])
                                     zip.writestr(f"_ufade_extra/icons/{iconname}", png_data)
                                 except Exception as e:
-                                    print(e)
+                                    pass
+                                    log(f"Error with app {app['CFBundleIdentifier']}: {e}")
+                                    #print(e)
                             except:
                                 pass
                     except:
