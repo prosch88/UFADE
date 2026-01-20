@@ -652,10 +652,12 @@ class MyApp(ctk.CTk):
         self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
         self.skip.grid(row=0, column=0, columnspan=2, sticky="w")
         self.menu_buttons = [
-            ctk.CTkButton(self.dynamic_frame, text="Decrypt and Unback\nBackup", command=self.show_unback, width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Decrypt Backup", command=lambda: self.show_unback("decrypt"), width=200, height=70, font=self.stfont),
+            ctk.CTkButton(self.dynamic_frame, text="Decrypt and Unback\nBackup", command=lambda: self.show_unback("unback"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Switch to\nLive Operations", fg_color="#2d2d35", command=self.show_nodevice, width=200, height=70, font=self.stfont)
         ]
-        self.menu_text = ["Decrypt an iTunes Backup and try to restore\nthe original Filesystem Structure. ", 
+        self.menu_text = ["Decrypt an iTunes Backup and keep the\nBackup Structure. ",
+                          "Decrypt an iTunes Backup and try to restore\nthe original Filesystem Structure. ", 
                           "Restart UFADE to work with a Device."
                           ]
         self.menu_textbox = []
@@ -1766,6 +1768,43 @@ class MyApp(ctk.CTk):
                 except: pass
             except Exception as e:
                 log(f"Error while decrypting file:{file.encode('cp1252', errors='ignore').decode('cp1252')} - {e}")
+        change.set(1) 
+
+# Decrypt, don't unback
+    def only_decrypt_itunes(self, b, backupfiles, progress, prog_text, line_list, line_cnt, d_nr, change, src, folder=None):
+        os.makedirs(folder, exist_ok=True)
+        log("Starting Backup decryption")
+        for file in line_list:
+            fileout = file
+            d_nr += 1
+            dpro = int(100*(d_nr/line_cnt))
+            progress.set(dpro/100)
+            prog_text.configure(text=f"{int(dpro)}%")
+            progress.update()
+            prog_text.update()
+            sha_name = backupfiles.loc[backupfiles['relativePath'] == file, 'backupFile'].iloc[0]
+            target_dir = os.path.join(folder, sha_name[:2])
+            os.makedirs(target_dir, exist_ok=True)
+            try:
+                b.getFileDecryptedCopy(relativePath=file, targetName=sha_name, targetFolder=target_dir)
+            except Exception as e:
+                log(f"Error while decrypting file:{file.encode('cp1252', errors='ignore').decode('cp1252')} - {e}")
+            
+        for name in os.listdir(src):
+            try:
+                src_path = os.path.join(src, name)
+                if os.path.isfile(src_path):
+                    if not "Manifest.db" in src_path:
+                        shutil.copy2(src_path, os.path.join(folder, name))
+            except:
+                pass
+        try:
+            shutil.copy2(b.manifestDB, os.path.join(folder, "Manifest.db"))
+        except:
+            pass
+        for dirpath, dirnames, filenames in os.walk(folder, topdown=False):
+            if not dirnames and not filenames:
+                os.rmdir(dirpath)
         change.set(1) 
 
 # Fallback decryption function for older devices
@@ -4712,7 +4751,7 @@ class MyApp(ctk.CTk):
         log(f"Error: {value}")
 
     #Unback given Backup
-    def show_unback(self):
+    def show_unback(self, mode):
         for widget in self.dynamic_frame.winfo_children():
             widget.destroy()
         valid_bu = False
@@ -4733,7 +4772,10 @@ class MyApp(ctk.CTk):
         self.passwordbox.bind(sequence="<Return>", command=lambda x: self.perf_unback(self.bu_folder))
         self.passwordbox.pack(anchor="w", padx= 80, pady = 5)
         self.passwordbox.configure(state="disabled")
-        self.okbutton = ctk.CTkButton(self.dynamic_frame, text="Unback", font=self.stfont, command=lambda: self.perf_unback(self.bu_folder))
+        if mode == "unback":
+            self.okbutton = ctk.CTkButton(self.dynamic_frame, text="Unback", font=self.stfont, command=lambda: self.perf_unback(self.bu_folder))
+        else:   
+            self.okbutton = ctk.CTkButton(self.dynamic_frame, text="Decrypt", font=self.stfont, command=lambda: self.perf_unback(self.bu_folder, dec_type="decrypt"))
         self.okbutton.pack(anchor="w", padx= 80, pady = 15)
         self.okbutton.configure(state="disabled")
 
@@ -4829,7 +4871,7 @@ class MyApp(ctk.CTk):
             self.passwordbox.configure(state="disabled")
             self.okbutton.configure(state="disabled")
     
-    def perf_unback(self, bu_folder):
+    def perf_unback(self, bu_folder, dec_type="unback"):
         self.text.configure(text="Checking Backup. This might take a while.", height=60)
         self.backup_text.pack_forget()
         self.okbutton.pack_forget()
@@ -4859,16 +4901,24 @@ class MyApp(ctk.CTk):
                     line_cnt += 1
                     line_list.append(line)
             d_nr = 0
-            self.change.set(0)                                                                     
-            zipname = f'{self.bu_udid}_unback_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     
-            zip = zipfile.ZipFile(f'{zipname}.zip', "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1)
-            decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type="PRFS", zip=zip))
-            decrypt.start()
+            self.change.set(0)
+            if dec_type == "unback":                                                                    
+                zipname = f'{self.bu_udid}_unback_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     
+                zip = zipfile.ZipFile(f'{zipname}.zip', "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1)
+                decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type="PRFS", zip=zip))
+                decrypt.start()
+            else:
+                outfolder = f'{self.bu_udid}_decrypted_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+                decrypt = threading.Thread(target=lambda: self.only_decrypt_itunes(b, backupfiles, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, src=bu_folder, folder=outfolder))
+                decrypt.start()
             self.wait_variable(self.change)
-            self.after(10, lambda: self.text.configure(text=f"The iTunes backup has been decrypted successfully.\nOutput: {zipname}.zip"))
-            zip.close()
-            try: shutil.rmtree(".tar_tmp")
-            except: pass  
+            if dec_type == "unback":
+                self.after(10, lambda: self.text.configure(text=f"The iTunes backup has been decrypted successfully.\nOutput: {zipname}.zip"))
+                zip.close()
+                try: shutil.rmtree(".tar_tmp")
+                except: pass  
+            else:
+                self.after(10, lambda: self.text.configure(text=f"The iTunes backup has been decrypted successfully.\nOutput: {outfolder}"))
             self.after(50)
             self.text.update()
             self.progress.pack_forget()
