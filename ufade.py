@@ -4408,7 +4408,7 @@ class MyApp(ctk.CTk):
                     Popen(["osascript", "-e", f'do shell script \"{sys.executable} tunnel\" with administrator privileges'])
                 except:
                     raise exceptions.AccessDeniedError()
-                self.after(100,change.set(1))
+                self.after(100, lambda: change.set(1))
             else:   
                 script = os.path.abspath(sys.argv[0])
                 python = sys.executable
@@ -4417,7 +4417,7 @@ class MyApp(ctk.CTk):
                     "-e",
                     f'do shell script "{python} {script} tunnel" with administrator privileges'
                 ])
-                self.after(100,change.set(1))
+                self.after(100, lambda: change.set(1))
         except exceptions.AccessDeniedError:
             self.text.configure(text="Couldn't create a tunnel. Try again.\nYou have to run UFADE as administrator for this.")
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
