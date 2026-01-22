@@ -5771,6 +5771,7 @@ def sysdiag(tarpath):
         if "otctl_status.txt" in member.name:
             serials = []
             otctl_file = tar.extractfile(member)
+            print(otctl_file)
             try:
                 otctl_content = json.load(otctl_file)
                 try:
