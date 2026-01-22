@@ -5793,80 +5793,95 @@ def sysdiag(tarpath):
         
         if "com.apple.wifi.known-networks.plist" in member.name:
             known_wifi = tar.extractfile(member.name)
-            k_wifi_cont = plistlib.load(known_wifi)
-            for elem in k_wifi_cont:
-                sfile = "com.apple.wifi.known-networks.plist"
-                known = k_wifi_cont.get(elem)
-                ssid = known.get("SSID").decode('UTF-8', errors='ignore')
-                try: end_time = datetime.strptime(str(known.get("UpdatedAt")).strip(), wifi_date_format).strftime(output_format)
-                except: end_time = ""
-                try: time_stamp = datetime.strptime(str(known.get("AddedAt")).strip(), wifi_date_format).strftime(output_format)
-                except: time_stamp = ""
-                try: last_connect = datetime.strptime(str(known.get("JoinedBySystemAt")).strip(), wifi_date_format).strftime(output_format)
-                except: last_connect = ""
-                secure = known.get("SupportedSecurityTypes")
-                os_spec = known.get("__OSSpecific__")
-                bssid = os_spec.get("BSSID")
-                k_wifi_list.append([last_connect, time_stamp, end_time, bssid, ssid, secure, sfile])
-            diagdict["known_wifi"] = k_wifi_list
+            try:
+                k_wifi_cont = plistlib.load(known_wifi)
+                for elem in k_wifi_cont:
+                    sfile = "com.apple.wifi.known-networks.plist"
+                    known = k_wifi_cont.get(elem)
+                    ssid = known.get("SSID").decode('UTF-8', errors='ignore')
+                    try: end_time = datetime.strptime(str(known.get("UpdatedAt")).strip(), wifi_date_format).strftime(output_format)
+                    except: end_time = ""
+                    try: time_stamp = datetime.strptime(str(known.get("AddedAt")).strip(), wifi_date_format).strftime(output_format)
+                    except: time_stamp = ""
+                    try: last_connect = datetime.strptime(str(known.get("JoinedBySystemAt")).strip(), wifi_date_format).strftime(output_format)
+                    except: last_connect = ""
+                    secure = known.get("SupportedSecurityTypes")
+                    os_spec = known.get("__OSSpecific__")
+                    bssid = os_spec.get("BSSID")
+                    k_wifi_list.append([last_connect, time_stamp, end_time, bssid, ssid, secure, sfile])
+                diagdict["known_wifi"] = k_wifi_list
+            except:
+                log("com.apple.wifi.known-networks.plist")
 
         if "com.apple.wifi.plist" in member.name:
             known_wifi = tar.extractfile(member.name)
-            k_wifi_cont = plistlib.load(known_wifi)
-            if 'List of known networks' in k_wifi_cont:
-                for known in k_wifi_cont['List of known networks']:
-                    sfile = "com.apple.wifi.plist"
-                    ssid =  known.get("SSID_STR")
-                    bssid = known.get("BSSID")
-                    try: end_time = datetime.strptime(str(known.get("lastUpdated")).strip(), wifi_date_format).strftime(output_format)
-                    except: end_time = ""
-                    try: time_stamp = datetime.strptime(str(known.get("addedAt")).strip(), wifi_date_format).strftime(output_format)
-                    except: time_stamp = ""
-                    try: last_connect = datetime.strptime(str(known.get("lastJoined")).strip(), wifi_date_format).strftime(output_format)
-                    except: last_connect = ""
-                    secure = None
-                    k_wifi_list.append([last_connect, time_stamp, end_time, bssid, ssid, secure, sfile])
-            diagdict["known_wifi"] = k_wifi_list
+            try:
+                k_wifi_cont = plistlib.load(known_wifi)
+                if 'List of known networks' in k_wifi_cont:
+                    for known in k_wifi_cont['List of known networks']:
+                        sfile = "com.apple.wifi.plist"
+                        ssid =  known.get("SSID_STR")
+                        bssid = known.get("BSSID")
+                        try: end_time = datetime.strptime(str(known.get("lastUpdated")).strip(), wifi_date_format).strftime(output_format)
+                        except: end_time = ""
+                        try: time_stamp = datetime.strptime(str(known.get("addedAt")).strip(), wifi_date_format).strftime(output_format)
+                        except: time_stamp = ""
+                        try: last_connect = datetime.strptime(str(known.get("lastJoined")).strip(), wifi_date_format).strftime(output_format)
+                        except: last_connect = ""
+                        secure = None
+                        k_wifi_list.append([last_connect, time_stamp, end_time, bssid, ssid, secure, sfile])
+                diagdict["known_wifi"] = k_wifi_list
+            except:
+                log("Error reading com.apple.wifi.plist")
 
         if "com.apple.wifi-private-mac-networks.plist" in member.name:
-            known_wifi = tar.extractfile(member.name)
-            k_wifi_cont = plistlib.load(known_wifi)
-            if 'List of scanned networks with private mac' in k_wifi_cont:
-                for known in k_wifi_cont['List of scanned networks with private mac']:
-                    sfile = "com.apple.wifi-private-mac-networks.plist"
-                    ssid =  known.get("SSID_STR")
-                    bssid = known.get("BSSID")
-                    try: end_time = datetime.strptime(str(known.get("lastUpdated")).strip(), wifi_date_format).strftime(output_format)
-                    except: end_time = ""
-                    try: time_stamp = datetime.strptime(str(known.get("addedAt")).strip(), wifi_date_format).strftime(output_format)
-                    except: time_stamp = ""
-                    try: last_connect = datetime.strptime(str(known.get("lastJoined")).strip(), wifi_date_format).strftime(output_format)
-                    except: last_connect = ""
-                    secure = None
-                    k_wifi_list.append([last_connect, time_stamp, end_time, bssid, ssid, secure, sfile])
-            diagdict["known_wifi"] = k_wifi_list
+            try:
+                known_wifi = tar.extractfile(member.name)
+                k_wifi_cont = plistlib.load(known_wifi)
+                if 'List of scanned networks with private mac' in k_wifi_cont:
+                    for known in k_wifi_cont['List of scanned networks with private mac']:
+                        sfile = "com.apple.wifi-private-mac-networks.plist"
+                        ssid =  known.get("SSID_STR")
+                        bssid = known.get("BSSID")
+                        try: end_time = datetime.strptime(str(known.get("lastUpdated")).strip(), wifi_date_format).strftime(output_format)
+                        except: end_time = ""
+                        try: time_stamp = datetime.strptime(str(known.get("addedAt")).strip(), wifi_date_format).strftime(output_format)
+                        except: time_stamp = ""
+                        try: last_connect = datetime.strptime(str(known.get("lastJoined")).strip(), wifi_date_format).strftime(output_format)
+                        except: last_connect = ""
+                        secure = None
+                        k_wifi_list.append([last_connect, time_stamp, end_time, bssid, ssid, secure, sfile])
+                diagdict["known_wifi"] = k_wifi_list
+            except:
+                log("Error reading com.apple.wifi-private-mac-networks.plist")
 
         if "mobileactivationd.log" in member.name:
             log_date_format = "%a %b %d %H:%M:%S %Y"
-            activation = tar.extractfile(member.name)
-            actilog = io.TextIOWrapper(activation, encoding="utf-8", errors="ignore")
-            for line in actilog:
-                if "____________________ Mobile Activation Startup _____________________" in line:
-                    startup = re.match(r'^([A-Za-z]{3} [A-Za-z]{3}\s+\d{1,2} \d{2}:\d{2}:\d{2} \d{4})', line)
-                    sfile = os.path.basename(member.name)
-                    try: 
-                        starttime_orig = startup.group(1)
-                        starttime = datetime.strptime(starttime_orig.strip(), log_date_format).strftime(output_format)
-                        dev_events.append(["Power on", starttime, sfile])
-                    except:
-                        pass
-            diagdict["device_events"] = dev_events
+            try:
+                activation = tar.extractfile(member.name)
+                actilog = io.TextIOWrapper(activation, encoding="utf-8", errors="ignore")
+                for line in actilog:
+                    if "____________________ Mobile Activation Startup _____________________" in line:
+                        startup = re.match(r'^([A-Za-z]{3} [A-Za-z]{3}\s+\d{1,2} \d{2}:\d{2}:\d{2} \d{4})', line)
+                        sfile = os.path.basename(member.name)
+                        try: 
+                            starttime_orig = startup.group(1)
+                            starttime = datetime.strptime(starttime_orig.strip(), log_date_format).strftime(output_format)
+                            dev_events.append(["Power on", starttime, sfile])
+                        except:
+                            pass
+                diagdict["device_events"] = dev_events
+            except:
+                log("Error reading mobileactivationd.log")
 
         if "FDRDiagnosticReport.plist" in member.name:
-            fdrdiag = tar.extractfile(member.name)
-            fdr = plistlib.load(fdrdiag)
-            seid = next((elem["seid"]["LiveProperty"] for elem in fdr["VerifiedProperties"] if "seid" in elem), None)
-            diagdict["seid"] = seid
+            try:
+                fdrdiag = tar.extractfile(member.name)
+                fdr = plistlib.load(fdrdiag)
+                seid = next((elem["seid"]["LiveProperty"] for elem in fdr["VerifiedProperties"] if "seid" in elem), None)
+                diagdict["seid"] = seid
+            except:
+                log("Error reading FDRDiagnosticReport.plist")
 
     return(diagdict)
 
