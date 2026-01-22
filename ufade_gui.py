@@ -61,6 +61,7 @@ import simpleaudio as sa
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from pdfme import build_pdf
+import click
 import base64
 import mimetypes
 import hashlib
@@ -5976,7 +5977,7 @@ tunnel = False
 try:
     if len(sys.argv) > 1 and sys.argv[1] == "tunnel":
         tunnel = True
-        cli_tunneld(["-d"], standalone_mode=False)
+        cli_tunneld(["-d"])
     else:
         pass
 except Exception as e:
