@@ -4408,6 +4408,7 @@ class MyApp(ctk.CTk):
                     Popen(["osascript", "-e", f'do shell script \"{sys.executable} tunnel\" with administrator privileges'])
                 except:
                     raise exceptions.AccessDeniedError()
+                self.after(100,change.set(1))
             else:   
                 script = os.path.abspath(sys.argv[0])
                 python = sys.executable
