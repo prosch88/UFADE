@@ -5882,7 +5882,7 @@ def sysdiag(tarpath):
             except:
                 log("Error reading FDRDiagnosticReport.plist")
     
-    if k_wifi_list != []
+    if k_wifi_list != []:
         diagdict["known_wifi"] = k_wifi_list
     if dev_events != []:
         diagdict["device_events"] = dev_events
