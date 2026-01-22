@@ -5858,7 +5858,7 @@ def sysdiag(tarpath):
             except:
                 log("Error reading com.apple.wifi-private-mac-networks.plist")
 
-        if member.name.endswith("/mobileactivationd.log") or member.name == "mobileactivationd.log":
+        if "mobileactivationd.log" in member.name:
             log_date_format = "%a %b %d %H:%M:%S %Y"
             try:
                 activation = tar.extractfile(member)
