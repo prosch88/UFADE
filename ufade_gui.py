@@ -5771,25 +5771,28 @@ def sysdiag(tarpath):
         if "otctl_status.txt" in member.name:
             serials = []
             otctl_file = tar.extractfile(member.name)
-            otctl_content = json.load(otctl_file)
             try:
-                if otctl_content.get("contextDump") != None:
-                    peers = otctl_content["contextDump"]["peers"]
-                else:
-                    peers = otctl_content["peers"]
-                for elem in peers:
-                    model = elem["permanentInfo"]["model_id"]
-                    m_name = DEVICE_MAP.get(model, model)
-                    if m_name == None:
-                        m_name = model
-                    os_bnum = elem["stableInfo"]["os_version"]
-                    serial = elem["stableInfo"]["serial_number"]
-                    if serial not in serials:
-                        serials.append(serial)
-                        iclouddev.append([model,m_name,os_bnum,serial])
-                diagdict["iclouddev"] = iclouddev
+                otctl_content = json.load(otctl_file)
+                try:
+                    if otctl_content.get("contextDump") != None:
+                        peers = otctl_content["contextDump"]["peers"]
+                    else:
+                        peers = otctl_content["peers"]
+                    for elem in peers:
+                        model = elem["permanentInfo"]["model_id"]
+                        m_name = DEVICE_MAP.get(model, model)
+                        if m_name == None:
+                            m_name = model
+                        os_bnum = elem["stableInfo"]["os_version"]
+                        serial = elem["stableInfo"]["serial_number"]
+                        if serial not in serials:
+                            serials.append(serial)
+                            iclouddev.append([model,m_name,os_bnum,serial])
+                    diagdict["iclouddev"] = iclouddev
+                except:
+                    pass
             except:
-                pass
+                log("Error reading otctl_status.txt")
         
         if "com.apple.wifi.known-networks.plist" in member.name:
             known_wifi = tar.extractfile(member.name)
