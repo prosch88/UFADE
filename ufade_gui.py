@@ -5974,7 +5974,7 @@ if getattr(sys, 'frozen', False):
 
 tunnel = False
 try:
-    if sys.argv[1] == "tunnel":
+    if len(sys.argv) > 1 and sys.argv[1] == "tunnel":
         tunnel = True
         cli_tunneld(["-d"], standalone_mode=False)
     else:
