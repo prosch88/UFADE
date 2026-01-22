@@ -4349,6 +4349,7 @@ class MyApp(ctk.CTk):
                     while True:
                         try:
                             tun = get_tunneld_devices()
+                            sleep(1)
                         except:
                             tun = []
                         if tun != []:
@@ -4370,6 +4371,7 @@ class MyApp(ctk.CTk):
                     while True:
                         try:
                             tun = get_tunneld_devices()
+                            wait(1)
                         except:
                             tun = []
                         if tun != []:
