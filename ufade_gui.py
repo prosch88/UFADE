@@ -5812,7 +5812,6 @@ def sysdiag(tarpath):
                     os_spec = known.get("__OSSpecific__")
                     bssid = os_spec.get("BSSID")
                     k_wifi_list.append([last_connect, time_stamp, end_time, bssid, ssid, secure, sfile])
-                diagdict["known_wifi"] = k_wifi_list
             except:
                 log("com.apple.wifi.known-networks.plist")
 
@@ -5833,7 +5832,6 @@ def sysdiag(tarpath):
                         except: last_connect = ""
                         secure = None
                         k_wifi_list.append([last_connect, time_stamp, end_time, bssid, ssid, secure, sfile])
-                diagdict["known_wifi"] = k_wifi_list
             except:
                 log("Error reading com.apple.wifi.plist")
 
@@ -5854,7 +5852,6 @@ def sysdiag(tarpath):
                         except: last_connect = ""
                         secure = None
                         k_wifi_list.append([last_connect, time_stamp, end_time, bssid, ssid, secure, sfile])
-                diagdict["known_wifi"] = k_wifi_list
             except:
                 log("Error reading com.apple.wifi-private-mac-networks.plist")
 
@@ -5884,6 +5881,9 @@ def sysdiag(tarpath):
                 diagdict["seid"] = seid
             except:
                 log("Error reading FDRDiagnosticReport.plist")
+    
+    if k_wifi_list != []
+        diagdict["known_wifi"] = k_wifi_list
     if dev_events != []:
         diagdict["device_events"] = dev_events
     return(diagdict)
