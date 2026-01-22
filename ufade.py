@@ -4399,7 +4399,7 @@ class MyApp(ctk.CTk):
 
     def macos_dev17(self, change):
         try:
-            """
+
             if getattr(sys, 'frozen', False):
                 try:
                     print("try")
@@ -4407,17 +4407,14 @@ class MyApp(ctk.CTk):
                 except:
                     raise exceptions.AccessDeniedError()
             else:   
-                run(["osascript", "-e", 'do shell script \"python3 -m pymobiledevice3 remote tunneld -d\" with administrator privileges'])
-
-                """
-            script = os.path.abspath(sys.argv[0])
-            python = sys.executable
-            Popen([
-                "osascript",
-                "-e",
-                f'do shell script "{python} {script} tunnel" with administrator privileges'
-            ])
-            self.after(100,change.set(1))
+                script = os.path.abspath(sys.argv[0])
+                python = sys.executable
+                Popen([
+                    "osascript",
+                    "-e",
+                    f'do shell script "{python} {script} tunnel" with administrator privileges'
+                ])
+                self.after(100,change.set(1))
         except exceptions.AccessDeniedError:
             self.text.configure(text="Couldn't create a tunnel. Try again.\nYou have to run UFADE as administrator for this.")
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
