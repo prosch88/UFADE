@@ -5976,15 +5976,16 @@ tunnel = False
 try:
     if sys.argv[1] == "tunnel":
         tunnel = True
-        cli_tunneld(["-d"])
+        cli_tunneld(["-d"], standalone_mode=False)
     else:
         pass
-except:
-    pass
-if tunnel == True:
-    sys.exit(0)
-else:
-    pass
+except Exception as e:
+    print(f"Tunnel-error: {e}")
+    raise
+#if tunnel == True:
+#    sys.exit(0)
+#else:
+#    pass
 
 lockdown = check_device()
 try:
