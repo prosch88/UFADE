@@ -5768,10 +5768,9 @@ def sysdiag(tarpath):
     tar = tarfile.open(tarpath)
     members = tar.getmembers()
     for member in members:
-        if "otctl_status.txt" in member.name:
+        if member.name.endswith("/otctl_status.txt") or member.name == "otctl_status.txt":
             serials = []
             otctl_file = tar.extractfile(member)
-            print(otctl_file)
             try:
                 otctl_content = json.load(otctl_file)
                 try:
@@ -5795,7 +5794,7 @@ def sysdiag(tarpath):
             except:
                 log("Error reading otctl_status.txt")
         
-        if "com.apple.wifi.known-networks.plist" in member.name:
+        if member.name.endswith("/com.apple.wifi.known-networks.plist") or member.name == "com.apple.wifi.known-networks.plist":
             known_wifi = tar.extractfile(member)
             try:
                 k_wifi_cont = plistlib.load(known_wifi)
@@ -5817,7 +5816,7 @@ def sysdiag(tarpath):
             except:
                 log("com.apple.wifi.known-networks.plist")
 
-        if "com.apple.wifi.plist" in member.name:
+        if member.name.endswith("/com.apple.wifi.plist") or member.name == "com.apple.wifi.plist":
             known_wifi = tar.extractfile(member)
             try:
                 k_wifi_cont = plistlib.load(known_wifi)
@@ -5838,7 +5837,7 @@ def sysdiag(tarpath):
             except:
                 log("Error reading com.apple.wifi.plist")
 
-        if "com.apple.wifi-private-mac-networks.plist" in member.name:
+        if member.name.endswith("/com.apple.wifi-private-mac-networks.plist") or member.name == "com.apple.wifi-private-mac-networks.plist":
             try:
                 known_wifi = tar.extractfile(member)
                 k_wifi_cont = plistlib.load(known_wifi)
@@ -5859,7 +5858,7 @@ def sysdiag(tarpath):
             except:
                 log("Error reading com.apple.wifi-private-mac-networks.plist")
 
-        if "mobileactivationd.log" in member.name:
+        if member.name.endswith("/mobileactivationd.log") or member.name == "mobileactivationd.log":
             log_date_format = "%a %b %d %H:%M:%S %Y"
             try:
                 activation = tar.extractfile(member)
@@ -5878,7 +5877,7 @@ def sysdiag(tarpath):
             except:
                 log("Error reading mobileactivationd.log")
 
-        if "FDRDiagnosticReport.plist" in member.name:
+        if member.name.endswith("/FDRDiagnosticReport.plist") or member.name == "FDRDiagnosticReport.plist":
             try:
                 fdrdiag = tar.extractfile(member)
                 fdr = plistlib.load(fdrdiag)
