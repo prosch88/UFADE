@@ -5770,7 +5770,7 @@ def sysdiag(tarpath):
     for member in members:
         if "otctl_status.txt" in member.name:
             serials = []
-            otctl_file = tar.extractfile(member.name)
+            otctl_file = tar.extractfile(member)
             try:
                 otctl_content = json.load(otctl_file)
                 try:
@@ -5795,7 +5795,7 @@ def sysdiag(tarpath):
                 log("Error reading otctl_status.txt")
         
         if "com.apple.wifi.known-networks.plist" in member.name:
-            known_wifi = tar.extractfile(member.name)
+            known_wifi = tar.extractfile(member)
             try:
                 k_wifi_cont = plistlib.load(known_wifi)
                 for elem in k_wifi_cont:
@@ -5817,7 +5817,7 @@ def sysdiag(tarpath):
                 log("com.apple.wifi.known-networks.plist")
 
         if "com.apple.wifi.plist" in member.name:
-            known_wifi = tar.extractfile(member.name)
+            known_wifi = tar.extractfile(member)
             try:
                 k_wifi_cont = plistlib.load(known_wifi)
                 if 'List of known networks' in k_wifi_cont:
@@ -5839,7 +5839,7 @@ def sysdiag(tarpath):
 
         if "com.apple.wifi-private-mac-networks.plist" in member.name:
             try:
-                known_wifi = tar.extractfile(member.name)
+                known_wifi = tar.extractfile(member)
                 k_wifi_cont = plistlib.load(known_wifi)
                 if 'List of scanned networks with private mac' in k_wifi_cont:
                     for known in k_wifi_cont['List of scanned networks with private mac']:
@@ -5861,7 +5861,7 @@ def sysdiag(tarpath):
         if "mobileactivationd.log" in member.name:
             log_date_format = "%a %b %d %H:%M:%S %Y"
             try:
-                activation = tar.extractfile(member.name)
+                activation = tar.extractfile(member)
                 actilog = io.TextIOWrapper(activation, encoding="utf-8", errors="ignore")
                 for line in actilog:
                     if "____________________ Mobile Activation Startup _____________________" in line:
@@ -5879,7 +5879,7 @@ def sysdiag(tarpath):
 
         if "FDRDiagnosticReport.plist" in member.name:
             try:
-                fdrdiag = tar.extractfile(member.name)
+                fdrdiag = tar.extractfile(member)
                 fdr = plistlib.load(fdrdiag)
                 seid = next((elem["seid"]["LiveProperty"] for elem in fdr["VerifiedProperties"] if "seid" in elem), None)
                 diagdict["seid"] = seid
