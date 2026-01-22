@@ -5873,7 +5873,6 @@ def sysdiag(tarpath):
                             dev_events.append(["Power on", starttime, sfile])
                         except:
                             pass
-                diagdict["device_events"] = dev_events
             except:
                 log("Error reading mobileactivationd.log")
 
@@ -5885,7 +5884,8 @@ def sysdiag(tarpath):
                 diagdict["seid"] = seid
             except:
                 log("Error reading FDRDiagnosticReport.plist")
-
+    if dev_events != []:
+        diagdict["device_events"] = dev_events
     return(diagdict)
 
 #pull single file
