@@ -4408,16 +4408,9 @@ class MyApp(ctk.CTk):
                     Popen(["osascript", "-e", f'do shell script \"{sys.executable} tunnel\" with administrator privileges'])
                 except:
                     raise exceptions.AccessDeniedError()
-                self.after(100, lambda: change.set(1))
-            else:   
-                script = os.path.abspath(sys.argv[0])
-                python = sys.executable
-                Popen([
-                    "osascript",
-                    "-e",
-                    f'do shell script "{python} {script} tunnel" with administrator privileges'
-                ])
-                self.after(100, lambda: change.set(1))
+            else:    
+                run(["osascript", "-e", 'do shell script \"python3 -m pymobiledevice3 remote tunneld -d\" with administrator privileges'])
+            change.set(1)
         except exceptions.AccessDeniedError:
             self.text.configure(text="Couldn't create a tunnel. Try again.\nYou have to run UFADE as administrator for this.")
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
@@ -5991,30 +5984,15 @@ port = TUNNELD_DEFAULT_ADDRESS[1]
 try:
     if len(sys.argv) > 1 and sys.argv[1] == "tunnel":
         tunnel = True
-        tunneld_runner = partial(
-            TunneldRunner.create,
-            host,
-            port,
-            protocol="QUIC",
-            usb_monitor=True,
-            wifi_monitor=True,
-            usbmux_monitor=True,
-            mobdev2_monitor=True,
-        )
-        tunneld_runner()
-
-        """
-        with tempfile.NamedTemporaryFile("wt") as pid_file:
-            daemon = Daemonize(app=f"Tunneld {host}:{port}", pid=pid_file.name, action=tunneld_runner)
-            print(f"starting Tunneld {host}:{port}")
-            daemon.start()
-        """
+        cli_tunneld(["-d"])
     else:
         pass
 except Exception as e:
     print(f"Tunnel-error: {e}")
     raise
 if tunnel == True:
+    sys.exit(0)
+else:
     pass
 else:    
     lockdown = check_device()
