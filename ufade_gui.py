@@ -4398,11 +4398,10 @@ class MyApp(ctk.CTk):
         try:
             if getattr(sys, 'frozen', False):
                 try:
-                    print("try")
-                    run(["osascript", "-e", f'do shell script \"{sys.executable} tunnel\" with administrator privileges'])
+                    Popen(["osascript", "-e", f'do shell script \"{sys.executable} tunnel\" with administrator privileges'], start_new_session=True)
                 except:
                     raise exceptions.AccessDeniedError()
-            else:    
+            else:               
                 run(["osascript", "-e", 'do shell script \"python3 -m pymobiledevice3 remote tunneld -p QUIC -d\" with administrator privileges'])
             change.set(1)
         except exceptions.AccessDeniedError:
@@ -5976,7 +5975,7 @@ tunnel = False
 try:
     if sys.argv[1] == "tunnel":
         tunnel = True
-        #cli_tunneld(["--protocol 'QUIC'"],["--daemonize"])
+        #cli_tunneld(["-d"])
         cli_tunneld(
             host=str(TUNNELD_DEFAULT_ADDRESS[0]),
             port=TUNNELD_DEFAULT_ADDRESS[1],
