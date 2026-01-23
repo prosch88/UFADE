@@ -78,7 +78,7 @@ pip install pygobject
 Connect an Apple device (iPhone, iPad) to your workstation, unlock and pair the device.
 Start the script:
 ```
-python ufade_gui.py
+python ufade.py
 ```
 
 Possibly the trust-message is shown on the device screen. Confirm with "trust".
