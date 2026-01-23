@@ -54,7 +54,7 @@ from subprocess import Popen, PIPE, check_call, run
 from pymobiledevice3 import exceptions
 from importlib.metadata import version
 from iOSbackup import iOSbackup
-from ufade import iOSbackupUF
+import ufade.iOSbackupUF as iOSbackupUF
 from pyiosbackup import Backup
 from io import BytesIO
 import simpleaudio as sa
