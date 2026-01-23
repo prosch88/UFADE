@@ -3,6 +3,7 @@
 # Licensed under GPLv3 License
 import sys
 import os
+sys.path.insert(0, os.path.dirname(__file__))
 if sys.stdout is None:
     sys.stdout = open(os.devnull, "w")
 if sys.stderr is None:
