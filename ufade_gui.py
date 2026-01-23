@@ -12,7 +12,6 @@ from PIL import ImageTk, Image, ExifTags, ImageDraw, ImageFont
 import tkinter.ttk as ttk
 from tkinter import StringVar
 from tkcalendar import Calendar
-from daemonize import Daemonize
 from pymobiledevice3 import usbmux, exceptions, lockdown
 from pymobiledevice3.services.mobile_image_mounter import DeveloperDiskImageMounter, MobileImageMounterService, PersonalizedImageMounter
 from pymobiledevice3.lockdown import create_using_usbmux, create_using_remote
@@ -43,7 +42,6 @@ from pymobiledevice3.remote.utils import get_rsds
 from pymobiledevice3.cli.remote import cli_tunneld
 from pymobiledevice3 import irecv
 from pymobiledevice3.irecv_devices import IRECV_DEVICES
-from functools import partial
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_pkcs12
 from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat, load_pem_public_key
 from cryptography.hazmat.primitives.serialization.pkcs7 import PKCS7SignatureBuilder
@@ -63,7 +61,6 @@ import simpleaudio as sa
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from pdfme import build_pdf
-import click
 import base64
 import mimetypes
 import hashlib
@@ -4349,7 +4346,6 @@ class MyApp(ctk.CTk):
                     while True:
                         try:
                             tun = get_tunneld_devices()
-                            sleep(1)
                         except:
                             tun = []
                         if tun != []:
@@ -4371,7 +4367,6 @@ class MyApp(ctk.CTk):
                     while True:
                         try:
                             tun = get_tunneld_devices()
-                            wait(1)
                         except:
                             tun = []
                         if tun != []:
@@ -4401,15 +4396,14 @@ class MyApp(ctk.CTk):
 
     def macos_dev17(self, change):
         try:
-
             if getattr(sys, 'frozen', False):
                 try:
                     print("try")
-                    Popen(["osascript", "-e", f'do shell script \"{sys.executable} tunnel\" with administrator privileges'])
+                    run(["osascript", "-e", f'do shell script \"{sys.executable} tunnel\" with administrator privileges'])
                 except:
                     raise exceptions.AccessDeniedError()
             else:    
-                run(["osascript", "-e", 'do shell script \"python3 -m pymobiledevice3 remote tunneld -d\" with administrator privileges'])
+                run(["osascript", "-e", 'do shell script \"python3 -m pymobiledevice3 remote tunneld -p QUIC -d\" with administrator privileges'])
             change.set(1)
         except exceptions.AccessDeniedError:
             self.text.configure(text="Couldn't create a tunnel. Try again.\nYou have to run UFADE as administrator for this.")
@@ -5979,129 +5973,137 @@ if getattr(sys, 'frozen', False):
     threading.excepthook = thread_exception_handler
 
 tunnel = False
-host = str(TUNNELD_DEFAULT_ADDRESS[0])
-port = TUNNELD_DEFAULT_ADDRESS[1]
 try:
-    if len(sys.argv) > 1 and sys.argv[1] == "tunnel":
+    if sys.argv[1] == "tunnel":
         tunnel = True
-        cli_tunneld(["-d"])
+        #cli_tunneld(["--protocol 'QUIC'"],["--daemonize"])
+        cli_tunneld(
+            host=str(TUNNELD_DEFAULT_ADDRESS[0]),
+            port=TUNNELD_DEFAULT_ADDRESS[1],
+            protocol="QUIC",
+            daemonize=False,
+            usb=True,
+            wifi=True,
+            usbmux=True,
+            mobdev2=True,
+        )
     else:
         pass
-except Exception as e:
-    print(f"Tunnel-error: {e}")
-    raise
+except:
+    pass
 if tunnel == True:
-    sys.exit(0)
+    pass
+    #sys.exit(0)
 else:
     pass
-else:    
-    lockdown = check_device()
-    try:
-        language = lockdown.language
-        ispaired = True
-        log(f"Paired with device: {udid}")
-    except:
-        ispaired = False
 
-    guiv = "default"
-    try:
-        if sys.argv[1] == "1368":
-            guiv = "1368"
-        elif sys.argv[1] == "1024":
-            guiv = "1024"
-        else:
-            pass
-    except:
+lockdown = check_device()
+try:
+    language = lockdown.language
+    ispaired = True
+    log(f"Paired with device: {udid}")
+except:
+    ispaired = False
+
+guiv = "default"
+try:
+    if sys.argv[1] == "1368":
+        guiv = "1368"
+    elif sys.argv[1] == "1024":
+        guiv = "1024"
+    else:
         pass
+except:
+    pass
 
 
-    if guiv == "default":
-        resx = 1100
-        resy = 600
-        leftx = 340
-        rightx = 760
-        fsize = 14
-        b_button_offset_x = 415
-        b_button_offset_y = 410
-        sb_button_offset_x = 525
-        right_content = 400
+if guiv == "default":
+    resx = 1100
+    resy = 600
+    leftx = 340
+    rightx = 760
+    fsize = 14
+    b_button_offset_x = 415
+    b_button_offset_y = 410
+    sb_button_offset_x = 525
+    right_content = 400
 
-    elif guiv == "1024":
-        resx = 1024
-        resy = 600
-        leftx = 330
-        rightx = 694
-        fsize = 14
-        b_button_offset_x = 355
-        b_button_offset_y = 410
-        sb_button_offset_x = 525
-        right_content = 360
+elif guiv == "1024":
+    resx = 1024
+    resy = 600
+    leftx = 330
+    rightx = 694
+    fsize = 14
+    b_button_offset_x = 355
+    b_button_offset_y = 410
+    sb_button_offset_x = 525
+    right_content = 360
 
-    elif guiv == "1368":
-        resx = 1358
-        resy = 764
-        leftx = 460
-        rightx = 800
-        fsize = 16
-        b_button_offset_x = 545
-        b_button_offset_y = 460
-        sb_button_offset_x = 655
-        right_content = 500
+elif guiv == "1368":
+    resx = 1358
+    resy = 764
+    leftx = 460
+    rightx = 800
+    fsize = 16
+    b_button_offset_x = 545
+    b_button_offset_y = 460
+    sb_button_offset_x = 655
+    right_content = 500
 
-    nodevice_text = ("No device detected!\n" +
-    "\n" + '{:13}'.format("Python: ") + "\t" + platform.python_version() +
-    "\n" + '{:13}'.format("PMD3: ") + "\t" + version('pymobiledevice3') +
-    "\n" + '{:13}'.format("pyiosbackup: ") + "\t" + version('pyiosbackup') +
-    "\n" + '{:13}'.format("iOSbackup: ") + "\t" + version('iOSbackup') +
-    "\n" + '{:13}'.format("paramiko: ") + "\t" + version('paramiko') +
-    "\n" + '{:13}'.format("pandas: ") + "\t" + version('pandas') +
-    "\n\n" + 
-    "   59 65 74 20 73 75 63 68 20 69 73 \n" +
-    "   20 6F 66 74 20 74 68 65 20 63 6F \n" +
-    "   75 72 73 65 20 6F 66 20 64 65 65 \n" +
-    "   64 73 20 74 68 61 74 20 6D 6F 76 \n" +
-    "   65 20 74 68 65 20 77 68 65 65 6C \n" + 
-    "   73 20 6F 66 20 74 68 65 20 77 6F \n" +
-    "   72 6C 64 3A 20 73 6D 61 6C 6C 20 \n" + 
-    "   68 61 6E 64 73 20 64 6F 20 74 68 \n" +
-    "   65 6D 20 62 65 63 61 75 73 65 20 \n" +
-    "   74 68 65 79 20 6D 75 73 74 2C 20 \n" +
-    "   77 68 69 6C 65 20 74 68 65 20 65 \n" +
-    "   79 65 73 20 6F 66 20 74 68 65 20 \n" +
-    "   67 72 65 61 74 20 61 72 65 20 65 \n" +
-    "   6C 73 65 77 68 65 72 65 2E")
+nodevice_text = ("No device detected!\n" +
+"\n" + '{:13}'.format("Python: ") + "\t" + platform.python_version() +
+"\n" + '{:13}'.format("PMD3: ") + "\t" + version('pymobiledevice3') +
+"\n" + '{:13}'.format("pyiosbackup: ") + "\t" + version('pyiosbackup') +
+"\n" + '{:13}'.format("iOSbackup: ") + "\t" + version('iOSbackup') +
+"\n" + '{:13}'.format("paramiko: ") + "\t" + version('paramiko') +
+"\n" + '{:13}'.format("pandas: ") + "\t" + version('pandas') +
+"\n\n" + 
+"   59 65 74 20 73 75 63 68 20 69 73 \n" +
+"   20 6F 66 74 20 74 68 65 20 63 6F \n" +
+"   75 72 73 65 20 6F 66 20 64 65 65 \n" +
+"   64 73 20 74 68 61 74 20 6D 6F 76 \n" +
+"   65 20 74 68 65 20 77 68 65 65 6C \n" + 
+"   73 20 6F 66 20 74 68 65 20 77 6F \n" +
+"   72 6C 64 3A 20 73 6D 61 6C 6C 20 \n" + 
+"   68 61 6E 64 73 20 64 6F 20 74 68 \n" +
+"   65 6D 20 62 65 63 61 75 73 65 20 \n" +
+"   74 68 65 79 20 6D 75 73 74 2C 20 \n" +
+"   77 68 69 6C 65 20 74 68 65 20 65 \n" +
+"   79 65 73 20 6F 66 20 74 68 65 20 \n" +
+"   67 72 65 61 74 20 61 72 65 20 65 \n" +
+"   6C 73 65 77 68 65 72 65 2E")
 
-    DEVICE_MAP = {device.product_type: device.display_name for device in IRECV_DEVICES}
-    doc_list = []
-    pub_key = ""
-    mode = "normal"
-    bu_fin = False
-    device = dev_data()
-    bu_pass = "12345"
-    developer = False
-    filedict = {}
-    unback_set = set()
-    m_unback_set = set()
-    no_escrow = False
-    case_number = ""
-    case_name = ""
-    evidence_number = ""
-    examiner = ""
-    u_version = "1.0.3"
-
-
+DEVICE_MAP = {device.product_type: device.display_name for device in IRECV_DEVICES}
+doc_list = []
+pub_key = ""
+mode = "normal"
+bu_fin = False
+device = dev_data()
+bu_pass = "12345"
+developer = False
+filedict = {}
+unback_set = set()
+m_unback_set = set()
+no_escrow = False
+case_number = ""
+case_name = ""
+evidence_number = ""
+examiner = ""
+u_version = "1.0.3"
 
 
 
 
-    # Start the app
-    if __name__ == "__main__":
-        app = MyApp()
-        app.mainloop()
 
-    #Restart the app
-    def restart():
-        app.destroy()
-        app = MyApp()
-        app.mainloop()
+
+# Start the app
+if __name__ == "__main__":
+    app = MyApp()
+    app.mainloop()
+
+#Restart the app
+def restart():
+    app.destroy()
+    app = MyApp()
+    app.mainloop()
 
