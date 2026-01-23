@@ -4419,7 +4419,7 @@ class MyApp(ctk.CTk):
         try:
             try:
                 print("try")
-                run(["pkexec", sys.executable, "tunnel"])
+                Popen(["pkexec", sys.executable, "tunnel"], start_new_session=True)
             except:
                 raise exceptions.AccessDeniedError()     
             change.set(1)
