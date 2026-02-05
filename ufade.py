@@ -3877,9 +3877,9 @@ class MyApp(ctk.CTk):
                                 "widths": [1.5, 2.7, 1.5, 2.5],
                                 "style": {"s": 10, "border_color": "lightgrey"},
                                 "table": [
-                                    [{".": [{".b": "ICCID:"}]}, {"colspan": 3, ".": [{".": entry["IntegratedCircuitCardIdentity"]}]}, None, None],
-                                    [{"style": {"cell_fill": u_grey}, ".": [{".b": "IMSI:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": entry["InternationalMobileSubscriberIdentity"]}]}, { "style": {"cell_fill": u_grey}, ".": [{".b": "MCC:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": entry["MCC"]}]}],
-                                    [{".": [{".b": "MNC:"}]}, {".": [{".": entry["MNC"]}]}, {".": [{".b": "Slot:"}]}, {".": entry["Slot"]}] 
+                                    [{".": [{".b": "ICCID:"}]}, {"colspan": 3, ".": [{".": entry.get("IntegratedCircuitCardIdentity", "")}]}, None, None],
+                                    [{"style": {"cell_fill": u_grey}, ".": [{".b": "IMSI:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": entry.get("InternationalMobileSubscriberIdentity", "")}]}, { "style": {"cell_fill": u_grey}, ".": [{".b": "MCC:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": entry.get("MCC", "")}]}],
+                                    [{".": [{".b": "MNC:"}]}, {".": [{".": entry.get("MNC", "")}]}, {".": [{".b": "Slot:"}]}, {".": entry.get("Slot", "")}] 
                                     ]}               
                             for entry in all if all != ""],
                             ["None" if all == "" else ""],
