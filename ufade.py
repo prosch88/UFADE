@@ -5015,6 +5015,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
     try: os.mkdir(dest)
     except: pass
     m_nr = 0
+    afc = AfcService(lockdown)
     for entry in media_list:
         m_nr += 1
         mpro = int(100*(m_nr/media_count))
@@ -5025,7 +5026,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         try:
             if l_type == "PRFS":
                 #if (f"/private/var/mobile/Media{entry}") not in unback_set:
-                pull_file(self=AfcService(lockdown),relative_src=entry, dst=dest)
+                pull_file(self=afc,relative_src=entry, dst=dest)
                 file_path = os.path.join(dest, pathlib.Path(entry).name)
                 arcname = os.path.join("/private/var/mobile/Media", entry.strip("/"))
                 zip.write(file_path, arcname=arcname)
@@ -5890,39 +5891,42 @@ def sysdiag(tarpath):
 
 #pull single file
 def pull_file(self, relative_src, dst, callback=None, src_dir=''):
-        src = self.resolve_path(posixpath.join(src_dir, relative_src))
-        if not self.isdir(src):
-            output_format = "%Y-%m-%dT%H:%M:%S+00:00"
-            try: 
-                filecontent = self.get_file_contents(src)
-                readable = 1
-            except:
-                log(f"Error reading file: {src}")
-                readable = 0
-            if readable == 1:
-                try: mtime = self.stat(src)['st_mtime'].timestamp()
-                except: pass
-                if os.path.isdir(dst):
-                    #dst = os.path.join(dst, os.path.basename(relative_src))
-                    dst = os.path.join(dst, pathlib.Path(relative_src).name)
-                try:    
-                    with open(dst, 'wb') as f:
-                        f.write(filecontent)
-                    try:
-                        if mtime < datetime.fromisoformat('1980-01-01').timestamp():
-                            mtime = datetime.fromisoformat('1980-01-01').timestamp() 
-                        os.utime(dst, (mtime, mtime))
-                    except: 
-                        pass
-                    if callback is not None:
-                        callback(src, dst)
-                except:
-                    log(f"Error writing file: {src}")
-                    pass
-            else:
-                pass
+    src = self.resolve_path(posixpath.join(src_dir, relative_src))
+    if self.isdir(src):
+        return
+
+    if os.path.isdir(dst):
+        dst = os.path.join(dst, pathlib.Path(relative_src).name)
+
+    src_size = self.stat(src)['st_size']
+    MAXIMUM_READ_SIZE = 1024*1024  # 1 MB
+
+    try:
+        if src_size <= MAXIMUM_READ_SIZE:
+            raw = self.get_file_contents(src)
+            filecontent = bytes(raw)
         else:
-            pass
+            handle = self.fopen(src)
+            filecontent = b""
+            for offset in range(0, src_size, MAXIMUM_READ_SIZE):
+                to_read = min(MAXIMUM_READ_SIZE, src_size - offset)
+                filecontent += self.fread(handle, to_read)
+            self.fclose(handle)
+
+        with open(dst, 'wb') as f:
+            f.write(filecontent)
+            f.flush()
+            os.fsync(f.fileno())
+
+        mtime = self.stat(src)['st_mtime'].timestamp()
+        os.utime(dst, (os.stat(dst).st_atime, mtime))
+
+        if callback:
+            callback(src, dst)
+
+    except Exception as e:
+        log(f"Error copying {src} → {dst}: {e!r}")
+        return
 
 #UFADE "logging"
 def log(text):
