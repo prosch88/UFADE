@@ -84,9 +84,11 @@ import exifread
 import uuid
 import ast
 import io
+import warnings
 
 iOSbackup.getFileDecryptedCopy = iOSbackupUF.getFileDecryptedCopy
 
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 ctk.set_appearance_mode("dark")  # Dark Mode
 ctk.set_default_color_theme("dark-blue") 
@@ -1203,7 +1205,7 @@ class MyApp(ctk.CTk):
 
         finally:
             waitsys.set(1)
-            return
+        return
 
     def abort_diag(self):
         self.diagsrv.close()
@@ -1226,7 +1228,8 @@ class MyApp(ctk.CTk):
 # Play a notification sound
     def notification(self):
         try:      
-            sa.WaveObject.from_wave_file(os.path.join(os.path.dirname(__file__), "assets", "notification.wav")).play()
+            self._wave = sa.WaveObject.from_wave_file(os.path.join(os.path.dirname(__file__), "assets", "notification.wav"))
+            self._play_obj = self._wave.play()
         except Exception as e:
             log(f"Error playing notification: {e}")
 
@@ -1407,9 +1410,11 @@ class MyApp(ctk.CTk):
             pass
 
 # Progress output for iTunes Backup
-    def show_process(self,x, progress, text, change, beep_timer, setext):
+    def show_process(self,x, progress, text, change, setext):
         global bu_fin
-        beep_timer.cancel()
+        if self._beep_after_id is not None:
+            self.after_cancel(self._beep_after_id)
+            self._beep_after_id = None
         setext.configure(text="Backup in progress.\nDo not disconnect the device.") 
         proc = x / 100
         progress.set(proc)
@@ -1441,13 +1446,12 @@ class MyApp(ctk.CTk):
     def password_known(self, passwordbox, pw_found, okbutton, abort, text):
         pw=passwordbox.get()
         global bu_pass
+        service_pw = UFADEMobilebackup2Service(lockdown) if no_escrow else Mobilebackup2Service(lockdown)
+        okbutton.configure(state="disabled")
+        text.configure(text="Checking password...")
         try:
-            okbutton.configure(state="disabled")
-            text.configure(text="Checking password...")
-            if no_escrow == True:
-                UFADEMobilebackup2Service(lockdown).change_password(old=pw, new="12345")                     #Try to deactivate backup encryption with the given password
-            else:
-                Mobilebackup2Service(lockdown).change_password(old=pw, new="12345")
+            with passcode_lock:
+                service_pw.change_password(old=pw, new="12345")
             bu_pass = pw
             passwordbox.pack_forget()
             okbutton.pack_forget()
@@ -1457,6 +1461,10 @@ class MyApp(ctk.CTk):
             pw_found.set(1)
         except Exception as e:
             if "Cannot parse a NULL" in str(e):
+                bu_pass = pw
+                passwordbox.pack_forget()
+                okbutton.pack_forget()
+                abort.pack_forget()
                 text.configure(text=f"Backup password: 12345 \nStarting Backup.\nUnlock device with PIN/PW")
                 log(f"Provided correct backup password: {pw}")
                 pw_found.set(1)
@@ -1465,7 +1473,7 @@ class MyApp(ctk.CTk):
                 text.configure(text="Wrong password.\nProvide the correct backup password:\n(UFADE sets this to \"12345\")")
                 log(f"Provided incorrect backup password: {pw} or device error (MDM)")
                 okbutton.configure(state="normal")
-                return()
+                
 
 # Filedialog for selecting the password-list for the backup password
     def pw_file_call(self):
@@ -1514,14 +1522,15 @@ class MyApp(ctk.CTk):
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Checking Backup Encryption.\nUnlock device with PIN/PW if prompted", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)        
         
-        #Check for active Encryption and activate
-        beep_timer = threading.Timer(13.0,self.notification)                                                                           
+        #Check for active Encryption and activate                                                                        
         self.change = ctk.IntVar(self, 0)
-        beep_timer.start()
+        self._beep_after_id = self.after(13000, self.notification)
         checkenc = threading.Thread(target=lambda: self.check_encryption(change=self.change))
         checkenc.start()
         self.wait_variable(self.change)
-        beep_timer.cancel()
+        if self._beep_after_id is not None:
+            self.after_cancel(self._beep_after_id)
+            self._beep_after_id = None
 
         if self.change.get() == 1:
             self.change.set(0)                 
@@ -1618,12 +1627,11 @@ class MyApp(ctk.CTk):
             self.progress.set(0)
             self.progress.pack()
             self.change.set(0)
-            beep_timer = threading.Timer(13.0,self.notification) 
-            beep_timer.start()
+            self._beep_after_id = self.after(13000, self.notification)
             if no_escrow == True:
-                startbu = threading.Thread(target=lambda:UFADEMobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, beep_timer, self.text)))
+                startbu = threading.Thread(target=lambda:UFADEMobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, self.text)))
             else:
-                startbu = threading.Thread(target=lambda:Mobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, beep_timer, self.text)))
+                startbu = threading.Thread(target=lambda:Mobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, self.text)))
             startbu.start()
             self.check_if_done(startbu, self.change)
             self.wait_variable(self.change)
@@ -1634,12 +1642,13 @@ class MyApp(ctk.CTk):
                 if m == "iTunes" or m == "PuMA":
                     self.text.configure(text="iTunes Backup complete!\nTrying to deactivate Backup Encryption again. \nUnlock device with PIN/PW if prompted")
                     self.change.set(0)
-                    beep_timer = threading.Timer(13.0,self.notification)  
-                    beep_timer.start()
+                    self._beep_after_id = self.after(13000, self.notification)
                     remove_enc = threading.Thread(target=lambda: self.deactivate_encryption(change=self.change, text=self.text))
                     remove_enc.start()
                     self.wait_variable(self.change)
-                    beep_timer.cancel()
+                    if self._beep_after_id is not None:
+                        self.after_cancel(self._beep_after_id)
+                        self._beep_after_id = None
                     if m == "iTunes":
                         shutil.move(udid, f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}')
                         self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
@@ -1965,7 +1974,6 @@ class MyApp(ctk.CTk):
         try:
             check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
             change.set(1)
-            return() 
         except exceptions.PasswordRequiredError:
             print("Device locked")
             text.configure(text="The device is locked. Unlock the device to continue.")
@@ -1978,8 +1986,7 @@ class MyApp(ctk.CTk):
                     break 
                 except:
                     pass
-        finally:
-            return()
+        return()
 
 # Actually perform the advanced logical backup
     def perf_logical_plus(self, t, incl_ul, keep_bu, incl_crash, incl_media, incl_apps, keep_ul):
@@ -2391,12 +2398,13 @@ class MyApp(ctk.CTk):
         else:
             self.text.configure(text="Backup complete!\nTrying to deactivate Backup Encryption again. \nUnlock device with PIN/PW if prompted")
             self.change.set(0)
-            beep_timer = threading.Timer(13.0,self.notification)  
-            beep_timer.start()
+            self._beep_after_id = self.after(13000, self.notification)
             remove_enc = threading.Thread(target=lambda: self.deactivate_encryption(change=self.change, text=self.text))
             remove_enc.start()
             self.wait_variable(self.change)
-            beep_timer.cancel()   
+            if self._beep_after_id is not None:
+                self.after_cancel(self._beep_after_id)
+                self._beep_after_id = None   
         self.text.configure(text="Logical+ Backup completed!")
         log("Logical+ Backup completed!")
         if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
@@ -4043,70 +4051,70 @@ class MyApp(ctk.CTk):
                 v_diff = np.absolute(v_check - int(v[1]))
                 index = v_diff.argmin()
                 ver = str(v[0]) + "." + str(d_images[int(v[0])][index])
-            finally:
-                mounted = []
-                try: mounted = DeveloperDiskImageMounter(lockdown).copy_devices()
-                except: pass
-                if int(v[0]) <= 13 or mounted == []:
-                    self.after(1000)
-                    info = info + "\nClosest version is " + ver
+            
+            mounted = []
+            try: mounted = DeveloperDiskImageMounter(lockdown).copy_devices()
+            except: pass
+            if int(v[0]) <= 13 or mounted == []:
+                self.after(1000)
+                info = info + "\nClosest version is " + ver
+                text.configure(text=info)
+                lockdown = create_using_usbmux()
+                self.after(1000)
+                try:
+                    self.after(50)
+                    if d_class == "Watch":
+                        DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg.signature"))
+                    else:
+                        DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
+                    info = info + "\nVersion: " + ver + " was used"
                     text.configure(text=info)
-                    lockdown = create_using_usbmux()
                     self.after(1000)
-                    try:
-                        self.after(50)
-                        if d_class == "Watch":
-                            DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg.signature"))
-                        else:
-                            DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
-                        info = info + "\nVersion: " + ver + " was used"
-                        text.configure(text=info)
-                        self.after(1000)
-                        developer = True
-                        change.set(1)
-                        return("developer")
-                    except exceptions.AlreadyMountedError:
-                        developer = True
-                        change.set(1)
-                        return("developer")            
-                    except:
-                        for i in range(index)[::-1]:
-                            ver = str(v[0]) + "." + str(d_images[int(v[0])][i])
-                            try:
-                                if d_class == "Watch":
-                                    DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg.signature"))
-                                else:
-                                    DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
-                                info = info + "\nVersion: " + ver + " was used"
-                                text.configure(text=info)
-                                self.after(1000)
-                                break
-                            except:
-                                pass
-                        if int(v[0]) <= 13:
-                            developer = True
-                            change.set(1)
-                            return("developer")
-                        else:
-                            pass
-                        try: mounted = DeveloperDiskImageMounter(lockdown).copy_devices()
-                        except: pass
-                        if mounted == []:
-                            text.configure(text="DeveloperDiskImage not loaded")
-                            developer = False
-                            change.set(1)
-                            return("nope")
-                        else:
-                            text.configure(text="DeveloperDiskImage loaded")
-                            developer = True
-                            change.set(1)
-                            return("developer")
-                    
-                else:
-                    text.configure(text="DeveloperDiskImage loaded")
                     developer = True
                     change.set(1)
                     return("developer")
+                except exceptions.AlreadyMountedError:
+                    developer = True
+                    change.set(1)
+                    return("developer")            
+                except:
+                    for i in range(index)[::-1]:
+                        ver = str(v[0]) + "." + str(d_images[int(v[0])][i])
+                        try:
+                            if d_class == "Watch":
+                                DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg.signature"))
+                            else:
+                                DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
+                            info = info + "\nVersion: " + ver + " was used"
+                            text.configure(text=info)
+                            self.after(1000)
+                            break
+                        except:
+                            pass
+                    if int(v[0]) <= 13:
+                        developer = True
+                        change.set(1)
+                        return("developer")
+                    else:
+                        pass
+                    try: mounted = DeveloperDiskImageMounter(lockdown).copy_devices()
+                    except: pass
+                    if mounted == []:
+                        text.configure(text="DeveloperDiskImage not loaded")
+                        developer = False
+                        change.set(1)
+                        return("nope")
+                    else:
+                        text.configure(text="DeveloperDiskImage loaded")
+                        developer = True
+                        change.set(1)
+                        return("developer")
+                    
+            else:
+                text.configure(text="DeveloperDiskImage loaded")
+                developer = True
+                change.set(1)
+                return("developer")
         else:
             developer = True
             change.set(1)
@@ -4979,8 +4987,8 @@ def fileloop(dvt, start, lista, fcount, cnt, folder_text, progress, prog_text):
                 fileloop(dvt, next_path, pathlist, fcount, cnt, folder_text, progress, prog_text) 
     except: 
         pass
-    finally:
-        return(pathlist)
+
+    return(pathlist)
 
 # Pull Media-files
 def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, progress=None, change=None, fzip=False):
@@ -6076,6 +6084,8 @@ nodevice_text = ("No device detected!\n" +
 "   79 65 73 20 6F 66 20 74 68 65 20 \n" +
 "   67 72 65 61 74 20 61 72 65 20 65 \n" +
 "   6C 73 65 77 68 65 72 65 2E")
+
+passcode_lock = threading.Lock()
 
 DEVICE_MAP = {device.product_type: device.display_name for device in IRECV_DEVICES}
 doc_list = []
