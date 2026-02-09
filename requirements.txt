@@ -2,7 +2,7 @@ pymobiledevice3
 pyiosbackup
 iOSbackup
 pandas
-pyarrow==20
+pyarrow
 simpleaudio-patched
 NSKeyedUnArchiver==1.5
 paramiko
