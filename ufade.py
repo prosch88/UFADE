@@ -3687,6 +3687,12 @@ class MyApp(ctk.CTk):
                 springboard_rep = app_id_list
         else:
             springboard_rep = app_id_list
+
+        dev_name_cell = (
+            {".": [{".": name}]}
+            if name.isascii() and name.isprintable()
+            else {"image": temp_image_name}
+            )
         
         if d_class == "Watch":
             d_image = os.path.join(os.path.dirname(__file__), "assets" , "report", "watch.jpg")
@@ -3735,7 +3741,7 @@ class MyApp(ctk.CTk):
                                 "widths": [1.2, 2.5, 1.8, 2.5],
                                 "style": {"s": 10, "border_color": "lightgrey"},
                                 "table": [
-                                    [{".": [{".b": "Dev-Name:"}]}, {"colspan": 3, "image": temp_image_name}, None, None],
+                                    [{".": [{".b": "Dev-Name:"}]}, {"colspan": 3, **dev_name_cell}, None, None],
                                     [{"style": {"border_color": "white", "cell_fill": u_grey}, ".": [{".b": "Model-Nr:"}]}, {"colspan": 3, "style": {"cell_fill": u_grey}, ".": [{".": dev_name}]}, None, None],
                                     [{".": [{".b": "UDID:"}]}, {"colspan": 3, ".": [{".": udid}]}, None, None],
                                 ]
@@ -3839,7 +3845,7 @@ class MyApp(ctk.CTk):
                                 "widths": [1.2, 2.5, 1.2, 3.1],
                                 "style": {"s": 10, "border_color": "lightgrey"},
                                 "table": [
-                                    [{".": [{".b": "Dev-Name:"}]}, {"colspan": 3, "image": temp_image_name}, None, None],
+                                    [{".": [{".b": "Dev-Name:"}]}, {"colspan": 3, **dev_name_cell}, None, None],
                                     [{"style": {"border_color": "white", "cell_fill": u_grey}, ".": [{".b": "Model-Nr:"}]}, {"colspan": 3, "style": {"cell_fill": u_grey}, ".": [{".": dev_name}]}, None, None],
                                     [{".": [{".b": "UDID:"}]}, {"colspan": 3, ".": [{".": udid}]}, None, None],
                                     [{"style": {"cell_fill": u_grey}, ".": [{".b": "Hardware:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": hardware_mnr}]}, { "style": {"cell_fill": u_grey}, ".": [{".b": "WiFi MAC:"}]}, {"style": {"cell_fill": u_grey}, ".": [{".": w_mac}]}],
@@ -3856,7 +3862,6 @@ class MyApp(ctk.CTk):
                             {
                                 ".": "Telephony:", "style": "title", "label": "title1", "outline": {}
                             },
-                            #{"image": "report_u.jpg"},
                             {
                                 "widths": [2.5, 7.5],
                                 "style": {"s": 10, "border_color": "lightgrey"},
