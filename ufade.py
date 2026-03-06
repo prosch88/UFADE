@@ -1955,7 +1955,7 @@ class MyApp(ctk.CTk):
                                 pass
 
                 try: os.remove(file_path)
-                except: shutil.rmtree(file_path)
+                except: shutil.rmtree(file_path, ignore_errors=True)
             i += 1
         change.set(1)
 
