@@ -4416,7 +4416,7 @@ class MyApp(ctk.CTk):
                 except:
                     raise exceptions.AccessDeniedError()
             else:               
-                run(["osascript", "-e", 'do shell script \"python3 -m pymobiledevice3 remote tunneld -p QUIC -d\" with administrator privileges'])
+                run(["osascript", "-e", f'do shell script \"{sys.executable} -m pymobiledevice3 remote tunneld -p QUIC -d\" with administrator privileges'])
             change.set(1)
         except exceptions.AccessDeniedError:
             self.text.configure(text="Couldn't create a tunnel. Try again.\nYou have to run UFADE as administrator for this.")
