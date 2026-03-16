@@ -75,6 +75,7 @@ import pandas as pd
 import shutil
 import tarfile
 import zipfile
+import shlex
 import threading
 import platform
 import time
@@ -4409,14 +4410,16 @@ class MyApp(ctk.CTk):
             return
 
     def macos_dev17(self, change):
+        script = os.path.abspath(sys.argv[0])
         try:
             if getattr(sys, 'frozen', False):
                 try:
                     Popen(["osascript", "-e", f'do shell script \"{sys.executable} tunnel\" with administrator privileges'], start_new_session=True)
                 except:
                     raise exceptions.AccessDeniedError()
-            else:               
-                run(["osascript", "-e", f'do shell script \"{sys.executable} -m pymobiledevice3 remote tunneld -p QUIC -d\" with administrator privileges'])
+            else:
+                Popen(["osascript", "-e", f'do shell script \"{sys.executable} {script} tunnel\" with administrator privileges'], start_new_session=True)               
+                #run(["osascript", "-e", f'do shell script \"{sys.executable} -m pymobiledevice3 remote tunneld -p QUIC -d\" with administrator privileges'])
             change.set(1)
         except exceptions.AccessDeniedError:
             self.text.configure(text="Couldn't create a tunnel. Try again.\nYou have to run UFADE as administrator for this.")
