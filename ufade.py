@@ -4410,7 +4410,7 @@ class MyApp(ctk.CTk):
             return
 
     def macos_dev17(self, change):
-        script = os.path.abspath(sys.argv[0])
+        script = os.path.realpath(__file__)
         try:
             if getattr(sys, 'frozen', False):
                 try:
