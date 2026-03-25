@@ -77,6 +77,7 @@ import pandas as pd
 import shutil
 import tarfile
 import zipfile
+import shlex
 import threading
 import platform
 import time
@@ -1848,7 +1849,7 @@ class MyApp(ctk.CTk):
             shutil.move(os.path.join(folder,domain,"Message", "Media"), os.path.join(folder,"Media"))
             shutil.move(os.path.join(folder,domain,"Media", "Profile"), os.path.join(folder,"Profile"))
             shutil.move(os.path.join(folder,domain,"ChatStorage.sqlite"), os.path.join(folder,"ChatStorage.sqlite"))
-            shutil.rmtree(os.path.join(folder,domain))
+            shutil.rmtree(os.path.join(folder,domain), ignore_errors=True)
             finish = True
         except:
             self.text.configure(text=f"An error occured while extracting {app}. Try again.")
@@ -1879,7 +1880,7 @@ class MyApp(ctk.CTk):
             shutil.move(os.path.join(folder,domain,"Message", "Media"), os.path.join(folder,"Media"))
             shutil.move(os.path.join(folder,domain,"Media", "Profile"), os.path.join(folder,"Profile"))
             shutil.move(os.path.join(folder,domain,"ChatStorage.sqlite"), os.path.join(folder,"ChatStorage.sqlite"))
-            shutil.rmtree(os.path.join(folder,domain))
+            shutil.rmtree(os.path.join(folder,domain), ignore_errors=True)
             finish = True       
         except:
             self.text.configure(text=f"An error occured while extracting {app}. Try again.")
@@ -1957,7 +1958,7 @@ class MyApp(ctk.CTk):
                                 pass
 
                 try: os.remove(file_path)
-                except: shutil.rmtree(file_path)
+                except: shutil.rmtree(file_path, ignore_errors=True)
             i += 1
         change.set(1)
 
@@ -2176,7 +2177,7 @@ class MyApp(ctk.CTk):
                 self.zip_media.start()
             self.wait_variable(self.change)
             #remove media-folder
-            shutil.rmtree(".tar_tmp/media")                                                                                       
+            shutil.rmtree(".tar_tmp/media", ignore_errors=True)                                                                                       
 
         #Gather Shared App-Folders
         if incl_apps == "on":
@@ -2204,7 +2205,7 @@ class MyApp(ctk.CTk):
             self.app_pull = threading.Thread(target=lambda: self.shared_app_files(prog_text=self.prog_text, progress=self.progress, change=self.change, media_count=media_count, tar=tar, zip=zip, l_type=l_type))
             self.app_pull.start()
             self.wait_variable(self.change)
-            shutil.rmtree(".tar_tmp/app_doc")
+            shutil.rmtree(".tar_tmp/app_doc", ignore_errors=True)
 
         #Gather Crash-Reports
         if l_type != "UFED":
@@ -2233,7 +2234,7 @@ class MyApp(ctk.CTk):
                     self.progress.pack_forget()
                     self.prog_text.pack_forget()
                 self.after(100)
-                shutil.rmtree(".tar_tmp/Crash")
+                shutil.rmtree(".tar_tmp/Crash", ignore_errors=True)
 
         #Add Bundle Files for PRFS
             if l_type == "PRFS":
@@ -2365,7 +2366,7 @@ class MyApp(ctk.CTk):
             zip.write("device_values.plist", arcname=("iPhoneDump/Lockdown Service/device_values.plist"))
             os.remove("PhoneInfo.xml")
             os.remove("device_values.plist")
-        shutil.rmtree(".tar_tmp/")
+        shutil.rmtree(".tar_tmp/", ignore_errors=True)
 
         self.progress.pack_forget()
         self.prog_text.pack_forget()
@@ -3577,7 +3578,7 @@ class MyApp(ctk.CTk):
                             zip.write(filepath, relative_path)
                     except:
                         log(f"Error zipping File: {file}")
-        shutil.rmtree(path)
+        shutil.rmtree(path, ignore_errors=True)
         log("Created UFDR Report")
         change.set(1)
 
@@ -4411,14 +4412,16 @@ class MyApp(ctk.CTk):
             return
 
     def macos_dev17(self, change):
+        script = os.path.realpath(__file__)
         try:
             if getattr(sys, 'frozen', False):
                 try:
                     Popen(["osascript", "-e", f'do shell script \"{sys.executable} tunnel\" with administrator privileges'], start_new_session=True)
                 except:
                     raise exceptions.AccessDeniedError()
-            else:               
-                run(["osascript", "-e", 'do shell script \"python3 -m pymobiledevice3 remote tunneld -p QUIC -d\" with administrator privileges'])
+            else:
+                #Popen(["osascript", "-e", f'do shell script \"{sys.executable} {script} tunnel\" with administrator privileges'], start_new_session=True)               
+                run(["osascript", "-e", f'do shell script \"{sys.executable} -m pymobiledevice3 remote tunneld -d\" with administrator privileges'])
             change.set(1)
         except exceptions.AccessDeniedError:
             self.text.configure(text="Couldn't create a tunnel. Try again.\nYou have to run UFADE as administrator for this.")
@@ -5075,7 +5078,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
                                     filename = os.path.relpath(source_file, dest)
                                     zip.write(source_file, os.path.join("iPhoneDump/AFC Service/", filename))
                     try: os.remove(file_path)
-                    except: shutil.rmtree(file_path)
+                    except: shutil.rmtree(file_path, ignore_errors=True)
                 else:
                     if fzip == True:
                         file_path = os.path.join(dest, entry) 
@@ -5088,7 +5091,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
                                     filename = os.path.relpath(source_file, dest)
                                     zip.write(source_file, os.path.join("private/var/Media/", filename))
                         try: os.remove(file_path)
-                        except: shutil.rmtree(file_path)
+                        except: shutil.rmtree(file_path, ignore_errors=True)
                     else:
                         pass
         except:
@@ -5101,7 +5104,7 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         pass
     if fzip == True:
         zip.close()
-        shutil.rmtree(dest)
+        shutil.rmtree(dest, ignore_errors=True)
     log("Extracted AFC-Media files")
     change.set(1)   
     return(archive)  
@@ -5139,7 +5142,7 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, z
                                 filename = os.path.relpath(source_file, crash_dir)
                                 zip.write(source_file, filename)
                     try: os.remove(file_path)
-                    except: shutil.rmtree(file_path)
+                    except: shutil.rmtree(file_path, ignore_errors=True)
                 elif tar != None:
                     file_path = os.path.join(crash_dir, entry) 
                     if os.path.isfile(file_path):
@@ -5151,7 +5154,7 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, z
                                 filename = os.path.relpath(source_file, crash_dir)
                                 tar.add(source_file, arcname=os.path.join(tarpath, filename))
                     try: os.remove(file_path)
-                    except: shutil.rmtree(file_path)
+                    except: shutil.rmtree(file_path, ignore_errors=True)
                 elif zip is not None and l_type == 'PRFS':
                     file_path = os.path.join(crash_dir, entry) 
                     if os.path.isfile(file_path):
@@ -5163,7 +5166,7 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, z
                                 filename = os.path.relpath(source_file, crash_dir)
                                 zip.write(source_file, os.path.join(tarpath, filename))
                     try: os.remove(file_path)
-                    except: shutil.rmtree(file_path)
+                    except: shutil.rmtree(file_path, ignore_errors=True)
 
                 else:
                     pass
@@ -5176,7 +5179,7 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, z
             prog_text.update()
         if czip == True:
             zip.close()
-            shutil.rmtree(crash_dir)
+            shutil.rmtree(crash_dir, ignore_errors=True)
         log("Crash log extraction complete.")
         change.set(1)
     except:
