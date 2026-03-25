@@ -13,6 +13,8 @@ from PIL import ImageTk, Image, ExifTags, ImageDraw, ImageFont
 import tkinter.ttk as ttk
 from tkinter import StringVar
 from tkcalendar import Calendar
+import ufade.irecv_devices as irecv_devices_ufade
+sys.modules["pymobiledevice3.irecv_devices"] = irecv_devices_ufade
 from pymobiledevice3 import usbmux, exceptions, lockdown
 from pymobiledevice3.services.mobile_image_mounter import DeveloperDiskImageMounter, MobileImageMounterService, PersonalizedImageMounter
 from pymobiledevice3.lockdown import create_using_usbmux, create_using_remote
