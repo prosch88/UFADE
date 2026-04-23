@@ -2445,7 +2445,7 @@ class MyApp(ctk.CTk):
                 hardware.upper() + " " + dev_name + "\nGUID=" + udid + "\nInternalBuild=\nIsEncrypted=True\nIsEncryptedBySystem=True\nMachineName=\nModel=" + hardware.upper() + " " + dev_name + "\nUfdVer=1.2\nUnitId=\nUserName=\nVendor=Apple\nVersion=other\n\n[SHA256]\n" + zipname + ".zip=" + z_hash.upper() + "")
             with open(f"{zipname}.ufd", "rb") as f:
                 try:
-                    ufd_sha256 = hashlib.file_digest(z, 'sha256').hexdigest()
+                    ufd_sha256 = hashlib.file_digest(f, 'sha256').hexdigest()
                 except:
                     ufd_sha256 = None
             bu_fname = f'{zipname}.zip'
