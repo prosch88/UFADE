@@ -2631,7 +2631,7 @@ class MyApp(ctk.CTk):
             tarname = f'{udid}_ffs_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
             case_json_name = f'{tarname}.case.json'
             ffs_sha256 = hashlib.sha256()
-            with open(udid + f"{tarname}.tar", "wb") as f:
+            with open(f"{tarname}.tar", "wb") as f:
                 while tar_data:
                     f.write(tar_data)
                     ffs_sha256.update(tar_data)
