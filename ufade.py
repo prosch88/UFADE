@@ -1970,7 +1970,7 @@ class MyApp(ctk.CTk):
             with open(zipname, 'rb') as z:
                 z_hash = hashlib.file_digest(z, 'sha256').hexdigest()
         except Exception as e:
-            log(f"Error zipping file: {e}")
+            log(f"Error hashing file: {e}")
             z_hash = " Error - Python >= 3.11 required"
         change.set(1)
 
