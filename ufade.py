@@ -2447,7 +2447,8 @@ class MyApp(ctk.CTk):
             with open(f"{zipname}.ufd", "rb") as f:
                 try:
                     ufd_sha256 = hashlib.file_digest(f, 'sha256').hexdigest()
-                except:
+                except Exception as e:
+                    log(f"Error hashing ufd-file: {e}")
                     ufd_sha256 = None
             bu_fname = f'{zipname}.zip'
             bu_size = os.path.getsize(bu_fname)
