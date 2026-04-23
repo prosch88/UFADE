@@ -2488,8 +2488,6 @@ class MyApp(ctk.CTk):
             "startTime": case_begin,
             "endTime": case_end
         }
-
-        print(case_backup)
         
         self.change.set(0)
         self.case_f = threading.Thread(target=lambda: self.call_case_json(self.change, case_device, case_backup, case_json_name))
