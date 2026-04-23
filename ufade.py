@@ -5673,8 +5673,6 @@ def dev_data():
                 }
                 if imei and imei.strip():
                     case_device["IMEI"] = imei
-
-                print(case_device)
                           
             else:
                 device = ("Device unpaired ✗ \n\n" +
