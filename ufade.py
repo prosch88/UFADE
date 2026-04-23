@@ -58,6 +58,7 @@ from pymobiledevice3 import exceptions
 from importlib.metadata import version
 from iOSbackup import iOSbackup
 import ufade.iOSbackupUF as iOSbackupUF
+import ufade.case_uco as case_uco
 from pyiosbackup import Backup
 from io import BytesIO
 import simpleaudio as sa
@@ -1963,10 +1964,10 @@ class MyApp(ctk.CTk):
         change.set(1)
 
 # calculate the sha256 hash of the zip for the ufd
-    def hash_ufd(self, change, zipname):
+    def hash_file(self, change, zipname):
         global z_hash
         try:
-            with open(zipname, 'rb', buffering=0) as z:
+            with open(zipname, 'rb') as z:
                 z_hash = hashlib.file_digest(z, 'sha256').hexdigest()
         except:
             z_hash = " Error - Python >= 3.11 required"
@@ -2015,6 +2016,7 @@ class MyApp(ctk.CTk):
             try: os.mkdir(".tar_tmp/itunes_bu")                                                                                     
             except: pass
         now = datetime.now()
+        case_begin = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         if l_type == "PRFS":
             bu_name = "PRFS"
         else:
@@ -2028,7 +2030,8 @@ class MyApp(ctk.CTk):
         
         if l_type != "UFED":
             if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
-                zipname = f'{udid}_prfs_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     
+                zipname = f'{udid}_prfs_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}' 
+                case_json_name = f'{zipname}.case.json'                                                   
                 zip = zipfile.ZipFile(f'{zipname}.zip', "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1)
                 tar = None
             else:
@@ -2055,11 +2058,14 @@ class MyApp(ctk.CTk):
                     if l_type == "PRFS":
                         zipname = f'{udid}_prfs_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     
                         zip = zipfile.ZipFile(f'{zipname}.zip', "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1)
+                        case_json_name = f'{zipname}.case.json'   
                         tar = None
                         decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type, zip=zip))
                         decrypt.start()
                     else:
-                        tar = tarfile.open(f'{udid}_logical_plus_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.tar', "a:")
+                        tarname = f'{udid}_logical_plus_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+                        case_json_name = f'{tarname}.case.json'   
+                        tar = tarfile.open(f'{tarname}.tar', "a:")
                         zip = None
                         decrypt = threading.Thread(target=lambda: self.decrypt_itunes(b, backupfiles, self.progress, self.prog_text, line_list, line_cnt, d_nr, self.change, l_type, tar=tar))
                         decrypt.start()
@@ -2073,7 +2079,9 @@ class MyApp(ctk.CTk):
                     self.progress.pack()
                     self.progress.start()
                     self.change.set(0)
-                    tar = tarfile.open(udid + "_logical_plus.tar", "w:") 
+                    tarname = f'{udid}_logical_plus_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+                    case_json_name = f'{tarname}.case.json'   
+                    tar = tarfile.open(f'{tarname}.tar', "a:")
                     zip = None
                     self.decrypt = threading.Thread(target=lambda: self.decrypt_old_itunes(tar, self.change))
                     self.decrypt.start()
@@ -2099,7 +2107,8 @@ class MyApp(ctk.CTk):
                         
         else:
             #create ZIP-File for CLB PA (TAR-handling isn't as good here)
-            zipname = f'Apple_{hardware.upper()}_{dev_name}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'                                                     
+            zipname = f'Apple_{hardware.upper()}_{dev_name}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            case_json_name = f'{zipname}.case.json'                                                        
             zip = zipfile.ZipFile(f'{zipname}.zip', "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1)
             tar = None
             self.after(100, lambda: self.text.configure(text="Processing Backup - this may take a while."))
@@ -2347,6 +2356,7 @@ class MyApp(ctk.CTk):
 
         #End Time for UFD-Report
             end = datetime.now()
+            case_end = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             local_timezone = datetime.now(timezone.utc).astimezone().tzinfo
             utc_offset = end.astimezone().utcoffset()
             utc_offset_hours = utc_offset.total_seconds() / 3600
@@ -2356,6 +2366,7 @@ class MyApp(ctk.CTk):
                 sign = "-"
             output_format = "%d/%m/%Y %H:%M:%S" 
             e_end = str(end.strftime(output_format)) + " (" + sign + str(int(utc_offset_hours)) + ")"
+            
 
         #Create the PhoneInfo.xml for the UFD-ZIP
             all_list = lockdown.get_value("","")
@@ -2368,34 +2379,124 @@ class MyApp(ctk.CTk):
             os.remove("device_values.plist")
         shutil.rmtree(".tar_tmp/", ignore_errors=True)
 
-        self.progress.pack_forget()
-        self.prog_text.pack_forget()
+        #self.progress.pack_forget()
+        #self.prog_text.pack_forget()
         
+        global z_hash
+        bu_files = []
         if l_type != 'UFED':
-            if l_type == 'PRFS':
-                zip.close()
-            else:
-                tar.close()        
-        else:
-            zip.close()
             self.text.configure(text="Calculate SHA256 hash. This may take a while.")
             self.change.set(0)
-            global z_hash
             z_hash = ""
             self.prog_text.configure(text=" ")
             self.progress.pack_forget()
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
             self.progress.pack()
             self.progress.start()
-            self.hashf = threading.Thread(target=lambda: self.hash_ufd(change=self.change, zipname=f'{zipname}.zip'))
+            if l_type == 'PRFS':
+                zip.close()
+                self.hashf = threading.Thread(target=lambda: self.hash_file(change=self.change, zipname=f'{zipname}.zip'))
+                bu_fname = f'{zipname}.zip'
+                bu_desc = "UFADE PRFS Backup",
+                bu_ext = "zip"
+                method = "Partially Reconstructed Filesystem"
+            else:
+                tar.close()
+                self.hashf = threading.Thread(target=lambda: self.hash_file(change=self.change, zipname=f'{tarname}.tar'))
+                bu_fname = f'{tarname}.tar'
+                bu_desc = "UFADE Logical+ (Tar) Backup"
+                bu_ext = "tar"
+                method = "Advanced Logical"
+            end = datetime.now(timezone.utc)
+            case_end = end.strftime("%Y-%m-%dT%H:%M:%SZ")
+            bu_size = os.path.getsize(bu_fname)
+            self.hashf.start()
+            self.wait_variable(self.change)
+            if not is_valid_sha256(z_hash):
+                bu_hash = None
+            else:
+                bu_hash = z_hash
+            bu_file = {
+                "Type": "forensic-image",
+                "FileName": bu_fname,
+                "extension": bu_ext,
+                "Filesize": bu_size,
+                "isDirectory": False,
+                "SHA256": bu_hash
+            }
+            bu_files.append(bu_file)
+
+        else:
+            zip.close()
+            self.text.configure(text="Calculate SHA256 hash. This may take a while.")
+            self.change.set(0)
+            z_hash = ""
+            self.prog_text.configure(text=" ")
+            self.progress.pack_forget()
+            self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
+            self.progress.pack()
+            self.progress.start()
+            self.hashf = threading.Thread(target=lambda: self.hash_file(change=self.change, zipname=f'{zipname}.zip'))
             self.hashf.start()
             self.wait_variable(self.change)
             with open(f'{zipname}.ufd', "w") as ufdf:
                 ufdf.write("[DeviceInfo]\nIMEI1=" + imei + "\nIMEI2=" + imei2 + "\nModel=" + product + "\nOS=" + dversion + "\nVendor=Apple\n\n[Dumps]\nFileDump=" + zipname +
                 ".zip\n\n[ExtractionStatus]\nExtractionStatus=Success\n\n[FileDump]\nType=ZIPfolder\nZIPLogicalPath=iPhoneDump\n\n[General]\nAcquisitionTool=UFADE\nBackupPassword=" + "12345" + "\nConnectionType=Cable No. 210 or Original Cable\nDate=" + begin + "\nDevice=" + d_class.upper() + "\nEndTime=" + e_end + "\nExtractionNameFromXML=File System\nExtractionType=AdvancedLogical\nFullName=" +
                 hardware.upper() + " " + dev_name + "\nGUID=" + udid + "\nInternalBuild=\nIsEncrypted=True\nIsEncryptedBySystem=True\nMachineName=\nModel=" + hardware.upper() + " " + dev_name + "\nUfdVer=1.2\nUnitId=\nUserName=\nVendor=Apple\nVersion=other\n\n[SHA256]\n" + zipname + ".zip=" + z_hash.upper() + "")
-            self.progress.pack_forget()
+            with open(f"{zipname}.ufd", "rb") as f:
+                try:
+                    ufd_sha256 = hashlib.file_digest(z, 'sha256').hexdigest()
+                except:
+                    ufd_sha256 = None
+            bu_fname = f'{zipname}.zip'
+            bu_size = os.path.getsize(bu_fname)
+            bu_desc = "UFADE Logical+ Backup (UFED Style)"
+            method = "Advanced Logical"
+            if not is_valid_sha256(z_hash):
+                bu_hash = None
+            else:
+                bu_hash = z_hash
+            print(bu_hash)
+            bu_file = {
+                "Type": "forensic-image",
+                "FileName": bu_fname,
+                "extension": "zip",
+                "Filesize": bu_size,
+                "isDirectory": False,
+                "SHA256": bu_hash
+            }
+            bu_files.append(bu_file)
+            ufd_fname = f'{zipname}.ufd'
+            ufd_size = os.path.getsize(ufd_fname)
+            ufd_file = {
+                "Type": "forensic-metadata",
+                "FileName": ufd_fname,
+                "extension": "ufd",
+                "Filesize": ufd_size,
+                "isDirectory": False,
+                "SHA256": ufd_sha256
+            }
+            bu_files.append(ufd_file)
+            
 
+        case_backup = {
+            "description": bu_desc,
+            "tool_version": u_version,
+            "ExtractionType": "Logical",
+            "ExtractionMethod": method,
+            "Files": bu_files,
+            "startTime": case_begin,
+            "endTime": case_end
+        }
+
+        print(case_backup)
+        
+        self.change.set(0)
+        self.case_f = threading.Thread(target=lambda: self.call_case_json(self.change, case_device, case_backup, case_json_name))
+        self.case_f.start()
+        self.wait_variable(self.change)
+        self.progress.pack_forget()
+        
         if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
             pass
         else:
@@ -2519,6 +2620,7 @@ class MyApp(ctk.CTk):
             text.configure(text="Performing Filesystem Backup")
             text.update()
             log("FFS extraction started")
+            case_begin = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             self.prog_text = ctk.CTkLabel(self.dynamic_frame, text="0%", width=585, height=20, font=self.stfont, anchor="w", justify="left")
             self.prog_text.pack()
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
@@ -2526,12 +2628,15 @@ class MyApp(ctk.CTk):
             self.progress.pack()
             self.received_text = ctk.CTkLabel(self.dynamic_frame, text=" ", width=585, height=20, font=self.stfont, anchor="w", justify="left")
             self.received_text.pack(pady=20)
-
-            with open(udid + "_ffs.tar", "wb") as f:
+            tarname = f'{udid}_ffs_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+            case_json_name = f'{tarname}.case.json'
+            ffs_sha256 = hashlib.sha256()
+            with open(udid + f"{tarname}.tar", "wb") as f:
                 while tar_data:
                     f.write(tar_data)
-                    tar_data = stdout.channel.recv(65536)
+                    ffs_sha256.update(tar_data)
                     transferred += len(tar_data)
+                    tar_data = stdout.channel.recv(65536)
                     ffs_pro = transferred / remote_folder_size
                     if ffs_pro >= 0.99:
                         ffs_pro = 0.99
@@ -2543,11 +2648,39 @@ class MyApp(ctk.CTk):
                 self.progress.set(i/100)
                 self.after(20)
             client.close()
+            bu_hash = ffs_sha256.hexdigest()
+            bu_files = [
+                {
+                    "Type": "forensic-image",
+                    "FileName": f"{tarname}.tar",
+                    "extension": "tar",
+                    "Filesize": transferred,
+                    "isDirectory": False,
+                    "SHA256": bu_hash
+                }
+            ]
+            case_end = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            case_backup = {
+                "description": "UFADE Full Filesystem Extraction (Jailbroken)",
+                "tool_version": u_version,
+                "ExtractionType": "Filesystem",
+                "ExtractionMethod": "Full Filesystem",
+                "Files": bu_files,
+                "startTime": case_begin,
+                "endTime": case_end
+            }
+
+            case_json = case_uco.backup_case_json(case_device, case_backup)
+            with open(case_json_name, "w", encoding="utf-8") as f:
+                json.dump(case_json, f, indent=4)
+
             self.prog_text.pack_forget()
             self.progress.pack_forget()
             self.received_text.pack_forget()
+
             text.configure(text="Filesystem Backup complete.")
             log("FFS extraction completed")
+            
             self.change.set(1)
         except:
             text.configure(text="Error connecting to SSH. The device has to be in jailbroken state and SSH has to be installed.")
@@ -4952,8 +5085,11 @@ class MyApp(ctk.CTk):
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("Data")).pack(pady=40))
             return
 
-
-
+    def call_case_json(self, change, case_device, case_backup, case_json_name):
+        case_json = case_uco.backup_case_json(case_device, case_backup)
+        with open(case_json_name, "w", encoding="utf-8") as f:
+            json.dump(case_json, f, indent=4)
+        change.set(1)
 
 def unmount_abort_timer():
     raise exceptions.UnsupportedCommandError()
@@ -5451,6 +5587,7 @@ def dev_data():
                     hardware_mnr = f"{hardware}, {mnr}"
                 global disk1 
                 disk1 = lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity")/1000000000
+                raw_size = lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity")
                 global disk 
                 disk = f'{round(disk1,2):.2f}'
                 global free1 
@@ -5521,6 +5658,24 @@ def dev_data():
                     device = device + "\n" + '{:13}'.format("IMEI 1: ") + "\t" + imei
                 if imei2 != " ":
                     device = device + "\n" + '{:13}'.format("IMEI 2: ") + "\t" + imei2
+                
+                global case_device
+                case_device = {
+                    "deviceType": d_class,
+                    "model": dev_name,
+                    "Software": dversion,
+                    "localeLanguage": language,
+                    "serialNumber": snr,
+                    "WifiAddress": w_mac,
+                    "BluetoothAddress": b_mac,
+                    "storageCapacityInBytes": raw_size,
+                    "UDID": udid,
+                }
+                if imei and imei.strip():
+                    case_device["IMEI"] = imei
+
+                print(case_device)
+                          
             else:
                 device = ("Device unpaired ✗ \n\n" +
                 '{:13}'.format("Model-Nr: ") + "\t" + dev_name_s +
@@ -5953,6 +6108,16 @@ def log(text):
     with open(f"ufade_log_{log_udid}.log", 'a', encoding="utf-8") as logfile:
         logtime = str(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
         logfile.write(f"{logtime}: {text}\n")
+
+#Check for a correct sha256 format
+def is_valid_sha256(value: str) -> bool:
+    if len(value) != 64:
+        return False
+    try:
+        int(value, 16)
+        return True
+    except ValueError:
+        return False
 
 # modified unback command from pyiosbackup for better Windows support
 def unback_alt(self, path='.'):
