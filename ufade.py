@@ -2458,7 +2458,6 @@ class MyApp(ctk.CTk):
                 bu_hash = None
             else:
                 bu_hash = z_hash
-            print(bu_hash)
             bu_file = {
                 "Type": "forensic-image",
                 "FileName": bu_fname,
