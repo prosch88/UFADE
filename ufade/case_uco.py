@@ -11,7 +11,7 @@ host_platform = (os_name, os_release, os_version)
 host_os = " ".join(host_platform)
 
 case_context = {
-    "kb": "http://example.org/kb/",
+    "kb": "urn:ufade:case:kb:",
     "case-investigation": "https://ontology.caseontology.org/case/investigation/",
     "uco-core": "https://ontology.unifiedcyberontology.org/uco/core/",
     "uco-identity": "https://ontology.unifiedcyberontology.org/uco/identity/",
