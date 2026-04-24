@@ -217,7 +217,7 @@ def backup_case_json(case_device, case_backup):
         b_mac = case_device["BluetoothAddress"]
         bt_adress_facet_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, b_mac)
         bt_mac_facet = {
-            "@id": "kb:wifi-address-facet-" + str(bt_adress_facet_uuid),
+            "@id": "kb:bluetooth-address-facet-" + str(bt_adress_facet_uuid),
             "@type": "uco-observable:BluetoothAddressFacet",
             "uco-observable:addressValue": b_mac,
         }
