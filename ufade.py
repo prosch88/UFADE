@@ -1910,7 +1910,11 @@ class MyApp(ctk.CTk):
             tasks = []
             for root, dirs, files in os.walk(base):
                 for file in files:
+                    if file.startswith("._"):
+                        continue
                     source_file = os.path.join(root, file)
+                    if not os.path.isfile(source_file):
+                        continue
                     filename = os.path.relpath(source_file, base)
                     arcname = os.path.join("iPhoneDump/Backup Service", udid, "Snapshot", filename)
                     tasks.append(executor.submit(self.zip_file, zip, source_file, arcname, lock))
