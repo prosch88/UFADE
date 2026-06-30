@@ -1980,7 +1980,7 @@ class MyApp(ctk.CTk):
         change.set(1)
 
 # Check, if the device is locked
-    def check_lock(self, change, text):
+    def check_lock(self, change, text, zip=None, tar=None):
         try:
             check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
             change.set(1)
@@ -1996,7 +1996,22 @@ class MyApp(ctk.CTk):
                     break 
                 except:
                     pass
+        except Exception as e:
+            log(str(e))
+            try:
+                self.progress.pack_forget()
+                self.prog_text.pack_forget()
+            except:
+                pass
+            if zip:
+                zip.close()
+            if tar:
+                tar.close()
+            self.after(100, lambda: self.text.configure(text="There is a problem with the device connection."))
+            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
+            change.set(3)
         return()
+        
 
 # Actually perform the advanced logical backup
     def perf_logical_plus(self, t, incl_ul, keep_bu, incl_crash, incl_media, incl_apps, keep_ul):
@@ -2174,6 +2189,8 @@ class MyApp(ctk.CTk):
             self.after(200)
             if self.change.get() == 2:
                 lockdown = create_using_usbmux()
+            if self.change.get() == 3:
+                return()
             self.prog_text.configure(text="0%")
             self.progress.pack_forget()
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
@@ -2203,6 +2220,8 @@ class MyApp(ctk.CTk):
             self.after(100)
             if self.change.get() == 2:
                 lockdown = create_using_usbmux()
+            if self.change.get() == 3:
+                return()
             media_count = 0
             self.text.configure(text="Performing Extraction of Shared App-Files")
             for app in doc_list:
@@ -2229,6 +2248,8 @@ class MyApp(ctk.CTk):
                 self.lockcheck = threading.Thread(target=lambda: self.check_lock(self.change, self.text))
                 self.lockcheck.start()
                 self.wait_variable(self.change)
+                if self.change.get() == 3:
+                    return()
                 self.text.configure(text="Performing Extraction of Crash Reports")
                 self.prog_text.configure(text="0%")
                 self.progress.pack_forget() 
