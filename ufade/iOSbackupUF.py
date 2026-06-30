@@ -26,12 +26,44 @@ module_logger = logging.getLogger(__name__)
 
 
 # Patch for iOSBackup
+
+def getFileManifestDBEntry_uf(self, fileNameHash=None, relativePath=None):
+        """Modified from iOSbackup"""
+        if fileNameHash==None and relativePath==None:
+            raise Exception(f"Either fileNameHash or relativePath must be provided")
+
+        if not self.manifestDB:
+            raise Exception("Object not yet innitialized or can't find decrypted files catalog ({})".format(iOSbackup.catalog['manifestDB']))
+
+        catalog = sqlite3.connect(self.manifestDB)
+        catalog.row_factory=sqlite3.Row
+
+        if relativePath:
+            backupFile = catalog.cursor().execute("SELECT * FROM Files WHERE relativePath=? ORDER BY domain LIMIT 1", (relativePath,)).fetchone()
+        else:
+            backupFile = catalog.cursor().execute("SELECT * FROM Files WHERE fileID=? ORDER BY domain LIMIT 1", (fileNameHash,)).fetchone()
+
+        catalog.close()
+
+        if backupFile:
+            payload=dict(backupFile)
+            payload['manifest']=NSKeyedUnArchiver.unserializeNSKeyedArchiver(payload['file'])
+            del payload['file']
+        else:
+            if relativePath:
+                raise(FileNotFoundError(f"Can't find backup entry for relative path «{relativePath}» on catalog"))
+            else:
+                raise(FileNotFoundError(f"Can't find backup entry for «{fileNameHash}» on catalog"))
+
+        return payload
+
+
 def getFileDecryptedCopy(self, relativePath=None, manifestEntry=None,
                                      targetName=None, targetFolder=None, temporary=False):
     """Same as original getFileDecryptedCopy, but skips outFile.truncate"""
     
     if relativePath:
-        manifestEntry=self.getFileManifestDBEntry(relativePath=relativePath)
+        manifestEntry=getFileManifestDBEntry_uf(self, relativePath=relativePath)
 
     if manifestEntry:
         info=iOSbackup.getFileInfo(manifestEntry['manifest'])

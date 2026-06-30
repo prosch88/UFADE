@@ -1781,7 +1781,8 @@ class MyApp(ctk.CTk):
                 try: os.remove(file_path)                                                                                       #remove the file after adding
                 except: pass
             except Exception as e:
-                log(f"Error while decrypting file:{file.encode('cp1252', errors='ignore').decode('cp1252')} - {e}")
+                if "cannot mmap an empty file" not in str(e):
+                    log(f"Error while decrypting file:{file.encode('cp1252', errors='ignore').decode('cp1252')} - {e}")
         change.set(1) 
 
 # Decrypt, don't unback
