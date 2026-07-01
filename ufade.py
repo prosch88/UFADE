@@ -1810,7 +1810,18 @@ class MyApp(ctk.CTk):
                 src_path = os.path.join(src, name)
                 if os.path.isfile(src_path):
                     if not "Manifest.db" in src_path:
-                        shutil.copy2(src_path, os.path.join(folder, name))
+                        if "Manifest.plist" in src_path:
+                            shutil.copy2(src_path, os.path.join(folder, f"bu_{name}_bu"))
+                            try:
+                                with open(src_path, "rb") as mani_in:
+                                    mani_plist = plistlib.load(mani_in)
+                                mani_plist["IsEncrypted"] = False
+                                with open(os.path.join(folder, name), "wb") as mani_out:
+                                    plistlib.dump(mani_plist, mani_out, fmt=plistlib.FMT_BINARY, sort_keys=False)
+                            except:
+                                shutil.copy2(src_path, os.path.join(folder, name))
+                        else:
+                            shutil.copy2(src_path, os.path.join(folder, name))
             except:
                 pass
         try:
