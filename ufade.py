@@ -5185,15 +5185,44 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         zip = zipfile.ZipFile(f'Media_{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.zip', 'w')
     text.configure(text="Performing AFC Extraction of Mediafiles")
     text.update()
+
+    def recursive_list():
+        results = []
+        afc = AfcService(lockdown)
+
+        def safe_walk(current_folder):
+            try:
+                items = afc.listdir(current_folder)
+            except Exception as e:
+                log(f"Error listing directory {current_folder}: {e}")
+                return
+
+            dirs = []
+            files = []
+            
+            for item in items:
+                if item in [".", ".."]:
+                    continue
+                
+                full_path = posixpath.join(current_folder, item)
+
+                if afc.isdir(full_path):
+                    dirs.append(item)
+                else:
+                    files.append(item)
+
+            for entry in files:
+                results.append(posixpath.join(current_folder, entry))
+
+            for d in dirs:
+                safe_walk(posixpath.join(current_folder, d))
+
+        safe_walk("/")
+        return results
+
     if l_type == "PRFS":
-        for line in AfcService(lockdown).dirlist("/", -1):
-            #if not line.startswith("/private/var/mobile/Media/PhotoData/Thumbnails/V2/"):
-            #    if not line.endswith((".JPG",".HEIC",".MOV")):
-            #        media_list.append(line)
-            #    else:
-            #        pass
-            #else:
-            #    pass
+        entries = recursive_list()
+        for line in entries:
             media_set.add(line)
         media_list = media_set.difference(m_unback_set)
     else:
