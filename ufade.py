@@ -5185,48 +5185,33 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         zip = zipfile.ZipFile(f'Media_{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.zip', 'w')
     text.configure(text="Performing AFC Extraction of Mediafiles")
     text.update()
-
-    def recursive_list():
-        results = []
-        afc = AfcService(lockdown)
-
-        def safe_walk(current_folder):
-            try:
-                items = afc.listdir(current_folder)
-            except Exception as e:
-                log(f"Error listing directory {current_folder}: {e}")
-                return
-
-            dirs = []
-            files = []
-            
-            for item in items:
-                if item in [".", ".."]:
-                    continue
-                
-                full_path = posixpath.join(current_folder, item)
-
-                if afc.isdir(full_path):
-                    dirs.append(item)
-                else:
-                    files.append(item)
-
-            for entry in files:
-                results.append(posixpath.join(current_folder, entry))
-
-            for d in dirs:
-                safe_walk(posixpath.join(current_folder, d))
-
-        safe_walk("/")
-        return results
-
+    afc = AfcService(lockdown)
     if l_type == "PRFS":
-        entries = recursive_list()
-        for line in entries:
-            media_set.add(line)
-        media_list = media_set.difference(m_unback_set)
+        def recursive_list(target_set, ignore_set, afc):
+            def safe_walk(current_folder):
+                try:
+                    items = afc.listdir(current_folder)
+                except Exception as e:
+                    log(f"Error listing directory {current_folder}: {e}")
+                    return
+                for item in items:
+                    if item in (".", ".."):
+                        continue
+                    full_path = posixpath.join(current_folder, item)
+                    try:
+                        if afc.isdir(full_path):
+                            safe_walk(full_path)
+                        else:
+                            if full_path not in ignore_set:
+                                target_set.add(full_path)
+                    except Exception as e:
+                        log(f"Error checking isdir() for {full_path}: {e}")
+            safe_walk("/")
+        recursive_list(media_set, m_unback_set, afc)
+        media_list = media_set
+        log(f"Found {len(media_list):,} new file(s) to extract ({len(m_unback_set):,} already in backup)")
     else:
-        for line in AfcService(lockdown).listdir("/"):
+        for line in afc.listdir("/"):
             media_list.append(line)
     if l_type != "folder" and l_type != "PRFS":
         media_list.remove("DCIM")                                                                                         #get amount of lines (files and folders) in media root
@@ -5234,7 +5219,6 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
     try: os.mkdir(dest)
     except: pass
     m_nr = 0
-    afc = AfcService(lockdown)
     for entry in media_list:
         m_nr += 1
         mpro = int(100*(m_nr/media_count))
