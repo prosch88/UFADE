@@ -12,3 +12,4 @@ crossfiledialog
 exifread<3
 pdfme==0.4.12
 imagehash
+construct-typing==0.7.0
