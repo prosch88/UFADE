@@ -8,11 +8,7 @@ if sys.stdout is None:
     sys.stdout = open(os.devnull, "w")
 if sys.stderr is None:
     sys.stderr = open(os.devnull, "w")
-import customtkinter as ctk
 from PIL import ImageTk, Image, ExifTags, ImageDraw, ImageFont
-import tkinter.ttk as ttk
-from tkinter import StringVar
-from tkcalendar import Calendar
 import ufade.irecv_devices as irecv_devices_ufade
 sys.modules["pymobiledevice3.irecv_devices"] = irecv_devices_ufade
 from pymobiledevice3 import usbmux, exceptions, lockdown
@@ -90,14 +86,30 @@ import ast
 import io
 import warnings
 
+if os.name == "posix":
+    dpi_file = pathlib.Path(__file__).parent / "assets" / "dpi96"
+    os.environ["XENVIRONMENT"] = str(dpi_file)
+from PIL import ImageTk, Image, ExifTags, ImageDraw, ImageFont
+
+import customtkinter as ctk
+import tkinter.ttk as ttk
+from tkinter import StringVar
+from tkcalendar import Calendar
+
+if os.name == "posix":
+    from ufade.linux_dpi import get_linux_scale_factor
+    scaling = get_linux_scale_factor()
+else:
+    scaling = 1.0
+
 iOSbackup.getFileDecryptedCopy = iOSbackupUF.getFileDecryptedCopy
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 ctk.set_appearance_mode("dark")  # Dark Mode
 ctk.set_default_color_theme("dark-blue") 
-ctk.set_window_scaling(1.0)
-ctk.set_widget_scaling(1.0) 
+ctk.set_window_scaling(scaling)
+ctk.set_widget_scaling(scaling) 
 
 class MyApp(ctk.CTk):
     def __init__(self):
@@ -6147,6 +6159,7 @@ def pull_file(self, relative_src, dst, callback=None, src_dir=''):
     except Exception as e:
         log(f"Error copying {src} → {dst}: {e!r}")
         return
+        
 
 #UFADE "logging"
 def log(text):
