@@ -19,6 +19,8 @@ More features may follow.
 
 UFADE has been selected as a finalist for the [Sans Difference Makers Award 2024](https://www.sans.org/about/awards/difference-makers/) in the category “Innovation of the Year (Open-Source or Product Tool)”.
 
+[ALEX](https://github.com/prosch88/ALEX) is now available as a comparable tool for extracting data from Android devices.
+
 <br />
 
 ## Installation
