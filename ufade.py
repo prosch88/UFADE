@@ -27,7 +27,7 @@ from pymobiledevice3.services.diagnostics import DiagnosticsService
 from pymobiledevice3.services.dvt.instruments.device_info import DeviceInfo
 from pymobiledevice3.services.dvt.instruments.screenshot import Screenshot
 from pymobiledevice3.services.screenshot import ScreenshotService
-from pymobiledevice3.services.dvt.dvt_secure_socket_proxy import DvtSecureSocketProxyService
+#from pymobiledevice3.services.dvt.dvt_secure_socket_proxy import DvtSecureSocketProxyService
 from pymobiledevice3.services.accessibilityaudit import AccessibilityAudit, Direction
 from pymobiledevice3.services.amfi import AmfiService
 from pymobiledevice3.tcp_forwarder import UsbmuxTcpForwarder
@@ -61,6 +61,7 @@ import simpleaudio as sa
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from pdfme import build_pdf
+import concurrent.futures
 import base64
 import mimetypes
 import hashlib
@@ -85,6 +86,8 @@ import uuid
 import ast
 import io
 import warnings
+import asyncio
+import inspect
 
 if os.name == "posix":
     dpi_file = pathlib.Path(__file__).parent / "assets" / "dpi96"
@@ -215,7 +218,8 @@ class MyApp(ctk.CTk):
             widget.destroy()
         global lockdown
         try:
-            lockdown = create_using_usbmux()
+            if "lockdown" not in globals():
+                lockdown = sync(create_using_usbmux(), timeout=3)
         except:
             self.after(20)
             self.show_nodevice()
@@ -765,7 +769,7 @@ class MyApp(ctk.CTk):
         global ispaired
         lockdown = check_device()
         try:
-            language = lockdown.language
+            language = sync(lockdown.get_language())
             ispaired = True
         except:
             ispaired = False
@@ -810,7 +814,7 @@ class MyApp(ctk.CTk):
         global lockdown
         global ispaired
         try:
-            language = lockdown.language
+            language = sync(lockdown.get_language())
             ispaired = True
         except:
             ispaired = False
@@ -818,7 +822,8 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="Pair", command=self.pair_button).pack(pady=10)
             ctk.CTkButton(self.dynamic_frame, text="Pair Supervised", fg_color="#2d2d35", command=self.show_supervised).pack(pady=10)
         else:
-            lockdown = check_device()
+            if "lockdown" not in globals():
+                lockdown = check_device()
             device = dev_data()
             self.info_text.configure(state="normal")
             self.info_text.delete("0.0", "end")
@@ -870,7 +875,7 @@ class MyApp(ctk.CTk):
                 ispaired = False
                 while ispaired == False:
                     try: 
-                        lockdown.pair_supervised(cert)
+                        sync(lockdown.pair_supervised(cert))
                         ispaired = True
                     except:
                         pass
@@ -1151,7 +1156,7 @@ class MyApp(ctk.CTk):
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Initiate the creation of a Sysdiagnose archive on the device and save \nit to disk afterwards. This may take some time. \nDo you want to continue?", width=585, height=60, font=self.stfont, anchor="w", justify="left")
         self.text.pack(pady=60)
 
-        self.diagsrv = CrashReportsManager(lockdown)
+        #self.diagsrv = CrashReportsManager(lockdown)
         self.choose = ctk.BooleanVar(self, False)
         self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
         self.yesb.pack(side="left", pady=(0,350), padx=140)
@@ -1198,9 +1203,9 @@ class MyApp(ctk.CTk):
     def sysdiag(self, text, progress, waitsys):
         self.abort = ctk.CTkButton(self.dynamic_frame, text="Abort", font=self.stfont, command=self.abort_diag)
         self.abort.pack(pady=15)
-        sysdiagname = None
+        out_file = f"{udid}_sysdiagnose.tar.gz"
         try:
-            sysdiagname = self.diagsrv._get_new_sysdiagnose_filename()
+            sysdiagname = sync(prepare_sysdiagnose_async(lockdown))
             self.abort.pack_forget()
             self.diaglabel.pack_forget()
             text.pack_forget()
@@ -1208,13 +1213,14 @@ class MyApp(ctk.CTk):
             text.pack(pady=30)
             progress.pack()
             progress.start()
-            self.diagsrv._wait_for_sysdiagnose_to_finish()
+            sync(wait_only(lockdown))
             text.configure(text="Pulling the Sysdiagnose archive from the device")
-            self.diagsrv.pull(out=f"{udid}_sysdiagnose.tar.gz", entry=sysdiagname,erase=True)
+            sync(pull_only(lockdown, sysdiagname, out_file))
             text.configure(text="Extraction of Sysdiagnose archive completed!")
             log("Extracted Sysdiagnose file")
             progress.pack_forget()
-        except:
+        except Exception as e:
+            print(e)
             text.configure(text="Extraction of Sysdiagnose canceled!")
             log("Sysdiagnose extraction canceled")
             self.diaglabel.pack_forget()
@@ -1226,7 +1232,8 @@ class MyApp(ctk.CTk):
         return
 
     def abort_diag(self):
-        self.diagsrv.close()
+        for task in asyncio.all_tasks(LOOP):
+            LOOP.call_soon_threadsafe(task.cancel)
 
 # manually send a pair command and call "notpaired" again to check the status
     def pair_button(self):
@@ -1259,11 +1266,19 @@ class MyApp(ctk.CTk):
         uname = f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.logarchive'
         try:
             if mode == "default":
-                OsTraceService(lockdown).collect(out= os.path.join("unified_logs", uname), start_time=time)
+                async def collect_ul_async(time, uname):
+                    service = OsTraceService(lockdown)
+                    await service.collect(out=os.path.join("unified_logs", uname), start_time=time)
+
+                sync(collect_ul_async(time, uname))
                 text.configure(text=f"Unified Logs written to:\n{uname}")
                 log(f"Collected Unified Logs as {uname}")
             else:
-                OsTraceService(lockdown).collect(out=f"{udid}.logarchive", start_time=time) 
+                async def collect_ul_async(time, uname):
+                    service = OsTraceService(lockdown)
+                    await service.collect(out=f"{udid}.logarchive", start_time=time)
+
+                sync(collect_ul_async(time, uname))
                 log(f"Collected Unified Logs with a Backup.")
             waitul.set(1)  
         except:
@@ -1343,20 +1358,39 @@ class MyApp(ctk.CTk):
 
 # Live Syslog function
     def capture_syslog(self, text, startb, backb):
-        fname = f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}_livelog.txt'
-        sysloglive = OsTraceService(lockdown)
-        #text.configure(height=200, wraplength=900, anchor="nw")
-        startb.configure(text="Stop", command=lambda: sysloglive.close())
+        fname = f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}_livelog.txt'        
+        self.syslog_running = True
+        
+        def stop_syslog():
+            self.syslog_running = False
+            startb.configure(state="disabled")
+
+        startb.configure(text="Stop", command=stop_syslog)
         backb.configure(state="disabled")
         backb.pack_forget()
-        i=0
-        try:
-            with open(fname, 'a') as out:
-                for entry in sysloglive.syslog():
-                    i=i+1
-                    text.configure(text=f'{i} lines of Syslogs written')
+        i = 0
+
+        async def capture_syslog_async(text, fname):
+            nonlocal i
+            service = OsTraceService(lockdown)
+            with open(fname, 'a', encoding='utf-8') as out:
+                async for entry in service.syslog():
+                    # Prüfen, ob der Stop-Button gedrückt wurde
+                    if not self.syslog_running:
+                        break
+                    
                     out.write(f'{entry}\n')
-        except:
+                    i += 1
+            if hasattr(service, 'close'):
+                if asyncio.iscoroutinefunction(service.close):
+                    await service.close()
+                else:
+                    service.close()
+        try:
+            sync(capture_syslog_async(text, fname))
+        except Exception as e:
+            print(f"Syslog Error: {e}")
+        finally:
             text.configure(text=f'{i} lines of Syslogs written to:\n{fname}')
             log(f'{i} lines of Syslogs written to: {fname}')
             startb.pack_forget()
@@ -1393,9 +1427,9 @@ class MyApp(ctk.CTk):
     def check_encryption(self, change):
         try:
             if no_escrow == True:
-                UFADEMobilebackup2Service(lockdown).change_password(new="12345")
+                sync(UFADEMobilebackup2Service(lockdown).change_password(new="12345"))
             else:
-                Mobilebackup2Service(lockdown).change_password(new="12345")
+                sync(Mobilebackup2Service(lockdown).change_password(new="12345"))
             change.set(1)
         except Exception as e:
             e = str(e)
@@ -1413,9 +1447,9 @@ class MyApp(ctk.CTk):
         global bu_pass
         try:
             if bu_pass != "12345":
-                UFADEMobilebackup2Service(lockdown).change_password(old="12345", new=bu_pass)
+                sync(UFADEMobilebackup2Service(lockdown).change_password(old="12345", new=bu_pass))
             else:
-                UFADEMobilebackup2Service(lockdown).change_password(old="12345") 
+                sync(UFADEMobilebackup2Service(lockdown).change_password(old="12345")) 
             change.set(1)
         except:
             change.set(2)
@@ -1469,7 +1503,7 @@ class MyApp(ctk.CTk):
         text.configure(text="Checking password...")
         try:
             with passcode_lock:
-                service_pw.change_password(old=pw, new="12345")
+                sync(service_pw.change_password(old=pw, new="12345"))
             bu_pass = pw
             passwordbox.pack_forget()
             okbutton.pack_forget()
@@ -1513,7 +1547,7 @@ class MyApp(ctk.CTk):
             progress.update()
             prog_text.update()                   
             try: 
-                UFADEMobilebackup2Service(lockdown).change_password(old=pw, new="12345")
+                sync(UFADEMobilebackup2Service(lockdown).change_password(old=pw, new="12345"))
                 text.configure(text="Password found: " + pw)
                 bu_pass = pw
                 log(f"Found correct backup password: {pw} via bruteforce")
@@ -1647,9 +1681,9 @@ class MyApp(ctk.CTk):
             self.change.set(0)
             self._beep_after_id = self.after(13000, self.notification)
             if no_escrow == True:
-                startbu = threading.Thread(target=lambda:UFADEMobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, self.text)))
+                startbu = threading.Thread(target=lambda:sync(UFADEMobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, self.text))))
             else:
-                startbu = threading.Thread(target=lambda:Mobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, self.text)))
+                startbu = threading.Thread(target=lambda:sync(Mobilebackup2Service(lockdown).backup(full=True, progress_callback=lambda x: self.show_process(x, self.progress, self.prog_text, self.change, self.text))))
             startbu.start()
             self.check_if_done(startbu, self.change)
             self.wait_variable(self.change)
@@ -1962,31 +1996,40 @@ class MyApp(ctk.CTk):
                 progress.update()
                 file_path = os.path.join(".tar_tmp/app_doc/", app, str((apps.get(app)['EnvironmentVariables'])['CFFIXED_USER_HOME'])[1:], "Documents/")
                 os.makedirs(file_path, exist_ok=True)
-                pull(self=HouseArrestService(lockdown, bundle_id=app, documents_only=True), relative_src="/Documents/.", dst=file_path)
-                if l_type != "UFED":
-                    if l_type == "PRFS":
-                        app_dest = os.path.join(str((apps.get(app)['EnvironmentVariables'])['CFFIXED_USER_HOME'])[1:], "Documents/")
+                try:
+                    service = sync(HouseArrestService.create(lockdown, bundle_id=app, documents_only=True))
+                    try:
+                        sync(pull(self=service, relative_src="/Documents/.", dst=file_path))
+                    finally:
+                        sync(service.close())
+                    if l_type != "UFED":
+                        if l_type == "PRFS":
+                            app_dest = os.path.join(str((apps.get(app)['EnvironmentVariables'])['CFFIXED_USER_HOME'])[1:], "Documents/")
+                            for root, dirs, files in os.walk(file_path):
+                                for file in files:
+                                    source_file = os.path.join(root, file)
+                                    filename = os.path.relpath(source_file, file_path)
+                                    app_arc = posixpath.join(app_dest, filename)
+                                    if app_arc not in unback_set and os.path.isfile(file_path):
+                                        zip.write(file_path, app_arc)
+                                    else:
+                                        pass
+                        else:
+                            tar.add(file_path, arcname=os.path.join("App_Share/", app, str((apps.get(app)['EnvironmentVariables'])['CFFIXED_USER_HOME'])[1:], "Documents/"), recursive=True)
+                    else:
                         for root, dirs, files in os.walk(file_path):
                             for file in files:
                                 source_file = os.path.join(root, file)
                                 filename = os.path.relpath(source_file, file_path)
-                                app_arc = posixpath.join(app_dest, filename)
-                                if app_arc not in unback_set and os.path.isfile(file_path):
-                                    zip.write(file_path, app_arc)
-                                else:
-                                    pass
-                    else:
-                        tar.add(file_path, arcname=os.path.join("App_Share/", app, str((apps.get(app)['EnvironmentVariables'])['CFFIXED_USER_HOME'])[1:], "Documents/"), recursive=True)
-                else:
-                    for root, dirs, files in os.walk(file_path):
-                        for file in files:
-                            source_file = os.path.join(root, file)
-                            filename = os.path.relpath(source_file, file_path)
-                            try:
-                                zip.write(source_file, os.path.join("iPhoneDump/Applications/", app, filename))
-                            except:
-                                log(f"Error zipping file {filename}")
+                                try:
+                                    zip.write(source_file, os.path.join("iPhoneDump/Applications/", app, filename))
+                                except:
+                                    log(f"Error zipping file {filename}")
                                 pass
+                except Exception as e:
+                    print(e)
+                    log(f"Error pulling app-files for: {app}")
+
 
                 try: os.remove(file_path)
                 except: shutil.rmtree(file_path, ignore_errors=True)
@@ -2007,7 +2050,7 @@ class MyApp(ctk.CTk):
 # Check, if the device is locked
     def check_lock(self, change, text, zip=None, tar=None):
         try:
-            check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
+            check_apps = sync(installation_proxy.InstallationProxyService(lockdown).get_apps())
             change.set(1)
         except exceptions.PasswordRequiredError:
             print("Device locked")
@@ -2016,7 +2059,7 @@ class MyApp(ctk.CTk):
             while True:
                 try:
                     self.after(3000)
-                    check_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
+                    check_apps = sync(installation_proxy.InstallationProxyService(lockdown).get_apps())
                     change.set(2)
                     break 
                 except:
@@ -2213,7 +2256,7 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.change)
             self.after(200)
             if self.change.get() == 2:
-                lockdown = create_using_usbmux()
+                lockdown = sync(create_using_usbmux(), timeout=3)
             if self.change.get() == 3:
                 return()
             self.prog_text.configure(text="0%")
@@ -2244,7 +2287,7 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.change)
             self.after(100)
             if self.change.get() == 2:
-                lockdown = create_using_usbmux()
+                lockdown = sync(create_using_usbmux(), timeout=3)
             if self.change.get() == 3:
                 return()
             media_count = 0
@@ -2282,7 +2325,7 @@ class MyApp(ctk.CTk):
                 self.progress.set(0)
                 self.progress.pack()
                 self.after(100)
-                lockdown = create_using_usbmux()
+                lockdown = sync(create_using_usbmux(), timeout=3)
                 self.change.set(0)
                 if l_type == "PRFS":
                     tarpath = "/private/var/mobile/Library/Logs/CrashReporter"
@@ -2321,7 +2364,7 @@ class MyApp(ctk.CTk):
                 self.change.set(0)
 
                 def additional_prfs():
-                    appinfo = installation_proxy.InstallationProxyService(lockdown).get_apps(application_type="Any", calculate_sizes=True)
+                    appinfo = sync(installation_proxy.InstallationProxyService(lockdown).get_apps(application_type="Any", calculate_sizes=True))
 
                     try:
                         json_bytes = json.dumps(appinfo, default=bytes_to_base64)
@@ -2330,7 +2373,7 @@ class MyApp(ctk.CTk):
                         pass
                         #print(e)
                     try:
-                        appfile = installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier', 'iTunesMetadata', 'ApplicationDSID', 'ApplicationSINF', 'ApplicationType', 'CFBundleDisplayName', 'CFBundleExecutable', 'CFBundleName', 'CFBundlePackageType', 'CFBundleShortVersionString', 'CFBundleVersion', 'Container', 'GroupContainers', 'MinimumOSVersion', 'Path', 'UIDeviceFamily', 'DynamicDiskUsage', 'StaticDiskUsage', 'UIFileSharingEnabled'])
+                        appfile = sync(installation_proxy.InstallationProxyService(lockdown).browse(attributes=['CFBundleIdentifier', 'iTunesMetadata', 'ApplicationDSID', 'ApplicationSINF', 'ApplicationType', 'CFBundleDisplayName', 'CFBundleExecutable', 'CFBundleName', 'CFBundlePackageType', 'CFBundleShortVersionString', 'CFBundleVersion', 'Container', 'GroupContainers', 'MinimumOSVersion', 'Path', 'UIDeviceFamily', 'DynamicDiskUsage', 'StaticDiskUsage', 'UIFileSharingEnabled']))
                         for app in appfile:
                             try:
                                 if "Bundle" in app['Path']:
@@ -2371,7 +2414,7 @@ class MyApp(ctk.CTk):
                                         pass
                                 try:
                                     iconname = f"{app['CFBundleIdentifier']}.png"
-                                    png_data = SpringBoardServicesService(lockdown).get_icon_pngdata(app['CFBundleIdentifier'])
+                                    png_data = sync(SpringBoardServicesService(lockdown).get_icon_pngdata(app['CFBundleIdentifier']))
                                     zip.writestr(f"_ufade_extra/icons/{iconname}", png_data)
                                 except Exception as e:
                                     pass
@@ -2389,7 +2432,7 @@ class MyApp(ctk.CTk):
 
         #Gather device information as device_values.plist for UFD-ZIP
         else:
-            lockdown = create_using_usbmux()
+            lockdown = sync(create_using_usbmux(), timeout=3)
             de_va_di = self.devinfo_plist()
             with open("device_values.plist", "wb") as file:
                 plistlib.dump(de_va_di, file)
@@ -2421,7 +2464,7 @@ class MyApp(ctk.CTk):
             
 
         #Create the PhoneInfo.xml for the UFD-ZIP
-            all_list = lockdown.get_value("","")
+            all_list = sync(lockdown.get_value("",""))
             dic_a = {'Request': 'GetValue', 'Value': all_list}
             with open("PhoneInfo.xml", "wb") as file:
                 plistlib.dump(dic_a, file)
@@ -2580,10 +2623,10 @@ class MyApp(ctk.CTk):
                         "com.apple.mobile.tethered_sync", "com.apple.mobile.third_party_termination", "com.apple.mobile.user_preferences", "com.apple.mobile.wireless_lockdown", "com.apple.purplebuddy", "com.apple.xcode.developerdomain"]
             de_va_di = {}
             for key in de_va1:
-                try: de_va_di.update([(key,(lockdown.get_value("",key)))])
+                try: de_va_di.update([(key,(sync(lockdown.get_value("",key))))])
                 except: pass
             for key in de_va2:
-                try: de_va_di.update([(key,(lockdown.get_value(key,"")))])
+                try: de_va_di.update([(key,(sync(lockdown.get_value(key,""))))])
                 except: pass
             return(de_va_di) 
 
@@ -2832,11 +2875,11 @@ class MyApp(ctk.CTk):
                 count = -1  
             serv_pcap = PcapdService(lockdown) 
             packets_generator = serv_pcap.watch(packets_count=count)
-            self.abort = ctk.CTkButton(self.dynamic_frame, text="Abort", font=self.stfont, command=lambda: serv_pcap.close())
+            self.abort = ctk.CTkButton(self.dynamic_frame, text="Abort", font=self.stfont, command=lambda: sync(serv_pcap.close()))
             self.abort.pack(pady=40)
             pname = f'{udid}_{str(datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))}.pcap'            
             with open(pname, "wb") as pcap_file:
-                serv_pcap.write_to_pcap(pcap_file, packets_generator)
+                sync(serv_pcap.write_to_pcap(pcap_file, packets_generator))
             text.configure(text="Sniffing process stopped. " + str(count) + " packages received." )
         except ValueError: 
             text.configure(text="Invalid input. Provide digits only.")
@@ -2914,7 +2957,7 @@ class MyApp(ctk.CTk):
         self.wait_variable(self.change)
         self.text.configure(text="Performing AFC Extraction of Mediafiles", height=60)
         global lockdown
-        lockdown = create_using_usbmux()
+        lockdown = sync(create_using_usbmux(), timeout=3)
         self.casebox.pack_forget()
         self.namebox.pack_forget()
         self.evidbox.pack_forget()
@@ -2950,7 +2993,7 @@ class MyApp(ctk.CTk):
         self.progress.set(0)
         self.prog_text.configure(text="0%")
         self.text.configure(text="Pulling Crash Logs from the device.")
-        lockdown = create_using_usbmux()
+        lockdown = sync(create_using_usbmux(), timeout=3)
         self.crashl = threading.Thread(target=lambda: crash_report(crash_dir=cfolder, change=self.change, progress=self.progress, prog_text=self.prog_text))
         self.crashl.start()
         self.wait_variable(self.change)
@@ -2976,7 +3019,7 @@ class MyApp(ctk.CTk):
         text.configure(text="Generating report files. This may take some time.")
         progress.pack_forget()
         global lockdown
-        lockdown = create_using_usbmux()
+        lockdown = sync(create_using_usbmux(), timeout=3)
         self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
         self.progress.pack()
         self.progress.start()
@@ -3321,7 +3364,7 @@ class MyApp(ctk.CTk):
         else:
             pass
         try: 
-            number = lockdown.get_value(key="PhoneNumber")
+            number = sync(lockdown.get_value(key="PhoneNumber"))
             if number == None:
                 number = ""
         except: 
@@ -3853,7 +3896,7 @@ class MyApp(ctk.CTk):
 
         global number
         try: 
-            number = lockdown.get_value(key="PhoneNumber")
+            number = sync(lockdown.get_value(key="PhoneNumber"))
             if number == None:
                 number = ""
         except: number = ""
@@ -3864,11 +3907,11 @@ class MyApp(ctk.CTk):
                 all = ""
         except: 
             all = ""
-        try: tele = lockdown.get_value("", "TelephonyCapability")
+        try: tele = sync(lockdown.get_value("", "TelephonyCapability"))
         except: tele = False
         if int(dversion.split(".")[0]) >= 17:
             try:
-                springboard_rep = str(SpringBoardServicesService(lockdown).get_icon_state())
+                springboard_rep = str(sync(get_springboard_state_async(lockdown)))
             except:
                 springboard_rep = app_id_list
         else:
@@ -4179,7 +4222,7 @@ class MyApp(ctk.CTk):
                         self.okbutton.pack()
                         self.wait_variable(self.choose)
                         self.okbutton.pack_forget()
-                        #lockdown = create_using_usbmux()
+                        #lockdown = sync(get_lockdown_async())
                         self.after(50)
                         #if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
                         if lockdown.developer_mode_status != True:
@@ -4226,7 +4269,7 @@ class MyApp(ctk.CTk):
                 else:
                     if not os.path.isdir(os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", dversion)):
                         raise Exception("Version not found!") 
-                lockdown = create_using_usbmux()
+                lockdown = sync(create_using_usbmux(), timeout=3)
                 if d_class == "Watch":
                     DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", dversion, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", dversion, "DeveloperDiskImage.dmg.signature"))
                 else:
@@ -4250,7 +4293,7 @@ class MyApp(ctk.CTk):
                 self.after(1000)
                 info = info + "\nClosest version is " + ver
                 text.configure(text=info)
-                lockdown = create_using_usbmux()
+                lockdown = sync(create_using_usbmux(), timeout=3)
                 self.after(1000)
                 try:
                     self.after(50)
@@ -4447,7 +4490,7 @@ class MyApp(ctk.CTk):
                         lockdown = get_tunneld_devices()[0]
                         new_dev == True
                 if new_dev == False:
-                    lockdown = create_using_usbmux()
+                    lockdown = sync(create_using_usbmux(), timeout=3)
                 dvt = DvtSecureSocketProxyService(lockdown)
                 dvt.__enter__()
             except:
@@ -4493,7 +4536,7 @@ class MyApp(ctk.CTk):
                             return
 
                 else:
-                    lockdown = create_using_usbmux()
+                    lockdown = sync(create_using_usbmux(), timeout=3)
                 #dvt = DvtSecureSocketProxyService(lockdown)
                 #dvt.__enter__()
                 self.switch_menu("DevMenu")
@@ -5193,198 +5236,207 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         media_set = set()
     else:
         media_list = []
+    
     tar = archive
     zip = archive
-    if fzip == True:
+    if fzip:
         zip = zipfile.ZipFile(f'Media_{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.zip', 'w')
+    
     text.configure(text="Performing AFC Extraction of Mediafiles")
     text.update()
     afc = AfcService(lockdown)
-    if l_type == "PRFS":
-        def recursive_list(target_set, ignore_set, afc):
-            def safe_walk(current_folder):
-                try:
-                    items = afc.listdir(current_folder)
-                except Exception as e:
-                    log(f"Error listing directory {current_folder}: {e}")
-                    return
-                for item in items:
-                    if item in (".", ".."):
-                        continue
-                    full_path = posixpath.join(current_folder, item)
+    try:
+        if l_type == "PRFS":
+            async def recursive_list_async(target_set, ignore_set, afc_inst):
+                async def safe_walk(current_folder):
                     try:
-                        if afc.isdir(full_path):
-                            safe_walk(full_path)
-                        else:
-                            if full_path not in ignore_set:
-                                target_set.add(full_path)
+                        items = await afc_inst.listdir(current_folder)
                     except Exception as e:
-                        log(f"Error checking isdir() for {full_path}: {e}")
-            safe_walk("/")
-        recursive_list(media_set, m_unback_set, afc)
-        media_list = media_set
-        log(f"Found {len(media_list):,} new file(s) to extract ({len(m_unback_set):,} already in backup)")
-    else:
-        for line in afc.listdir("/"):
-            media_list.append(line)
-    if l_type != "folder" and l_type != "PRFS":
-        media_list.remove("DCIM")                                                                                         #get amount of lines (files and folders) in media root
-    media_count = len(media_list)
-    try: os.mkdir(dest)
-    except: pass
-    m_nr = 0
-    for entry in media_list:
-        m_nr += 1
-        mpro = int(100*(m_nr/media_count))
-        prog_text.configure(text=f"{mpro}%")
-        progress.set(mpro/100)
-        prog_text.update()
-        progress.update()
-        try:
-            if l_type == "PRFS":
-                #if (f"/private/var/mobile/Media{entry}") not in unback_set:
-                pull_file(self=afc,relative_src=entry, dst=dest)
-                file_path = os.path.join(dest, pathlib.Path(entry).name)
-                arcname = os.path.join("/private/var/mobile/Media", entry.strip("/"))
-                zip.write(file_path, arcname=arcname)
-                os.remove(file_path)
-                #else:
-                #    pass
-            else:
-                pull(self=AfcService(lockdown),relative_src=entry, dst=dest)
-                if l_type != "folder":
-                    file_path = os.path.join(dest, entry)                                                              #get the files and folders shared over AFC
-                    if l_type != "UFED":
-                        #tar.add(file_path, arcname=os.path.join("Media/", entry), recursive=True)                                   #add the file/folder to the TAR
-                        if os.path.isfile(file_path):
-                            tar.add(file_path, arcname=os.path.join("Media", entry))                            #add the file/folder to the ZIP
-                        elif os.path.isdir(file_path):
-                            for root, dirs, files in os.walk(dest):
-                                for file in files:
-                                    source_file = os.path.join(root, file)
-                                    filename = os.path.relpath(source_file, dest)
-                                    base_folder = os.path.join(dest, "AirFair")
-                                    if dest.startswith(base_folder):
-                                        filename = os.path.relpath(source_file, os.path.join(dest, "AirFair"))
-                                    tar.add(source_file, arcname=os.path.join("Media", filename))
-                    else:
-                        if os.path.isfile(file_path):
-                            zip.write(file_path, os.path.join("iPhoneDump/AFC Service/", entry))                            #add the file/folder to the ZIP
-                        elif os.path.isdir(file_path):
-                            for root, dirs, files in os.walk(dest):
-                                for file in files:
-                                    source_file = os.path.join(root, file)
-                                    filename = os.path.relpath(source_file, dest)
-                                    zip.write(source_file, os.path.join("iPhoneDump/AFC Service/", filename))
-                    try: os.remove(file_path)
-                    except: shutil.rmtree(file_path, ignore_errors=True)
-                else:
-                    if fzip == True:
-                        file_path = os.path.join(dest, entry) 
-                        if os.path.isfile(file_path):
-                            zip.write(file_path, os.path.join("private/var/Media/", entry))                            #add the file/folder to the ZIP
-                        elif os.path.isdir(file_path):  
-                            for root, dirs, files in os.walk(dest):
-                                for file in files:
-                                    source_file = os.path.join(root, file)
-                                    filename = os.path.relpath(source_file, dest)
-                                    zip.write(source_file, os.path.join("private/var/Media/", filename))
-                        try: os.remove(file_path)
-                        except: shutil.rmtree(file_path, ignore_errors=True)
-                    else:
-                        pass
-        except:
+                        log(f"Error listing directory {current_folder}: {e}")
+                        return
+                    for item in items:
+                        if item in (".", ".."):
+                            continue
+                        full_path = posixpath.join(current_folder, item)
+                        try:
+                            if await afc_inst.isdir(full_path):
+                                await safe_walk(full_path)
+                            else:
+                                if full_path not in ignore_set:
+                                    target_set.add(full_path)
+                        except Exception as e:
+                            log(f"Error checking isdir() for {full_path}: {e}")
+                await safe_walk("/")
+
+            sync(recursive_list_async(media_set, m_unback_set, afc))
+            media_list = media_set
+            log(f"Found {len(media_list):,} new file(s) to extract ({len(m_unback_set):,} already in backup)")
+        
+        else:
+            media_list = sync(afc.listdir("/"))
+
+        if l_type != "folder" and l_type != "PRFS":
+            if "DCIM" in media_list:
+                media_list.remove("DCIM")
+
+        media_count = len(media_list)
+        try: 
+            os.mkdir(dest)
+        except Exception: 
             pass
 
-    if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
+        m_nr = 0
+        for entry in media_list:
+            m_nr += 1
+            mpro = int(100 * (m_nr / media_count)) if media_count > 0 else 100
+            prog_text.configure(text=f"{mpro}%")
+            progress.set(mpro / 100)
+            prog_text.update()
+            progress.update()
+
+            try:
+                if l_type == "PRFS":
+                    sync(pull_file(self=afc, relative_src=entry, dst=dest))
+                    file_path = os.path.join(dest, pathlib.Path(entry).name)
+                    arcname = os.path.join("/private/var/mobile/Media", entry.strip("/"))
+                    zip.write(file_path, arcname=arcname)
+                    os.remove(file_path)
+                else:
+                    sync(pull(self=afc, relative_src=entry, dst=dest))
+
+                    if l_type != "folder":
+                        file_path = os.path.join(dest, entry)
+                        if l_type != "UFED":
+                            if os.path.isfile(file_path):
+                                tar.add(file_path, arcname=os.path.join("Media", entry))
+                            elif os.path.isdir(file_path):
+                                for root, dirs, files in os.walk(dest):
+                                    for file in files:
+                                        source_file = os.path.join(root, file)
+                                        filename = os.path.relpath(source_file, dest)
+                                        base_folder = os.path.join(dest, "AirFair")
+                                        if dest.startswith(base_folder):
+                                            filename = os.path.relpath(source_file, base_folder)
+                                        tar.add(source_file, arcname=os.path.join("Media", filename))
+                        else:
+                            if os.path.isfile(file_path):
+                                zip.write(file_path, os.path.join("iPhoneDump/AFC Service/", entry))
+                            elif os.path.isdir(file_path):
+                                for root, dirs, files in os.walk(dest):
+                                    for file in files:
+                                        source_file = os.path.join(root, file)
+                                        filename = os.path.relpath(source_file, dest)
+                                        zip.write(source_file, os.path.join("iPhoneDump/AFC Service/", filename))
+                        
+                        try: 
+                            os.remove(file_path)
+                        except Exception: 
+                            shutil.rmtree(file_path, ignore_errors=True)
+                    else:
+                        if fzip:
+                            file_path = os.path.join(dest, entry) 
+                            if os.path.isfile(file_path):
+                                zip.write(file_path, os.path.join("private/var/Media/", entry))
+                            elif os.path.isdir(file_path):  
+                                for root, dirs, files in os.walk(dest):
+                                    for file in files:
+                                        source_file = os.path.join(root, file)
+                                        filename = os.path.relpath(source_file, dest)
+                                        zip.write(source_file, os.path.join("private/var/Media/", filename))
+                            try: 
+                                os.remove(file_path)
+                            except Exception: 
+                                shutil.rmtree(file_path, ignore_errors=True)
+            except Exception as e:
+                log(f"Error processing entry {entry}: {e}")
+
+    finally:
+        if hasattr(afc, 'close_async'):
+            sync(afc.close_async())
+        elif hasattr(afc, 'close'):
+            sync(afc.close())
+
+    if d_class in ("Watch", "AppleTV", "AudioAccessory"):
         with open(f"afc_files_{udid}.json", "w") as file:
             json.dump(filedict, file)
-    else:
-        pass
-    if fzip == True:
+
+    if fzip:
         zip.close()
         shutil.rmtree(dest, ignore_errors=True)
+
     log("Extracted AFC-Media files")
     change.set(1)   
-    return(archive)  
+    return archive
 
 
 
 # Pull crash logs
 def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, zip=None, tarpath=None, l_type="default"):
     log("Starting crash log extraction")
-    if czip == True:
+    if czip:
         zip = zipfile.ZipFile(f'{crash_dir}.zip', 'w')
-    crash_count = 0
-    crash_list = []
+    afc = None  
     try:
-        for entry in CrashReportsManager(lockdown).ls(""):
-            crash_list.append(entry)
-            crash_count += 1        
-        try: os.mkdir(crash_dir)
-        except: pass
-        c_nr = 0
-        for entry in crash_list:
-            c_nr += 1
-            try: 
-                pull(self=AfcService(lockdown, service_name="com.apple.crashreportcopymobile"),relative_src=entry, dst=crash_dir)
-                #AfcService(lockdown, service_name="com.apple.crashreportcopymobile").pull(relative_src=entry, dst=crash_dir, src_dir="")
-                if czip == True:
-                    file_path = os.path.join(crash_dir, entry) 
-                    if os.path.isfile(file_path):
-                        #add the file/folder to the ZIP
-                        zip.write(file_path, entry)                            
-                    elif os.path.isdir(file_path):  
-                        for root, dirs, files in os.walk(crash_dir):
-                            for file in files:
-                                source_file = os.path.join(root, file)
-                                filename = os.path.relpath(source_file, crash_dir)
-                                zip.write(source_file, filename)
-                    try: os.remove(file_path)
-                    except: shutil.rmtree(file_path, ignore_errors=True)
-                elif tar != None:
-                    file_path = os.path.join(crash_dir, entry) 
-                    if os.path.isfile(file_path):
-                        tar.add(file_path, arcname=os.path.join(tarpath, entry))
-                    elif os.path.isdir(file_path):  
-                        for root, dirs, files in os.walk(crash_dir):
-                            for file in files:
-                                source_file = os.path.join(root, file)
-                                filename = os.path.relpath(source_file, crash_dir)
-                                tar.add(source_file, arcname=os.path.join(tarpath, filename))
-                    try: os.remove(file_path)
-                    except: shutil.rmtree(file_path, ignore_errors=True)
-                elif zip is not None and l_type == 'PRFS':
-                    file_path = os.path.join(crash_dir, entry) 
-                    if os.path.isfile(file_path):
-                        zip.write(file_path, os.path.join(tarpath, entry))
-                    elif os.path.isdir(file_path):  
-                        for root, dirs, files in os.walk(crash_dir):
-                            for file in files:
-                                source_file = os.path.join(root, file)
-                                filename = os.path.relpath(source_file, crash_dir)
-                                zip.write(source_file, os.path.join(tarpath, filename))
-                    try: os.remove(file_path)
-                    except: shutil.rmtree(file_path, ignore_errors=True)
+        afc = AfcService(lockdown, service_name="com.apple.crashreportcopymobile")
+        #sync(afc.connect_async())
+        crash_list = list(sync(afc.listdir("")))
+        crash_count = len(crash_list)
+        os.makedirs(crash_dir, exist_ok=True)
+        arc_base = tarpath if tarpath else ""
 
-                else:
-                    pass
-            except: 
-                pass
-            cpro = c_nr/crash_count
-            progress.set(cpro)
-            prog_text.configure(text=f"{int(cpro*100)}%")
-            progress.update()
-            prog_text.update()
-        if czip == True:
+        for c_nr, entry in enumerate(crash_list, 1):
+            try:
+                sync(afc.pull(relative_src=entry, dst=crash_dir))
+                file_path = os.path.join(crash_dir, entry)
+                
+                if os.path.exists(file_path):
+                    if czip:
+                        _add_to_archive(zip.write, crash_dir, file_path, entry, "")
+                    elif tar is not None:
+                        _add_to_archive(tar.add, crash_dir, file_path, entry, arc_base)
+                    elif zip is not None and l_type == 'PRFS':
+                        _add_to_archive(zip.write, crash_dir, file_path, entry, arc_base)
+                    
+                    if czip or tar or (zip and l_type == 'PRFS'):
+                        if os.path.isfile(file_path):
+                            os.remove(file_path)
+                        else:
+                            shutil.rmtree(file_path, ignore_errors=True)
+            except Exception as e:
+                log(f"Error processing {entry}: {e}")
+
+            # GUI-Update
+            if crash_count > 0:
+                cpro = c_nr / crash_count
+                progress.set(cpro)
+                prog_text.configure(text=f"{int(cpro * 100)}%")
+
+        if czip and zip:
             zip.close()
             shutil.rmtree(crash_dir, ignore_errors=True)
+            
         log("Crash log extraction complete.")
-        change.set(1)
-    except:
-        log("Crash log extraction failed.")
+    except Exception as e:
+        print(e)
+        log(f"Crash log extraction failed: {e}")
+    finally:
+        try:
+            sync(afc.close())
+        except Exception:
+            pass
         change.set(1)
 
+def _add_to_archive(add_func, base_dir, target_path, entry, arc_prefix):
+    if os.path.isfile(target_path):
+        arcname = os.path.join(arc_prefix, entry) if arc_prefix else entry
+        add_func(target_path, arcname=arcname) if 'add' in add_func.__name__ else add_func(target_path, arcname)
+    elif os.path.isdir(target_path):
+        for root, _, files in os.walk(target_path):
+            for file in files:
+                src_file = os.path.join(root, file)
+                rel_path = os.path.relpath(src_file, base_dir)
+                arcname = os.path.join(arc_prefix, rel_path) if arc_prefix else rel_path
+                add_func(src_file, arcname=arcname) if 'add' in add_func.__name__ else add_func(src_file, arcname)
 
 
 def save_info():
@@ -5396,7 +5448,7 @@ def save_info():
     
     global number
     try: 
-        number = lockdown.get_value(key="PhoneNumber")
+        number = sync(lockdown.get_value(key="PhoneNumber"))
         if number == None:
             number = ""
     except: number = ""
@@ -5417,7 +5469,8 @@ def save_info():
         all = lockdown.all_values.get("CarrierBundleInfoArray")
         if all == None:
             all = ""
-    except: 
+    except Exception as e:
+        print(e)
         all = ""
     if all != "":
         for entry in all:
@@ -5431,7 +5484,7 @@ def save_info():
     #Save user-installed Apps to txt
     if int(dversion.split(".")[0]) >= 14:
         try:
-            springboard = SpringBoardServicesService(lockdown).get_icon_state()
+            springboard = str(call_service(SpringBoardServicesService, 'get_icon_state'))
         except:
             springboard = None
     else:
@@ -5469,8 +5522,10 @@ def save_info():
     log("Wrote device info to text")    
 
 def check_device():
+    #global lockdown
+    #if "lockdown" not in globals(): 
     try:
-        lockdown = create_using_usbmux(autopair=False)
+        lockdown = sync(create_using_usbmux(autopair=False),timeout=3)
     except:
         lockdown = None
     return(lockdown)
@@ -5479,7 +5534,7 @@ def pair_device(paired):
     global lockdown
     lockdown_unpaired = lockdown
     try:
-        lockdown = create_using_usbmux()
+        lockdown = sync(create_using_usbmux(),timeout=3)
         global ispaired
         ispaired = True
         paired.set(True) 
@@ -5493,7 +5548,7 @@ def pair_supervised_device(paired):
     global lockdown
     lockdown_unpaired = lockdown
     try:
-        lockdown = create_using_usbmux()
+        lockdown = sync(create_using_usbmux(), timeout=3)
         global ispaired
         ispaired = True
         paired.set(True) 
@@ -5572,7 +5627,7 @@ def dev_data():
     else:
         if lockdown != None:
             global d_class 
-            try: d_class= lockdown.get_value("","DeviceClass")
+            try: d_class= sync(lockdown.get_value("","DeviceClass"))
             except: d_class = " "
             
             try: 
@@ -5601,7 +5656,7 @@ def dev_data():
             try: 
                 product = lockdown.product_type
                 if product == None:
-                    product = lockdown.get_value("","ProductType")
+                    product = sync(lockdown.get_value("","ProductType"))
                     if product == None:
                         product = d_class
             except: 
@@ -5617,31 +5672,31 @@ def dev_data():
             try: w_mac = lockdown.wifi_mac_address
             except: w_mac = " "
             global name
-            try: name =  lockdown.get_value("","DeviceName")
+            try: name =  sync(lockdown.get_value("","DeviceName"))
             except: name = " "
             global build
-            try: build = lockdown.get_value("","BuildVersion")
+            try: build = sync(lockdown.get_value("","BuildVersion"))
             except: build = " "
             if ispaired == True:
                 global imei
                 global imei2
-                try: imei = lockdown.get_value("","InternationalMobileEquipmentIdentity")
+                try: imei = sync(lockdown.get_value("","InternationalMobileEquipmentIdentity"))
                 except: imei = " "
-                try: imei2 = lockdown.get_value("","InternationalMobileEquipmentIdentity2")
+                try: imei2 = sync(lockdown.get_value("","InternationalMobileEquipmentIdentity2"))
                 except: imei2 = " "
-                try: snr = lockdown.get_value("","SerialNumber")
+                try: snr = sync(lockdown.get_value("","SerialNumber"))
                 except: snr = " "
                 global mlbsnr 
-                try: mlbsnr = lockdown.get_value("","MLBSerialNumber")
+                try: mlbsnr = sync(lockdown.get_value("","MLBSerialNumber"))
                 except: mlbsnr = " "
                 global d_tz 
-                try: d_tz = lockdown.get_value("","TimeZone")
+                try: d_tz = sync(lockdown.get_value("","TimeZone"))
                 except: d_tz = " "
                 global b_mac
-                try: b_mac = lockdown.get_value("","BluetoothAddress")
+                try: b_mac = sync(lockdown.get_value("","BluetoothAddress"))
                 except: b_mac = " "
                 global mnr
-                try: mnr = lockdown.get_value("", "ModelNumber")
+                try: mnr = sync(lockdown.get_value("", "ModelNumber"))
                 except: mnr = " "
                 global hardware_mnr
                 if hardware == " ":
@@ -5649,12 +5704,12 @@ def dev_data():
                 else:
                     hardware_mnr = f"{hardware}, {mnr}"
                 global disk1 
-                disk1 = lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity")/1000000000
-                raw_size = lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity")
+                disk1 = sync(lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity"))/1000000000
+                raw_size = sync(lockdown.get_value("com.apple.disk_usage","TotalDiskCapacity"))
                 global disk 
                 disk = f'{round(disk1,2):.2f}'
                 global free1 
-                free1 = lockdown.get_value("com.apple.disk_usage","AmountDataAvailable")/1000000000
+                free1 = sync(lockdown.get_value("com.apple.disk_usage","AmountDataAvailable"))/1000000000
                 global free 
                 free = f'{round(free1,2):.2f}'
                 global used1 
@@ -5664,11 +5719,11 @@ def dev_data():
                 global graph_progress 
                 graph_progress = "" + "▓" * int(26/100*(100/disk1*used1)) + "░" * int(26/100*(100/disk1*free1)) + ""
                 global language
-                try: language = lockdown.language
+                try: language = sync(lockdown.get_language())
                 except: language = " "
                 global comp
                 if d_class != "Watch":
-                    try: comp = CompanionProxyService(lockdown).list()
+                    try: comp = sync(CompanionProxyService(lockdown).list())
                     except: comp = []
                 else:
                     comp = []
@@ -5753,13 +5808,12 @@ def dev_data():
             device = nodevice_text
 
         #Get installed Apps
-        if lockdown != None and ispaired != False:
+        if lockdown is not None and ispaired:
             global apps 
             global all_apps
             global app_id_list 
             try:
-                all_apps = installation_proxy.InstallationProxyService(lockdown).get_apps()
-                apps = installation_proxy.InstallationProxyService(lockdown).get_apps("User")
+                all_apps, apps = sync(fetch_apps_async(lockdown), timeout=3)
                 app_id_list = []
                 sorted_apps = sorted(apps.keys(), key=lambda app: apps.get(app).get('CFBundleDisplayName', '').lower())
                 for app in sorted_apps:
@@ -5772,7 +5826,8 @@ def dev_data():
                         doc_list.append("yes")
                     except:
                         doc_list.append("no")
-            except:
+            except Exception as e:
+                print(e)
                 apps = {}
                 all_apps = {}
                 app_id_list = []
@@ -5821,16 +5876,16 @@ def keybag_from_p12(p12file, password: str):
 
 
 # modified pull function from pymobiledevice3 (sets atime to mtime as it's not readable)
-def pull(self, relative_src, dst, callback=None, src_dir=''):
+async def pull(self, relative_src, dst, callback=None, src_dir=''):
         global filedict
 
-        src = self.resolve_path(posixpath.join(src_dir, relative_src))
+        src = await self.resolve_path(posixpath.join(src_dir, relative_src))
 
-        if not self.isdir(src):
+        if not await self.isdir(src):
             # normal file
             output_format = "%Y-%m-%dT%H:%M:%S+00:00"
             try: 
-                filecontent = self.get_file_contents(src)
+                filecontent = await self.get_file_contents(src)
                 readable = 1
             except:
                 log(f"Error reading file: {src}")
@@ -5856,9 +5911,6 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                             tag = "Configuration"
                         else: 
                             tag = "Uncategorized"
-                        #print(src)
-                        #print(mimetype)
-                        #print(tag)
                     except:
                         mimetype = ["uncategorized", None]
                         if any(x in src.lower() for x in dbfiles):
@@ -5866,7 +5918,7 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                         else: 
                             tag = "Uncategorized"
                     finally:
-                        filedict[str(src)] = {"size": str(self.stat(src)['st_size']), "accessInfo": {"CreationTime": f"{self.stat(src)['st_birthtime'].strftime(output_format)}", "ModifyTime": f"{self.stat(src)['st_mtime'].strftime(output_format)}", "AccessTime": ""}, 
+                        filedict[str(src)] = {"size": str(await self.stat(src)['st_size']), "accessInfo": {"CreationTime": f"{await self.stat(src)['st_birthtime'].strftime(output_format)}", "ModifyTime": f"{await self.stat(src)['st_mtime'].strftime(output_format)}", "AccessTime": ""}, 
                         "metadata": {"Local Path": f"files/AFC_Media/{str(src)}", "SHA256": hashlib.sha256(filecontent).hexdigest(), "MD5": hashlib.md5(filecontent).hexdigest(), "Tags": tag}}
                         if tag == "Image":
                             try:
@@ -5943,7 +5995,7 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                                     filedict[str(src)]["GPS"] = gpsdict
                 else:
                     pass                
-                try: mtime = self.stat(src)['st_mtime'].timestamp()
+                try: mtime = (await self.stat(src))['st_mtime'].timestamp()
                 except: pass
                 if os.path.isdir(dst):
                     dst = os.path.join(dst, os.path.basename(relative_src))
@@ -5962,7 +6014,7 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                     except: 
                         pass
                     if callback is not None:
-                        callback(src, dst)
+                        await callback(src, dst)
                 except:
                     log(f"Error writing file: {src}")
                     pass
@@ -5974,19 +6026,19 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
             dst_path = pathlib.Path(dst) / os.path.basename(relative_src)
             dst_path.mkdir(parents=True, exist_ok=True)
 
-            for filename in self.listdir(src):
+            for filename in await self.listdir(src):
                 src_filename = posixpath.join(src, filename)
                 dst_filename = dst_path / filename
 
-                src_filename = self.resolve_path(src_filename)
+                src_filename = await self.resolve_path(src_filename)
 
                 try:
-                    if self.isdir(src_filename):
+                    if await self.isdir(src_filename):
                         dst_filename.mkdir(exist_ok=True)
-                        pull(self, src_filename, str(dst_path), callback=callback,)
+                        await pull(self, src_filename, str(dst_path), callback=callback,)
                         continue
 
-                    pull(self, src_filename, str(dst_path), callback=callback)
+                    await pull(self, src_filename, str(dst_path), callback=callback)
                 except:
                     log(f"Error pulling folder: {src_filename}")
                     pass
@@ -6214,9 +6266,67 @@ def create_linux_shell_script():
     os.chmod(script_file.name, 0o755)
     return script_file.name
 
+async def prepare_sysdiagnose_async(lockdown):
+    async with CrashReportsManager(lockdown) as crash_mgr:
+        sysdiag_path = await crash_mgr._get_new_sysdiagnose_filename()
+        return sysdiag_path
+
+async def wait_only(lockdown):
+    async with CrashReportsManager(lockdown) as crash_mgr:
+        await crash_mgr._wait_for_sysdiagnose_to_finish()
+
+async def pull_only(lockdown, path, out):
+    async with CrashReportsManager(lockdown) as crash_mgr:
+        await crash_mgr.pull(out=out, entry=path, erase=True)
+
+async def finish_and_pull_sysdiagnose_async(lockdown, sysdiag_path, out_file):
+    async with CrashReportsManager(lockdown) as crash_mgr:
+        await crash_mgr._wait_for_sysdiagnose_to_finish()
+        await crash_mgr.pull(out=out_file, entry=sysdiag_path, erase=True)    
+
+async def fetch_apps_async(lockdown):
+    global all_apps
+    if 'all_apps' not in globals():
+        async with installation_proxy.InstallationProxyService(lockdown) as inst_proxy:
+            all_apps = await inst_proxy.get_apps()
+    user_apps = {
+        app_id: data for app_id, data in all_apps.items()
+        if data.get("ApplicationType") == "User"
+    }
+
+    return all_apps, user_apps
+    
+
+def call_service(service_cls, method_name, *args, **kwargs):
+    async def _runner():
+        async with service_cls(lockdown) as service:
+            method = getattr(service, method_name)
+            res = method(*args, **kwargs)
+            if inspect.isawaitable(res):
+                return await res
+            return res
+
+    return sync(_runner())
+
 def thread_exception_handler(args):
     error = exc_info=(args.exc_type, args.exc_value, args.exc_traceback)
     log(f"Error: {error}")
+
+LOOP = asyncio.new_event_loop()
+
+def _loop_worker(loop):
+    asyncio.set_event_loop(loop)
+    loop.run_forever()
+
+threading.Thread(target=_loop_worker, args=(LOOP,), daemon=True).start()
+
+def sync(coro, timeout=None):
+    future = asyncio.run_coroutine_threadsafe(coro, LOOP)
+    try:
+        return future.result(timeout=timeout)
+    except concurrent.futures.TimeoutError:
+        future.cancel()
+        raise TimeoutError("Lockdown/Service-Timeout")
 
 if getattr(sys, 'frozen', False):
     threading.excepthook = thread_exception_handler
@@ -6248,7 +6358,7 @@ else:
 
 lockdown = check_device()
 try:
-    language = lockdown.language
+    language = sync(lockdown.get_language())
     ispaired = True
     log(f"Paired with device: {udid}")
 except:
