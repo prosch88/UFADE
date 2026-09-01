@@ -27,13 +27,15 @@ from pymobiledevice3.services.diagnostics import DiagnosticsService
 from pymobiledevice3.services.dvt.instruments.device_info import DeviceInfo
 from pymobiledevice3.services.dvt.instruments.screenshot import Screenshot
 from pymobiledevice3.services.screenshot import ScreenshotService
-#from pymobiledevice3.services.dvt.dvt_secure_socket_proxy import DvtSecureSocketProxyService
+from pymobiledevice3.services.dvt.instruments.dvt_provider import DvtProvider
 from pymobiledevice3.services.accessibilityaudit import AccessibilityAudit, Direction
 from pymobiledevice3.services.amfi import AmfiService
 from pymobiledevice3.tcp_forwarder import UsbmuxTcpForwarder
 from pymobiledevice3.services.pcapd import PcapdService
 from pymobiledevice3.osu.os_utils import get_os_utils
+from pymobiledevice3.remote.remote_service_discovery import RemoteServiceDiscoveryService
 from pymobiledevice3.remote.module_imports import MAX_IDLE_TIMEOUT, start_tunnel, verify_tunnel_imports
+from pymobiledevice3.remote.rsd_tunnel import PreferredRsdTunnel
 from pymobiledevice3.tunneld.api import TUNNELD_DEFAULT_ADDRESS, get_tunneld_devices
 from pymobiledevice3.tunneld.server import TunneldRunner
 from pymobiledevice3.remote.common import TunnelProtocol
@@ -316,16 +318,10 @@ class MyApp(ctk.CTk):
         elif menu_name == "Media":
             self.show_media()
         elif menu_name == "FileLS":
-            dvt = DvtSecureSocketProxyService(lockdown)
-            dvt.__enter__()
-            self.show_fileloop(dvt)
+            self.show_fileloop()
         elif menu_name == "Shot":
-            dvt = DvtSecureSocketProxyService(lockdown)
-            dvt.__enter__()
-            self.screen_device(dvt)
+            self.screen_device()
         elif menu_name == "ChatLoop":
-            dvt = DvtSecureSocketProxyService(lockdown)
-            dvt.__enter__()
             self.chat_shotloop(dvt)
         elif menu_name == "Report":
             self.show_report()
@@ -2065,6 +2061,7 @@ class MyApp(ctk.CTk):
                 except:
                     pass
         except Exception as e:
+            print(e)
             log(str(e))
             try:
                 self.progress.pack_forget()
@@ -4159,13 +4156,14 @@ class MyApp(ctk.CTk):
 #AMFI Developer:
     def amfi_developer(self, text):
         try:
-            AmfiService(lockdown).enable_developer_mode(enable_post_restart=True)
+            sync(AmfiService(lockdown).enable_developer_mode(enable_post_restart=True))
         except exceptions.DeviceHasPasscodeSetError:
-            AmfiService(lockdown).reveal_developer_mode_option_in_ui()
+            sync(AmfiService(lockdown).reveal_developer_mode_option_in_ui())
             text.configure(text="The developer mode has to be activated manually.\n\nNavigate to: Settings > Privacy & Security > Developer Mode (bottom) \n\nand activate the new option. Wait for the device to reboot.\nUnlock it and confirm the activation of the developer mode.\nAfter this, press \"OK\".")
 
 # Try to mount a suitable developerdiskimage
     def mount_developer(self, change, text):
+        print("mount developer")
         global developer
         global lockdown
         if d_class == "Watch":
@@ -4177,7 +4175,7 @@ class MyApp(ctk.CTk):
                         14:[0,1,2,3,4,5,6,7,7.1,8], 15:[0,1,2,3,3.1,4,5,6,6.1,7],
                         16:[0,1,2,3,3.1,4,4.1,5,6,7]}
         try:
-            if DeveloperDiskImageMounter(lockdown).copy_devices() != []:
+            if sync(DeveloperDiskImageMounter(lockdown).copy_devices()) != []:
                 developer = True
                 change.set(1)
                 return("developer")
@@ -4196,10 +4194,12 @@ class MyApp(ctk.CTk):
                     text.configure(text="Something went wrong. Make sure the device is unlocked.")
                     change.set(1)
                     return("nope")
-        except:
+        except Exception as e:
+            print(e)
             pass
         try:
-            if lockdown.developer_mode_status == True:
+            if sync(lockdown.get_developer_mode_status()) == True:
+                print("developer true")
                 pass
             else:
                 self.choose = ctk.BooleanVar(self, False)
@@ -4225,7 +4225,7 @@ class MyApp(ctk.CTk):
                         #lockdown = sync(get_lockdown_async())
                         self.after(50)
                         #if DeveloperDiskImageMounter(lockdown).copy_devices() == []:
-                        if lockdown.developer_mode_status != True:
+                        if sync(lockdown.developer_mode_status) != True:
                             text.configure(text="Uh-Oh, an error was raised.\nWait for the device to reboot and try again.")
                             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
                             return
@@ -4242,7 +4242,8 @@ class MyApp(ctk.CTk):
                     developer = False
                     change.set(1)
                     return
-        except:
+        except Exception as e:
+            print(e)
             pass
         ddin = False
         if d_class == "Watch":
@@ -4269,15 +4270,16 @@ class MyApp(ctk.CTk):
                 else:
                     if not os.path.isdir(os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", dversion)):
                         raise Exception("Version not found!") 
-                lockdown = sync(create_using_usbmux(), timeout=3)
+                lockdown = check_device()
                 if d_class == "Watch":
-                    DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", dversion, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", dversion, "DeveloperDiskImage.dmg.signature"))
+                    sync(DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", dversion, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", dversion, "DeveloperDiskImage.dmg.signature")))
                 else:
-                    DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", dversion, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", dversion, "DeveloperDiskImage.dmg.signature"))
+                    sync(DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", dversion, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", dversion, "DeveloperDiskImage.dmg.signature")))
                 developer = True
                 change.set(1)
                 return("developer")   
-            except:
+            except Exception as e:
+                print(e)
                 info = info + "\nVersion " + dversion + " not found"
                 text.configure(text=info)
                 self.after(1000)
@@ -4287,7 +4289,7 @@ class MyApp(ctk.CTk):
                 ver = str(v[0]) + "." + str(d_images[int(v[0])][index])
             
             mounted = []
-            try: mounted = DeveloperDiskImageMounter(lockdown).copy_devices()
+            try: mounted = sync(DeveloperDiskImageMounter(lockdown).copy_devices())
             except: pass
             if int(v[0]) <= 13 or mounted == []:
                 self.after(1000)
@@ -4298,9 +4300,9 @@ class MyApp(ctk.CTk):
                 try:
                     self.after(50)
                     if d_class == "Watch":
-                        DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg.signature"))
+                        sync(DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg.signature")))
                     else:
-                        DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
+                        sync(DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature")))
                     info = info + "\nVersion: " + ver + " was used"
                     text.configure(text=info)
                     self.after(1000)
@@ -4311,19 +4313,21 @@ class MyApp(ctk.CTk):
                     developer = True
                     change.set(1)
                     return("developer")            
-                except:
+                except Exception as e:
+                    print(e)
                     for i in range(index)[::-1]:
                         ver = str(v[0]) + "." + str(d_images[int(v[0])][i])
                         try:
                             if d_class == "Watch":
-                                DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg.signature"))
+                                sync(DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", ver, "DeveloperDiskImage.dmg.signature")))
                             else:
-                                DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature"))
+                                sync(DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", ver, "DeveloperDiskImage.dmg.signature")))
                             info = info + "\nVersion: " + ver + " was used"
                             text.configure(text=info)
                             self.after(1000)
                             break
-                        except:
+                        except Exception as e:
+                            print(e)    
                             pass
                     if int(v[0]) <= 13:
                         developer = True
@@ -4331,7 +4335,7 @@ class MyApp(ctk.CTk):
                         return("developer")
                     else:
                         pass
-                    try: mounted = DeveloperDiskImageMounter(lockdown).copy_devices()
+                    try: mounted = sync(DeveloperDiskImageMounter(lockdown).copy_devices())
                     except: pass
                     if mounted == []:
                         text.configure(text="DeveloperDiskImage not loaded")
@@ -4353,26 +4357,6 @@ class MyApp(ctk.CTk):
             developer = True
             change.set(1)
             return("developer")
-            """
-            try:
-                self.after(1000)
-                text.configure(text="Mounting personalized image.")
-                PersonalizedImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Xcode_iOS_DDI_Personalized", "Image.dmg"), build_manifest=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Xcode_iOS_DDI_Personalized", "BuildManifest.plist"), trust_cache=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Xcode_iOS_DDI_Personalized", "Image.dmg.trustcache"))
-                developer = True
-                text.configure(text="Personalized image mounted.")
-                change.set(1)
-                return("developer")
-            except exceptions.AlreadyMountedError:
-                developer = True
-                change.set(1)
-                return("developer")
-            except:
-                self.after(1000)
-                text.configure(text="DeveloperDiskImage not loaded")
-                developer = False
-                change.set(1)
-                return("nope")
-            """
 
 
     def developer_options(self):
@@ -4427,7 +4411,7 @@ class MyApp(ctk.CTk):
                             self.wait_variable(self.choose)
                             self.okbutton.pack_forget()
                             self.after(50)
-                            if lockdown.developer_mode_status != True:
+                            if sync(lockdown.get_developer_mode_status()) != True:
                                 self.text.configure(text="Uh-Oh, an error was raised.\nWait for the device to reboot and try again.")
                                 self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
                                 return
@@ -4452,24 +4436,27 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.change)
             self.change.set(0)
             if self.tun == None:
-                self.text.configure(text="To use developer options on devices with iOS >= 17 a tunnel has to be created.\nThis requires administrative privileges. Do you want to continue?")
-                self.choose = ctk.BooleanVar(self, False)
-                self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
-                self.yesb.pack(side="left", pady=(0,350), padx=140)
-                self.nob = ctk.CTkButton(self.dynamic_frame, text="NO", font=self.stfont, command=lambda: self.choose.set(False))
-                self.nob.pack(side="left", pady=(0,350))    
-                self.wait_variable(self.choose)                             
-                if self.choose.get() == True:
-                    self.yesb.pack_forget()
-                    self.nob.pack_forget() 
-                    self.change.set(0)
-                    self.dev17 = threading.Thread(target=lambda: self.run_ios17_developer(self.change)) 
-                    self.dev17.start()
-                    self.wait_variable(self.change)
+                if dversion < "17.4":
+                    self.text.configure(text="To use developer options on devices with iOS >= 17 a tunnel has to be created.\nThis requires administrative privileges. Do you want to continue?")
+                    self.choose = ctk.BooleanVar(self, False)
+                    self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
+                    self.yesb.pack(side="left", pady=(0,350), padx=140)
+                    self.nob = ctk.CTkButton(self.dynamic_frame, text="NO", font=self.stfont, command=lambda: self.choose.set(False))
+                    self.nob.pack(side="left", pady=(0,350))    
+                    self.wait_variable(self.choose)                             
+                    if self.choose.get() == True:
+                        self.yesb.pack_forget()
+                        self.nob.pack_forget() 
+                        self.change.set(0)
+                        self.dev17 = threading.Thread(target=lambda: self.run_ios17_developer(self.change)) 
+                        self.dev17.start()
+                        self.wait_variable(self.change)
+                    else:
+                        self.show_main_menu()
+                        return
+                        #process = run(["sudo", "-E", "python3", "-m", "pymobiledevice3", "remote", "tunneld", "-d"])
                 else:
-                    self.show_main_menu()
-                    return
-                    #process = run(["sudo", "-E", "python3", "-m", "pymobiledevice3", "remote", "tunneld", "-d"])
+                    pass
             else: 
                 pass
         else:
@@ -4483,22 +4470,21 @@ class MyApp(ctk.CTk):
                 new_dev == False
                 if d_class == "Watch":
                     if int(dversion.split(".")[0]) >= 10:
-                        lockdown = get_tunneld_devices()[0]
+                        tunnel_dev = sync(get_tunneld_devices())[0]
                         new_dev == True
                 else:    
                     if int(dversion.split(".")[0]) >= 17:
-                        lockdown = get_tunneld_devices()[0]
+                        tunnel_dev = sync(get_tunneld_devices())[0]
                         new_dev == True
                 if new_dev == False:
-                    lockdown = sync(create_using_usbmux(), timeout=3)
-                dvt = DvtSecureSocketProxyService(lockdown)
-                dvt.__enter__()
-            except:
+                    pass
+            except Exception as e:
+                print(e)
                 if int(dversion.split(".")[0]) >= 17:
-                    try: PersonalizedImageMounter(lockdown).umount()
+                    try: sync(PersonalizedImageMounter(lockdown).umount())
                     except: pass
                 else:
-                    try: DeveloperDiskImageMounter(lockdown).umount()
+                    try: sync(DeveloperDiskImageMounter(lockdown).umount())
                     except: pass
                 self.text.configure(text="Error. Try again.")
                 developer = False
@@ -4523,11 +4509,16 @@ class MyApp(ctk.CTk):
                         new_dev = True
                 if new_dev == True:
                     try:
-                        lockdown = get_tunneld_devices()[0]
-                    except:
+                        rsd, dvt = sync(rsd_tunnel())
+                        print(rsd)
+                        print(dvt)
+                    except Exception as e:
+                        print("Except")
+                        print(e)
                         try:
-                            lockdown.connect()
-                        except:
+                            rsd.connect()
+                        except Exception as e:
+                            print(e)
                             if platform.uname().system == 'Windows':
                                 self.text.configure(text="Something went wrong. Try again.\nOn iOS 18 and up this is expected.\nPlease restart UFADE.")
                             else:
@@ -4545,7 +4536,7 @@ class MyApp(ctk.CTk):
 
     def check_tun(self, change):
         try: 
-            self.tun = get_tunneld_devices()
+            self.tun = sync(get_tunneld_devices())
             if self.tun == []:
                 self.tun = None
         except:
@@ -4680,7 +4671,7 @@ class MyApp(ctk.CTk):
             return
 
 # Device screenshot
-    def screen_device(self, dvt):
+    def screen_device(self):
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Take Screenshots", height=30, width=585, font=("standard",24), justify="left").pack(pady=10)
         self.shotframe = ctk.CTkFrame(self.dynamic_frame, width=400, corner_radius=0, fg_color="transparent")
@@ -4692,29 +4683,30 @@ class MyApp(ctk.CTk):
         self.imglabel.pack()
         try: os.mkdir("screenshots")
         except: pass
-        self.shotbutton = ctk.CTkButton(self.textframe, text="Screenshot", font=self.stfont, command=lambda: self.shotthread(dvt, self.imglabel, self.namefield))
+        self.shotbutton = ctk.CTkButton(self.textframe, text="Screenshot", font=self.stfont, command=lambda: self.shotthread(self.imglabel, self.namefield))
         self.shotbutton.pack(pady=20, ipadx=0, anchor="w")
         self.abortbutton = ctk.CTkButton(self.textframe, text="Back", font=self.stfont, command=lambda: self.switch_menu("DevMenu"))
         self.abortbutton.pack(pady=5, ipadx=0, anchor="w")
         self.namefield = ctk.CTkLabel(self.textframe, text=" ", width=300, height=100, font=self.stfont, anchor="w", justify="left")
         self.namefield.pack(anchor="w", pady=10)
 
-    def shotthread(self, dvt, imglabel, namefield):
-        self.doshot = threading.Thread(target=lambda: self.shot(dvt, self.imglabel, self.namefield))
+    def shotthread(self, imglabel, namefield):
+        self.doshot = threading.Thread(target=lambda: self.shot(self.imglabel, self.namefield))
         self.doshot.start()
 
-    def shot(self, dvt, imglabel, namefield):
+    def shot(self, imglabel, namefield):
+
         hsize = 426
         if d_class == "Watch":
             try:
-                png = ScreenshotService(lockdown).take_screenshot()
+                png = sync(rsd_screenshot())
             except:
-                png = Screenshot(dvt).get_screenshot()
+                png = sync(ScreenshotService(lockdown).take_screenshot())
         else:
             try:
-                png = Screenshot(dvt).get_screenshot()
-            except: 
-                png = ScreenshotService(lockdown).take_screenshot()
+                png = sync(rsd_screenshot())
+            except Exception as e:
+                png = sync(ScreenshotService(lockdown).take_screenshot())
         png_bytes = BytesIO()
         png_bytes.write(png)
         shot = Image.open(png_bytes)
@@ -4740,7 +4732,7 @@ class MyApp(ctk.CTk):
         namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
         self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, w=wsize, h=hsize)
 
-    def chat_shotloop(self, dvt):
+    def chat_shotloop(self):
         try: os.mkdir("screenshots")
         except: pass
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
@@ -4758,9 +4750,9 @@ class MyApp(ctk.CTk):
         self.appbox.pack(pady=10, ipadx=0, anchor="w")
         self.chatbox = ctk.CTkEntry(self.textframe, width=140, height=20, corner_radius=0, placeholder_text="name of the chat")
         self.chatbox.pack(pady=10, ipadx=0, anchor="w")
-        self.upbutton = ctk.CTkButton(self.textframe, text="↑ Up", font=self.stfont, command=lambda: self.chatshotthread(dvt, app_name=self.appbox.get(), chat_name=self.chatbox.get(), direction="up", imglabel=self.imglabel, namefield=self.namefield, text=self.text))
+        self.upbutton = ctk.CTkButton(self.textframe, text="↑ Up", font=self.stfont, command=lambda: self.chatshotthread(app_name=self.appbox.get(), chat_name=self.chatbox.get(), direction="up", imglabel=self.imglabel, namefield=self.namefield, text=self.text))
         self.upbutton.pack(pady=10, ipadx=0, anchor="w")
-        self.downbutton = ctk.CTkButton(self.textframe, text="↓ Down", font=self.stfont, command=lambda: self.chatshotthread(dvt, app_name=self.appbox.get(), chat_name=self.chatbox.get(), direction="down", imglabel=self.imglabel, namefield=self.namefield, text=self.text))
+        self.downbutton = ctk.CTkButton(self.textframe, text="↓ Down", font=self.stfont, command=lambda: self.chatshotthread(app_name=self.appbox.get(), chat_name=self.chatbox.get(), direction="down", imglabel=self.imglabel, namefield=self.namefield, text=self.text))
         self.downbutton.pack(pady=10, ipadx=0, anchor="w")
         self.breakbutton = ctk.CTkButton(self.textframe, text="Cancel Loop", fg_color="#8c2c27", font=self.stfont, command=self.breakshotloop)
         self.breakbutton.pack(pady=10, ipadx=0, anchor="w")
@@ -4770,7 +4762,7 @@ class MyApp(ctk.CTk):
         self.namefield.pack(anchor="w", pady=5)
 
 
-    def chatshotthread(self, dvt, app_name, chat_name, direction, imglabel, namefield, text):
+    def chatshotthread(self, app_name, chat_name, direction, imglabel, namefield, text):
         ab_count = 0
         sc_count = 0
         abs_count = 0
@@ -4778,15 +4770,16 @@ class MyApp(ctk.CTk):
         self.downbutton.configure(state="disabled")
         self.abortbutton.configure(state="disabled")
         self.stop_event.clear()
-        self.doshot = threading.Thread(target=lambda: self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, text, first=True))
+        self.doshot = threading.Thread(target=lambda: self.shotloop(app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, text, first=True))
         self.doshot.start()
         
     
     def breakshotloop(self):
         self.stop_event.set()
     
-    def shotloop(self, dvt, app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, text, png=None, first=False, seen_hashes=None, first_hash=None):
-        AccessibilityAudit(lockdown).set_show_visuals(False)
+    def shotloop(self, app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, text, png=None, first=False, seen_hashes=None, first_hash=None):
+        sync(no_visuals(lockdown))
+        #sync(AccessibilityAudit(lockdown).set_show_visuals(False))
         name = chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
         filename = name + ".png"
         hashname = name + ".txt"
@@ -4807,10 +4800,10 @@ class MyApp(ctk.CTk):
                 try:
                     png = ScreenshotService(lockdown).take_screenshot()
                 except:
-                    png = Screenshot(dvt).get_screenshot()
+                    png = sync(rsd_screenshot())
             else:
                 try:
-                    png = Screenshot(dvt).get_screenshot()
+                    png = sync(rsd_screenshot())
                 except: 
                     png = ScreenshotService(lockdown).take_screenshot()
             png_bytes = BytesIO()
@@ -4836,7 +4829,7 @@ class MyApp(ctk.CTk):
             first_hash = imagehash.phash(shot)
             seen_hashes.append(first_hash)
             self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, app_name=app_name, chat_name=chat_name, w=wsize, h=hsize)
-            self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, png=png, text=text, seen_hashes=seen_hashes, first_hash=first_hash)
+            self.shotloop(app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, png=png, text=text, seen_hashes=seen_hashes, first_hash=first_hash)
         else:
             while not self.stop_event.is_set():
                 if ab_count >= 8 or abs_count >= 16:
@@ -4848,17 +4841,19 @@ class MyApp(ctk.CTk):
                     return
                 else:
                     prev = png
-                    AccessibilityAudit(lockdown).move_focus(ch_direction)
-                    AccessibilityAudit(lockdown).set_show_visuals(False)
+                    #sync(AccessibilityAudit(lockdown).move_focus(ch_direction))
+                    #sync(AccessibilityAudit(lockdown).set_show_visuals(False))
+                    sync(move_focus(lockdown, ch_direction))
+                    #sync(no_visuals())
                     time.sleep(0.3)
                     if d_class == "Watch":
                         try:
                             png = ScreenshotService(lockdown).take_screenshot()
                         except:
-                            png = Screenshot(dvt).get_screenshot()
+                            png = sync(rsd_screenshot())
                     else:
                         try:
-                            png = Screenshot(dvt).get_screenshot()
+                            png = sync(rsd_screenshot())
                         except: 
                             png = ScreenshotService(lockdown).take_screenshot()
                     png_bytes = BytesIO()
@@ -4904,18 +4899,19 @@ class MyApp(ctk.CTk):
                     if sc_count > 2 and abs(l_hash - first_hash) <= 2:
                             print("is first")
                             self.breakshotloop()
-                    self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, png=png, text=text, seen_hashes=seen_hashes, first_hash=first_hash)
+                    self.shotloop(app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, png=png, text=text, seen_hashes=seen_hashes, first_hash=first_hash)
             text.configure(text="Chat loop stopped.")
             self.upbutton.configure(state="enabled")
             self.downbutton.configure(state="enabled")
             self.abortbutton.configure(state="enabled")
-            AccessibilityAudit(lockdown).set_show_visuals(False)
+            sync(no_visuals(lockdown))
+            #AccessibilityAudit(lockdown).set_show_visuals(False)
             raise SystemExit
             return("interrupt")
     
 
 # Fileloop window
-    def show_fileloop(self, dvt):
+    def show_fileloop(self):
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Filesystem content", height=60, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Creating a filesystem-list. This will take a while.", width=585, height=60, font=self.stfont, anchor="w", justify="left")
@@ -4928,7 +4924,7 @@ class MyApp(ctk.CTk):
         self.folder_text = ctk.CTkLabel(self.dynamic_frame, text="Folder: ", width=585, height=40, font=self.stfont, anchor="w", justify="left")
         self.folder_text.pack()
         self.waitls = ctk.IntVar(self, 0)
-        self.dev_ls = threading.Thread(target=lambda: self.call_fileloop(dvt, self.waitls, self.prog_text, self.progress, self.folder_text))
+        self.dev_ls = threading.Thread(target=lambda: sync(self.call_fileloop(self.waitls, self.prog_text, self.progress, self.folder_text)))
         self.dev_ls.start()
         self.wait_variable(self.waitls)
         self.prog_text.pack_forget()
@@ -4939,21 +4935,24 @@ class MyApp(ctk.CTk):
         self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("DevMenu")).pack(pady=40))
 
 # Call the fileloop and write the output to a file
-    def call_fileloop(self, dvt, waitls, prog_text, progress, folder_text):
+    async def call_fileloop(self, waitls, prog_text, progress, folder_text):
         folders = []
-        for line in DeviceInfo(dvt).ls("/"):
-            folders.append(line)
-        fcount = len(folders)
-        cnt = 0
-        pathlist = set()
-        pathlist = fileloop(dvt, "/var", pathlist, fcount, cnt, folder_text, progress, prog_text)
-        s_pathlist = sorted(pathlist)
-        with open(udid + "_var_filesystem.txt", "w") as files:
-            for line in s_pathlist:
-                files.write("\n" + line)
-        prog_text.configure(text="100%")
-        progress.set(1)
-        waitls.set(1)
+        async with PreferredRsdTunnel(serial=None) as rsd:
+            async with DvtProvider(rsd) as dvt:
+                async with DeviceInfo(dvt) as info_service:
+                    for line in await info_service.ls("/"):
+                        folders.append(line)
+                    fcount = len(folders)
+                    cnt = 0
+                    pathlist = set()
+                    pathlist = await fileloop(info_service, "/var", pathlist, fcount, cnt, folder_text, progress, prog_text)
+                    s_pathlist = sorted(pathlist)
+                    with open(udid + "_var_filesystem.txt", "w") as files:
+                        for line in s_pathlist:
+                            files.write("\n" + line)
+                    prog_text.configure(text="100%")
+                    progress.set(1)
+                    waitls.set(1)
 
     def call_unmount(self):
         global developer
@@ -5190,9 +5189,9 @@ def unmount_abort_timer():
 def unmount_developer(text, change):
     try:
         if int(dversion.split(".")[0]) >= 17:
-            PersonalizedImageMounter(lockdown).umount()
+            sync(PersonalizedImageMounter(lockdown).umount())
         else:
-            DeveloperDiskImageMounter(lockdown).umount()
+            sync(DeveloperDiskImageMounter(lockdown).umount())
         developer = False
         text.configure(text="DeveloperDiskImage unmounted.")
         change.set(1)
@@ -5203,10 +5202,10 @@ def unmount_developer(text, change):
         pass
 
 # Developer Mode filesystem-"ls"-loop
-def fileloop(dvt, start, lista, fcount, cnt, folder_text, progress, prog_text):
+async def fileloop(info_service, start, lista, fcount, cnt, folder_text, progress, prog_text):
     pathlist = lista
     try: 
-        next = DeviceInfo(dvt).ls(start)
+        next = await info_service.ls(start)
         for line in next:
             next_path = (start + "/" + line)
             if len(next_path.split("/")) == 3:
@@ -5223,7 +5222,7 @@ def fileloop(dvt, start, lista, fcount, cnt, folder_text, progress, prog_text):
                 break
             else:
                 pathlist.add(next_path)
-                fileloop(dvt, next_path, pathlist, fcount, cnt, folder_text, progress, prog_text) 
+                await fileloop(info_service, next_path, pathlist, fcount, cnt, folder_text, progress, prog_text) 
     except: 
         pass
 
@@ -6265,6 +6264,76 @@ def create_linux_shell_script():
     script_file.close()
     os.chmod(script_file.name, 0o755)
     return script_file.name
+
+async def rsd_tunnel():
+    global dvt
+    async with PreferredRsdTunnel(serial=None) as rsd:
+        async with DvtProvider(rsd) as dvt:
+            return rsd, dvt
+
+"""
+async def establish_userspace_rsd(
+    serial = None, autopair: bool = True, remotepairing_fallback: bool = True
+) -> RemoteServiceDiscoveryService:
+
+    global _cli_tunnel
+    if (
+        _cli_tunnel is not None
+        and _cli_tunnel.rsd is not None
+        and (serial is None or serial in (_cli_tunnel.serial, _cli_tunnel.rsd.udid))
+    ):
+        return _cli_tunnel.rsd
+    tunnel = UserspaceRsdTunnel(serial=serial, autopair=autopair, remotepairing_fallback=remotepairing_fallback)
+    try:
+        rsd = await tunnel.aopen()
+    except PyMobileDevice3Exception:
+        winner = _cli_tunnel or _active_tunnel
+        if (
+            winner is not None
+            and winner.rsd is not None
+            and (serial is None or serial in (winner.serial, winner.rsd.udid))
+        ):
+            return winner.rsd
+        raise
+    _cli_tunnel = tunnel
+    atexit.register(_close_cli_tunnel_at_exit)
+    return rsd
+"""
+
+async def rsd_screenshot():
+    try:
+        async with PreferredRsdTunnel(serial=None) as rsd:
+            async with DvtProvider(rsd) as dvt:
+                async with Screenshot(dvt) as screenshot_service:
+                    png = await screenshot_service.get_screenshot()
+                    return png
+    except:
+        async with DvtProvider(lockdown) as dvt:
+            async with Screenshot(dvt) as screenshot_service:
+                    png = await screenshot_service.get_screenshot()
+                    return png
+    
+async def move_focus(lockdown, ch_direction):
+    try:
+        async with PreferredRsdTunnel(serial=None) as rsd:
+            await rsd.connect()
+            async with AccessibilityAudit(rsd) as audit:
+                await audit.move_focus(ch_direction)
+                await audit.set_show_visuals(False)
+                await asyncio.sleep(0.1)
+    except:
+        async with AccessibilityAudit(lockdown) as audit:
+                await audit.move_focus(ch_direction)
+                await audit.set_show_visuals(False)
+                await asyncio.sleep(0.1)
+
+
+async def no_visuals(lockdown):
+    try:
+        async with PreferredRsdTunnel(serial=None) as rsd:
+            await AccessibilityAudit(rsd).set_show_visuals(False)
+    except:
+        await AccessibilityAudit(lockdown).set_show_visuals(False)
 
 async def prepare_sysdiagnose_async(lockdown):
     async with CrashReportsManager(lockdown) as crash_mgr:
