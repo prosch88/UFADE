@@ -2045,6 +2045,7 @@ class MyApp(ctk.CTk):
 
 # Check, if the device is locked
     def check_lock(self, change, text, zip=None, tar=None):
+        lockdown = check_device()
         try:
             check_apps = sync(installation_proxy.InstallationProxyService(lockdown).get_apps())
             change.set(1)
