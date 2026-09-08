@@ -11,6 +11,6 @@ pdfme==0.4.12
 pyarrow
 pyiosbackup
 pymobiledevice3==7.8.3
-pywin32
+pywin32; sys_platform == "win32"
 simpleaudio-patched
 tkcalendar
