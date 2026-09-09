@@ -4349,7 +4349,10 @@ class MyApp(ctk.CTk):
                 return 
         except:
             self.text.configure(text="Directory \"ufade_developer\" not found.\nPlease clone the submodule:\n\ngit submodule init\ngit submodule update")
-            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+            if d_class == "Watch":
+                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=40))
+            else:
+                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
             return
 
         new_dev = False
@@ -4386,14 +4389,20 @@ class MyApp(ctk.CTk):
                             self.after(50)
                             if lockdown.developer_mode_status != True:
                                 self.text.configure(text="Uh-Oh, an error was raised.\nWait for the device to reboot and try again.")
-                                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                                if d_class == "Watch":
+                                    self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=40))
+                                else:
+                                    self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
                                 return
                             else:
                                 pass
                         except:
                             self.text.configure(text="Uh-Oh, an error was raised. Please remove the PIN/PW and try again")
                             developer = False
-                            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                            if d_class == "Watch":
+                                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=40))
+                            else:
+                                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))                            
                             return
                     else:
                         self.yesb.pack_forget()
@@ -4489,7 +4498,10 @@ class MyApp(ctk.CTk):
                                 self.text.configure(text="Something went wrong. Try again.\nOn iOS 18 and up this is expected.\nPlease restart UFADE.")
                             else:
                                 self.text.configure(text="Something went wrong. Try again.\nOn iOS 18 and up this is expected.")
-                            self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                            if d_class == "Watch":
+                                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=40))
+                            else:
+                                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
                             return
 
                 else:
@@ -4498,7 +4510,10 @@ class MyApp(ctk.CTk):
                 #dvt.__enter__()
                 self.switch_menu("DevMenu")
             else:
-                self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+                if d_class == "Watch":
+                    self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=40))
+                else:
+                    self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
 
     def check_tun(self, change):
         try: 
