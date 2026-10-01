@@ -2662,7 +2662,7 @@ class MyApp(ctk.CTk):
             client.connect(sock=out, hostname='127.0.0.1', port=scr_prt, username=user, password=pwd, look_for_keys=False, allow_agent=False)
             stdin, stdout, stderr = client.exec_command(f"du -s {remote_folder}")
             remote_folder_size = [int(s) for s in stdout.read().split() if s.isdigit()][0]*512
-            tar_command = f"tar --exclude *.gl --exclude '.overprovisioning_file' -cf - {remote_folder}"
+            tar_command = f"tar --exclude '*.gl' --exclude '.overprovisioning_file' -cf - {remote_folder}"
             stdin, stdout, stderr = client.exec_command(tar_command)
             tar_data = stdout.channel.recv(65536)
             transferred = 0
