@@ -125,6 +125,19 @@ including:
 
 *Try to mount a suitable DeveloperDiskImage. Gives further options for screenshots and filesystem views.* 
 
+On iOS/iPadOS 17.4+ and watchOS 10.4+, UFADE opens a USB userspace tunnel
+without administrator privileges. Install the updated requirements (including
+`pmd-pytcp==0.3.7`), pair and unlock the device, and enable Developer Mode.
+Reopening Developer Options checks whether an existing userspace tunnel still
+responds. A failed check is logged and the tunnel is rebuilt once automatically;
+the check runs in the background with a timeout so the UI remains responsive.
+Older versions retain the existing privileged tunnel. The userspace tunnel is
+also replaced by the existing tunnel flow if setup or service discovery fails:
+UFADE logs the error and asks for confirmation before starting a privileged
+tunnel (or reuses an existing one). The userspace tunnel is
+available only inside UFADE, supports one device at a time, and closes when UFADE
+exits. After disconnecting a device, reopen Developer Options to reconnect.
+
 **Advanced Options**
 
 *Gives options like network-sniffing and various Logging functions .* 
@@ -152,4 +165,3 @@ This script utilizes the following projects:
 [crossfiledialog](https://github.com/maikelwever/crossfiledialog) by [maikelwever](https://github.com/maikelwever)
 
 [paramiko](https://github.com/paramiko/paramiko), [pandas](https://github.com/pandas-dev/pandas), [pyarrow](https://github.com/apache/arrow), [simpleaudio](https://github.com/hamiltron/py-simple-audio), [pdfme](https://github.com/aFelipeSP/pdfme)
-

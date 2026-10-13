@@ -36,6 +36,7 @@ from pymobiledevice3.osu.os_utils import get_os_utils
 from pymobiledevice3.remote.module_imports import MAX_IDLE_TIMEOUT, start_tunnel, verify_tunnel_imports
 from pymobiledevice3.tunneld.api import TUNNELD_DEFAULT_ADDRESS, get_tunneld_devices
 from pymobiledevice3.tunneld.server import TunneldRunner
+from ufade.userspace_tunnel import UserspaceRsdTunnel, supports_userspace_tunnel
 from pymobiledevice3.remote.common import TunnelProtocol
 from pymobiledevice3.remote.utils import get_rsds
 from pymobiledevice3.cli.remote import cli_tunneld
@@ -197,6 +198,11 @@ class MyApp(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def on_close(self):
+        if getattr(self, 'userspace_tunnel', None) is not None:
+            try:
+                self.userspace_tunnel.close()
+            except Exception as exc:
+                print(f"Userspace tunnel cleanup failed: {exc}")
         if hasattr(self, 'linux_17') and self.linux_17:
             try: self.linux_17.kill()
             except: pass
@@ -610,12 +616,13 @@ class MyApp(ctk.CTk):
             ctk.CTkButton(self.dynamic_frame, text="Take screenshots", command=lambda: self.switch_menu("Shot"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Chat capture", command=lambda: self.switch_menu("ChatLoop"), width=200, height=70, font=self.stfont),
             ctk.CTkButton(self.dynamic_frame, text="Capture filesystem\nto text", command=lambda: self.switch_menu("FileLS"), width=200, height=70, font=self.stfont),
-            ctk.CTkButton(self.dynamic_frame, text="Unmount\nDeveloperDiskImage", command=lambda: self.switch_menu("umount"), width=200, height=70, font=self.stfont),
         ]
         self.menu_text = ["Take screenshots from device screen.\nScreenshots will be saved under \"screenshots\"\nas PNG.", 
                           "Loop through a chat taking screenshots.\nOne screenshot is taken per message.", 
-                          "Write a filesystem list to a textfile. (iOS < 16)\nStarting from /var Folder.\nThis may take some time.",
-                          "Try to unmount the image.\nReboot the device if this fails"]
+                          "Write a filesystem list to a textfile. (iOS < 16)\nStarting from /var Folder.\nThis may take some time."]
+        if int(dversion.split(".")[0]) < (10 if d_class == "Watch" else 17):
+            self.menu_buttons.append(ctk.CTkButton(self.dynamic_frame, text="Unmount\nDeveloperDiskImage", command=lambda: self.switch_menu("umount"), width=200, height=70, font=self.stfont))
+            self.menu_text.append("Try to unmount the image.\nReboot the device if this fails")
         self.menu_textbox = []
         for btn in self.menu_buttons:
             self.menu_textbox.append(ctk.CTkLabel(self.dynamic_frame, width=right_content, height=70, font=self.stfont, anchor="w", justify="left"))
@@ -1338,9 +1345,6 @@ class MyApp(ctk.CTk):
             pass
         waitul.set(1)
        
-
-
-
 # Live Syslog function
     def capture_syslog(self, text, startb, backb):
         fname = f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}_livelog.txt'
@@ -4334,6 +4338,7 @@ class MyApp(ctk.CTk):
 
     def developer_options(self):
         self.change = ctk.IntVar(self, 0)
+        self.use_userspace_tunnel = False
         global developer
         global lockdown
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
@@ -4413,31 +4418,14 @@ class MyApp(ctk.CTk):
             except:
                 pass
     
-            self.chk_tun = threading.Thread(target=lambda: self.check_tun(self.change))
-            self.chk_tun.start()
-            self.wait_variable(self.change)
-            self.change.set(0)
-            if self.tun == None:
-                self.text.configure(text="To use developer options on devices with iOS >= 17 a tunnel has to be created.\nThis requires administrative privileges. Do you want to continue?")
-                self.choose = ctk.BooleanVar(self, False)
-                self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
-                self.yesb.pack(side="left", pady=(0,350), padx=140)
-                self.nob = ctk.CTkButton(self.dynamic_frame, text="NO", font=self.stfont, command=lambda: self.choose.set(False))
-                self.nob.pack(side="left", pady=(0,350))    
-                self.wait_variable(self.choose)                             
-                if self.choose.get() == True:
-                    self.yesb.pack_forget()
-                    self.nob.pack_forget() 
-                    self.change.set(0)
-                    self.dev17 = threading.Thread(target=lambda: self.run_ios17_developer(self.change)) 
-                    self.dev17.start()
-                    self.wait_variable(self.change)
-                else:
-                    self.show_main_menu()
+            if supports_userspace_tunnel(dversion, d_class):
+                self.text.configure(text="Opening userspace tunnel. This may take some time.")
+                self.dev17 = threading.Thread(target=lambda: self.run_userspace_developer(self.change))
+                self.dev17.start()
+                self.wait_variable(self.change)
+            if not self.use_userspace_tunnel:
+                if not self.ensure_legacy_tunnel():
                     return
-                    #process = run(["sudo", "-E", "python3", "-m", "pymobiledevice3", "remote", "tunneld", "-d"])
-            else: 
-                pass
         else:
             pass
 
@@ -4446,17 +4434,24 @@ class MyApp(ctk.CTk):
 
         if developer == True:
             try:
-                new_dev == False
-                if d_class == "Watch":
-                    if int(dversion.split(".")[0]) >= 10:
-                        lockdown = get_tunneld_devices()[0]
-                        new_dev == True
-                else:    
-                    if int(dversion.split(".")[0]) >= 17:
-                        lockdown = get_tunneld_devices()[0]
-                        new_dev == True
-                if new_dev == False:
-                    lockdown = create_using_usbmux()
+                if self.use_userspace_tunnel:
+                    device = self.get_developer_device()
+                    if device is None:
+                        developer = False
+                        return
+                    lockdown = device
+                else:
+                    new_dev == False
+                    if d_class == "Watch":
+                        if int(dversion.split(".")[0]) >= 10:
+                            lockdown = get_tunneld_devices()[0]
+                            new_dev == True
+                    else:
+                        if int(dversion.split(".")[0]) >= 17:
+                            lockdown = get_tunneld_devices()[0]
+                            new_dev == True
+                    if new_dev == False:
+                        lockdown = create_using_usbmux()
                 dvt = DvtSecureSocketProxyService(lockdown)
                 dvt.__enter__()
             except:
@@ -4489,8 +4484,11 @@ class MyApp(ctk.CTk):
                         new_dev = True
                 if new_dev == True:
                     try:
-                        lockdown = get_tunneld_devices()[0]
-                    except:
+                        device = self.get_developer_device()
+                        if device is None:
+                            return
+                        lockdown = device
+                    except Exception:
                         try:
                             lockdown.connect()
                         except:
@@ -4514,6 +4512,90 @@ class MyApp(ctk.CTk):
                     self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_watch_menu).pack(pady=40))
                 else:
                     self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
+
+    def ensure_legacy_tunnel(self):
+        self.change.set(0)
+        self.chk_tun = threading.Thread(target=lambda: self.check_tun(self.change))
+        self.chk_tun.start()
+        self.wait_variable(self.change)
+        self.change.set(0)
+        if self.tun == None:
+            self.text.configure(text="To use developer options on devices with iOS >= 17 a tunnel has to be created.\nThis requires administrative privileges. Do you want to continue?")
+            self.choose = ctk.BooleanVar(self, False)
+            self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
+            self.yesb.pack(side="left", pady=(0,350), padx=140)
+            self.nob = ctk.CTkButton(self.dynamic_frame, text="NO", font=self.stfont, command=lambda: self.choose.set(False))
+            self.nob.pack(side="left", pady=(0,350))
+            self.wait_variable(self.choose)
+            if self.choose.get() == True:
+                self.yesb.pack_forget()
+                self.nob.pack_forget()
+                self.change.set(0)
+                self.dev17 = threading.Thread(target=lambda: self.run_ios17_developer(self.change))
+                self.dev17.start()
+                self.wait_variable(self.change)
+            else:
+                self.show_main_menu()
+                return False
+        return self.change.get() != 2
+
+    def userspace_tunnel_failed(self, exc):
+        log(f"Userspace tunnel failed ({type(exc).__name__}): {exc}. Falling back to the legacy tunnel.")
+        self.use_userspace_tunnel = False
+        tunnel = getattr(self, "userspace_tunnel", None)
+        if tunnel is not None:
+            try:
+                tunnel.close()
+            except Exception as cleanup_error:
+                log(f"Userspace tunnel cleanup failed: {cleanup_error}")
+
+    def get_developer_device(self):
+        if self.use_userspace_tunnel:
+            try:
+                # Keep Tk responsive while probing/rebuilding a stale connection.
+                completed = ctk.IntVar(self, 0)
+                result = {}
+
+                def reconnect():
+                    try:
+                        result["device"] = self.userspace_tunnel.ensure_connected(
+                            on_retry=self.log_userspace_retry)
+                    except Exception as exc:
+                        result["error"] = exc
+                    finally:
+                        completed.set(1)
+
+                self.text.configure(text="Checking userspace tunnel. This may take some time.")
+                threading.Thread(target=reconnect, daemon=True).start()
+                self.wait_variable(completed)
+                if "error" in result:
+                    raise result["error"]
+                return result["device"]
+            except Exception as exc:
+                self.userspace_tunnel_failed(exc)
+                if not self.ensure_legacy_tunnel():
+                    return None
+        return get_tunneld_devices()[0]
+
+    def log_userspace_retry(self, exc):
+        log(f"Userspace tunnel no longer responds ({type(exc).__name__}): {exc}. Reopening tunnel.")
+
+    def run_userspace_developer(self, change):
+        try:
+            tunnel = getattr(self, "userspace_tunnel", None)
+            if tunnel is not None and (not tunnel.active or tunnel.serial != udid):
+                tunnel.close()
+                tunnel = None
+            if tunnel is None:
+                tunnel = UserspaceRsdTunnel(serial=udid)
+                self.userspace_tunnel = tunnel
+            tunnel.ensure_connected(on_retry=self.log_userspace_retry)
+        except Exception as exc:
+            self.userspace_tunnel_failed(exc)
+        else:
+            self.use_userspace_tunnel = True
+        finally:
+            change.set(1)
 
     def check_tun(self, change):
         try: 
@@ -6372,4 +6454,3 @@ def restart():
     app.destroy()
     app = MyApp()
     app.mainloop()
-
