@@ -135,8 +135,10 @@ Older versions retain the existing privileged tunnel. The userspace tunnel is
 also replaced by the existing tunnel flow if setup or service discovery fails:
 UFADE logs the error and asks for confirmation before starting a privileged
 tunnel (or reuses an existing one). The userspace tunnel is
-available only inside UFADE, supports one device at a time, and closes when UFADE
-exits. After disconnecting a device, reopen Developer Options to reconnect.
+available only inside UFADE and supports one device at a time. It is closed in
+the background when leaving the developer area and rebuilt on the next visit.
+Closing UFADE does not wait for tunnel cleanup. After disconnecting a device,
+reopen Developer Options to reconnect.
 
 **Advanced Options**
 

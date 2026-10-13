@@ -199,10 +199,7 @@ class MyApp(ctk.CTk):
 
     def on_close(self):
         if getattr(self, 'userspace_tunnel', None) is not None:
-            try:
-                self.userspace_tunnel.close()
-            except Exception as exc:
-                print(f"Userspace tunnel cleanup failed: {exc}")
+            self.userspace_tunnel.request_close()
         if hasattr(self, 'linux_17') and self.linux_17:
             try: self.linux_17.kill()
             except: pass
@@ -216,6 +213,7 @@ class MyApp(ctk.CTk):
         os._exit(0)
 
     def show_main_menu(self):
+        self.stop_userspace_tunnel()
          # Erase content of dynamic frame
         for widget in self.dynamic_frame.winfo_children():
             widget.destroy()
@@ -257,6 +255,8 @@ class MyApp(ctk.CTk):
             i+=1
 
     def switch_menu(self, menu_name, **kwargs):
+        if menu_name not in {"CheckDev", "DevMenu", "Shot", "ChatLoop", "FileLS", "umount"}:
+            self.stop_userspace_tunnel()
         # Erase content of dynamic frame
         for widget in self.dynamic_frame.winfo_children():
             widget.destroy()
@@ -342,6 +342,7 @@ class MyApp(ctk.CTk):
 
 # Watch/TV Menu
     def show_watch_menu(self):
+        self.stop_userspace_tunnel()
         for widget in self.dynamic_frame.winfo_children():
             widget.destroy()
         self.skip = ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont)
@@ -4341,6 +4342,9 @@ class MyApp(ctk.CTk):
         self.use_userspace_tunnel = False
         global developer
         global lockdown
+        if isinstance(lockdown, LockdownClient):
+            self._developer_usb_lockdown = lockdown
+        developer_epoch = getattr(self, "_developer_epoch", 0)
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Developer Options", height=60, width=585, font=("standard",24), justify="left").pack(pady=20)
         self.text = ctk.CTkLabel(self.dynamic_frame, text="Checking developer status.", width=585, height=100, font=self.stfont, anchor="w", justify="left")
@@ -4423,6 +4427,8 @@ class MyApp(ctk.CTk):
                 self.dev17 = threading.Thread(target=lambda: self.run_userspace_developer(self.change))
                 self.dev17.start()
                 self.wait_variable(self.change)
+                if developer_epoch != getattr(self, "_developer_epoch", 0):
+                    return
             if not self.use_userspace_tunnel:
                 if not self.ensure_legacy_tunnel():
                     return
@@ -4435,7 +4441,7 @@ class MyApp(ctk.CTk):
         if developer == True:
             try:
                 if self.use_userspace_tunnel:
-                    device = self.get_developer_device()
+                    device = self.get_developer_device(verify_dvt=True)
                     if device is None:
                         developer = False
                         return
@@ -4452,8 +4458,9 @@ class MyApp(ctk.CTk):
                             new_dev == True
                     if new_dev == False:
                         lockdown = create_using_usbmux()
-                dvt = DvtSecureSocketProxyService(lockdown)
-                dvt.__enter__()
+                if not self.use_userspace_tunnel:
+                    dvt = DvtSecureSocketProxyService(lockdown)
+                    dvt.__enter__()
             except:
                 if int(dversion.split(".")[0]) >= 17:
                     try: PersonalizedImageMounter(lockdown).umount()
@@ -4539,35 +4546,95 @@ class MyApp(ctk.CTk):
                 return False
         return self.change.get() != 2
 
+    def stop_userspace_tunnel(self, leaving=True):
+        """Detach the developer tunnel immediately; never join it on Tk's thread."""
+        tunnel = getattr(self, "userspace_tunnel", None)
+        if tunnel is None:
+            return
+        global lockdown
+        if leaving:
+            self._developer_epoch = getattr(self, "_developer_epoch", 0) + 1
+        if not isinstance(lockdown, LockdownClient) and hasattr(self, "_developer_usb_lockdown"):
+            lockdown = self._developer_usb_lockdown
+        self.userspace_tunnel = None
+        self.use_userspace_tunnel = False
+        tunnel.request_close()
+
+        def cleanup():
+            try:
+                tunnel.close()
+                log("Userspace tunnel closed.")
+            except Exception as exc:
+                log(f"Userspace tunnel cleanup failed: {exc}")
+
+        self._userspace_cleanup = threading.Thread(target=cleanup, daemon=True)
+        self._userspace_cleanup.start()
+
     def userspace_tunnel_failed(self, exc):
         log(f"Userspace tunnel failed ({type(exc).__name__}): {exc}. Falling back to the legacy tunnel.")
         self.use_userspace_tunnel = False
-        tunnel = getattr(self, "userspace_tunnel", None)
-        if tunnel is not None:
-            try:
-                tunnel.close()
-            except Exception as cleanup_error:
-                log(f"Userspace tunnel cleanup failed: {cleanup_error}")
+        self.stop_userspace_tunnel(leaving=False)
 
-    def get_developer_device(self):
+    def get_developer_device(self, verify_dvt=False):
         if self.use_userspace_tunnel:
             try:
+                tunnel = self.userspace_tunnel
+                developer_epoch = getattr(self, "_developer_epoch", 0)
                 # Keep Tk responsive while probing/rebuilding a stale connection.
                 completed = ctk.IntVar(self, 0)
+                finished = threading.Event()
                 result = {}
 
                 def reconnect():
                     try:
-                        result["device"] = self.userspace_tunnel.ensure_connected(
+                        device = tunnel.ensure_connected(
                             on_retry=self.log_userspace_retry)
+                        if verify_dvt:
+                            for attempt in range(2):
+                                probe = None
+                                try:
+                                    log("Checking userspace developer service (DVT).")
+                                    probe = DvtSecureSocketProxyService(device)
+                                    probe.service.socket.settimeout(10)
+                                    probe.__enter__()
+                                    break
+                                except Exception as exc:
+                                    if attempt:
+                                        raise
+                                    self.log_userspace_retry(exc)
+                                    if probe is not None:
+                                        probe.service.close()
+                                        probe = None
+                                    tunnel.close()
+                                    if developer_epoch != getattr(self, "_developer_epoch", 0):
+                                        return
+                                    device = tunnel.open()
+                                finally:
+                                    if probe is not None:
+                                        probe.service.close()
+                        log("Userspace developer connection ready.")
+                        result["device"] = device
                     except Exception as exc:
                         result["error"] = exc
                     finally:
+                        finished.set()
+
+                started = time.monotonic()
+
+                def poll():
+                    if finished.is_set() or developer_epoch != getattr(self, "_developer_epoch", 0):
                         completed.set(1)
+                    else:
+                        self.text.configure(text=f"Checking userspace tunnel and developer services.\n"
+                                                 f"Please wait ({int(time.monotonic() - started)} s).")
+                        self.after(200, poll)
 
                 self.text.configure(text="Checking userspace tunnel. This may take some time.")
                 threading.Thread(target=reconnect, daemon=True).start()
+                self.after(200, poll)
                 self.wait_variable(completed)
+                if developer_epoch != getattr(self, "_developer_epoch", 0):
+                    return None
                 if "error" in result:
                     raise result["error"]
                 return result["device"]
@@ -4582,6 +4649,12 @@ class MyApp(ctk.CTk):
 
     def run_userspace_developer(self, change):
         try:
+            cleanup = getattr(self, "_userspace_cleanup", None)
+            if cleanup is not None:
+                # This method runs in a worker, not on Tk's event loop.
+                cleanup.join(timeout=40)
+                if cleanup.is_alive():
+                    raise TimeoutError("Previous userspace tunnel is still closing")
             tunnel = getattr(self, "userspace_tunnel", None)
             if tunnel is not None and (not tunnel.active or tunnel.serial != udid):
                 tunnel.close()

@@ -409,7 +409,12 @@ class UserspaceRSD(RemoteServiceDiscoveryService):
         self.all_values = self.lockdown.all_values if self.lockdown else {}
 
     def start_lockdown_service_without_checkin(self, name):
-        return ServiceConnection(self._relay.connect(self.get_service_port(name)))
+        sock = self._relay.connect(self.get_service_port(name))
+        if name.startswith("com.apple.mobile.lockdown.remote."):
+            # asyncio cancellation cannot stop the blocking check-in / GetValue
+            # running in to_thread(). Bound the underlying reads as well.
+            sock.settimeout(10)
+        return ServiceConnection(sock)
 
     async def aio_start_lockdown_service(self, name, include_escrow_bag=False):
         service = await asyncio.to_thread(self.start_lockdown_service, name, include_escrow_bag)
@@ -484,12 +489,16 @@ class UserspaceRsdTunnel:
                 self.close()
         return self.open()
 
-    def close(self):
-        if self._thread is None:
-            return
+    def request_close(self):
+        """Signal shutdown without waiting; safe to call from the GUI thread."""
         if self._loop is not None and self._stop is not None:
             with suppress(RuntimeError):
                 self._loop.call_soon_threadsafe(self._stop.set)
+
+    def close(self):
+        if self._thread is None:
+            return
+        self.request_close()
         self._thread.join(timeout=35)
         if self._thread.is_alive():
             raise TimeoutError("Userspace tunnel cleanup has not completed")
@@ -549,14 +558,22 @@ class UserspaceRsdTunnel:
             async def establish():
                 lockdown = await asyncio.to_thread(create_using_usbmux, serial=self.serial)
                 resources.callback(lockdown.close)
+                # The async service factory in 7.8.3 still issues synchronous
+                # StartService requests. Keep these off the packet/event loop.
+                lockdown.service.socket.settimeout(10)
                 # Let asyncio own TLS from the outset. The synchronous factory
                 # returns an SSLSocket for EnableServiceSSL, which aio_start()
                 # cannot accept. In 7.8.3 only the non-TLS path needs aio_start().
-                service = await lockdown.aio_start_lockdown_service(
+                attributes = await asyncio.to_thread(
+                    lockdown.get_service_connection_attributes,
                     "com.apple.internal.devicecompute.CoreDeviceProxy",
                 )
+                service = await asyncio.to_thread(lockdown._create_service_connection, attributes["Port"])
                 resources.callback(service.close)
-                if service.reader is None:
+                if attributes.get("EnableServiceSSL", False):
+                    with lockdown.ssl_file() as certificate:
+                        await service.aio_ssl_start(certificate)
+                else:
                     await service.aio_start()
 
                 async def close_service():
