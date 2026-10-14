@@ -97,7 +97,7 @@ import tkinter.ttk as ttk
 from tkinter import StringVar
 from tkcalendar import Calendar
 
-if os.name == "posix":
+if os.name == "posix" and platform.uname().system != "Darwin":
     from ufade.linux_dpi import get_linux_scale_factor
     scaling = get_linux_scale_factor()
     if scaling == 1.5:
