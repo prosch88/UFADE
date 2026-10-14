@@ -1043,7 +1043,7 @@ class MyApp(ctk.CTk):
                 self.text.configure(text="Select a start time:", height=10, width=300)
                 self.logcal = Calendar(
                     master= self.dynamic_frame,
-                    font=(ctk.CTkFont("default"),12),
+                    font=(ctk.CTkFont("default"),round(12*scaling)),
                     locale="en_US",
                     date_pattern="dd.mm.yy", 
                     background="#2b2b2b",    
@@ -6430,6 +6430,8 @@ try:
         guiv = "1368"
     elif sys.argv[1] == "1024":
         guiv = "1024"
+    elif sys.argv[1] == "800":
+        guiv = "800"
     else:
         pass
 except:
@@ -6446,6 +6448,20 @@ if guiv == "default":
     b_button_offset_y = 410
     sb_button_offset_x = 525
     right_content = 400
+
+elif guiv == "800":
+    scaling = 0.8
+    ctk.set_window_scaling(scaling)
+    ctk.set_widget_scaling(scaling)
+    resx = 1000
+    resy = 600
+    leftx = 330
+    rightx = 680
+    fsize = 14
+    b_button_offset_x = 330
+    b_button_offset_y = 410
+    sb_button_offset_x = 525
+    right_content = 340
 
 elif guiv == "1024":
     resx = 1024
