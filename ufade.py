@@ -1802,6 +1802,8 @@ class MyApp(ctk.CTk):
             except Exception as e:
                 if "cannot mmap an empty file" not in str(e):
                     log(f"Error while decrypting file:{file.encode('cp1252', errors='ignore').decode('cp1252')} - {e}")
+                else:
+                    log(f"Skipped backup entry: source blob is empty (cannot mmap); file not extracted: {file.encode('cp1252', errors='ignore').decode('cp1252')}")
         change.set(1) 
 
 # Decrypt, don't unback
