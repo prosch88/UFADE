@@ -1693,9 +1693,15 @@ class MyApp(ctk.CTk):
         global b
         global backupfiles
         try:
-            b = iOSbackup(udid=udid, cleartextpassword=bu_pass, derivedkey=None, backuproot=backuproot)                           #Load Backup with Password
-            key = b.getDecryptionKey()                                                                                      #Get decryption Key
-            b = iOSbackup(udid=udid, derivedkey=key, backuproot=backuproot)                                                       #Load Backup again with Key
+            with open(os.path.join(backuproot, udid, "Manifest.plist"), "rb") as mani_in:
+                bu_encrypted = plistlib.load(mani_in).get("IsEncrypted", True)
+            if bu_encrypted:
+                b = iOSbackup(udid=udid, cleartextpassword=bu_pass, derivedkey=None, backuproot=backuproot)                       #Load Backup with Password
+                key = b.getDecryptionKey()                                                                                  #Get decryption Key
+                b = iOSbackup(udid=udid, derivedkey=key, backuproot=backuproot)                                                   #Load Backup again with Key
+            else:
+                log("Backup is not encrypted, the backup password is not used")
+                b = iOSbackup(udid=udid, backuproot=backuproot)                                                                   #Load unencrypted Backup
             backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])
             change.set(1)
         except:
@@ -5133,7 +5139,7 @@ class MyApp(ctk.CTk):
         bu_pass = ""
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter  -  Output: {dir_top}", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="w")
         ctk.CTkLabel(self.dynamic_frame, text="Unback Backup", height=60, width=585, font=("standard",24), justify="left").pack(pady=20)
-        self.text = ctk.CTkLabel(self.dynamic_frame, text="Choose an iTunes Backup directory (encrypted) and\nprovide the correct Backup Password:", width=585, height=40, font=self.stfont, anchor="w", justify="left")
+        self.text = ctk.CTkLabel(self.dynamic_frame, text="Choose an iTunes Backup directory and provide the\ncorrect Backup Password (if the backup is encrypted):", width=585, height=40, font=self.stfont, anchor="w", justify="left")
         self.text.pack(anchor="center", pady=25)
         self.backup_text = ctk.CTkLabel(self.dynamic_frame, text="Chosen Backup:    < no backup chosen >", width=585, height=20, font=self.stfont, anchor="w", justify="left")
         self.backup_text.pack(anchor="center", pady= 5)

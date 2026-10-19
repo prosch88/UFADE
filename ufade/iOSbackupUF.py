@@ -76,6 +76,11 @@ def getFileDecryptedCopy(self, relativePath=None, manifestEntry=None,
 
     fileData=info['completeManifest']
 
+    # In unencrypted backups no entry has an EncryptionKey, so iOSbackup's folder test
+    # (Size == 0 and no key) also matches empty files. Use the Manifest.db flags instead (2 = folder).
+    if not self.decryptionKey and 'flags' in manifestEntry:
+        info['isFolder'] = manifestEntry['flags'] == 2
+
     if targetName:
         fileName=targetName
     else:
