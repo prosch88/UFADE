@@ -5,6 +5,7 @@ import textwrap
 from importlib import import_module
 import pprint
 import tempfile
+import shutil
 import sqlite3
 import time
 import mmap
