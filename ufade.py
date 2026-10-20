@@ -1755,6 +1755,8 @@ class MyApp(ctk.CTk):
             prog_text.configure(text=f"{int(dpro)}%")
             progress.update()
             prog_text.update()
+            if file == "":
+                continue
             filedomain = backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0]
             try:
                 b.getFileDecryptedCopy(relativePath=file, targetName=fileout, targetFolder=os.path.join(".tar_tmp", "itunes_bu"))               #actually decrypt the backup-files
