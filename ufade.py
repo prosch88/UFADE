@@ -1704,7 +1704,8 @@ class MyApp(ctk.CTk):
                 b = iOSbackup(udid=udid, backuproot=backuproot)                                                                   #Load unencrypted Backup
             backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])
             change.set(1)
-        except:
+        except Exception as e:
+            log(f"Error while loading backup: {type(e).__name__}: {e}")
             change.set(2)
 
 # Decrypting / "unbacking" the Backup
