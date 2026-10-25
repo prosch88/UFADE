@@ -1712,7 +1712,8 @@ class MyApp(ctk.CTk):
                 b = iOSbackup(udid=udid, backuproot=backuproot)                                                                   #Load unencrypted Backup
             backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])
             change.set(1)
-        except:
+        except Exception as e:
+            log(f"Error while loading backup: {type(e).__name__}: {e}")
             change.set(2)
 
 # Decrypting / "unbacking" the Backup
@@ -1751,7 +1752,10 @@ class MyApp(ctk.CTk):
             all_apps = []
         log("Starting Backup decryption")
         MIN_TS = time.mktime((1980, 1, 1, 0, 0, 0, 0, 1, -1))
-        for file in line_list:
+        file_rows = backupfiles.set_index('backupFile')
+        zip_names = set()
+        for file_id in line_list:
+            file = file_rows.at[file_id, 'relativePath']
             fileout = file
             if platform.uname().system == 'Windows':
                 fileout = re.sub(r"[?%*:|\"<>\x7F\x00-\x1F]", "-", file)
@@ -1765,9 +1769,10 @@ class MyApp(ctk.CTk):
             prog_text.update()
             if file == "":
                 continue
-            filedomain = backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0]
+            filedomain = file_rows.at[file_id, 'domain']
             try:
-                b.getFileDecryptedCopy(relativePath=file, targetName=fileout, targetFolder=os.path.join(".tar_tmp", "itunes_bu"))               #actually decrypt the backup-files
+                file_entry = iOSbackupUF.getFileManifestDBEntry_uf(b, fileNameHash=file_id)
+                b.getFileDecryptedCopy(manifestEntry=file_entry, targetName=fileout, targetFolder=os.path.join(".tar_tmp", "itunes_bu"))               #actually decrypt the backup-files
                 file_path = os.path.join('.tar_tmp', 'itunes_bu', fileout)
                 stat = os.stat(file_path)
                 if stat.st_mtime < MIN_TS:
@@ -1808,11 +1813,15 @@ class MyApp(ctk.CTk):
                         m_unback_set.add(tarfile_path.replace("/private/var/mobile/Media", ""))
                     if tarfile_path == "/private/var/mobile/Media":
                         pass
+                    elif tarfile_path in zip_names:
+                        if not os.path.isdir(file_path):
+                            log(f"Skipped duplicate ZIP entry: {tarfile_path.encode('cp1252', errors='ignore').decode('cp1252')} from {filedomain} (already added from another domain)")
                     else:
                         zip.write(file_path, os.path.join(tarpath, file))
+                        zip_names.add(tarfile_path)
                 else:
                     tar.add(file_path, arcname=os.path.join("iTunes_Backup/",
-                        backupfiles.loc[backupfiles['relativePath'] == file, 'domain'].iloc[0], file), recursive=False)         #add files to the TAR
+                        filedomain, file), recursive=False)         #add files to the TAR
                 try: os.remove(file_path)                                                                                       #remove the file after adding
                 except: pass
             except Exception as e:
@@ -1826,7 +1835,9 @@ class MyApp(ctk.CTk):
     def only_decrypt_itunes(self, b, backupfiles, progress, prog_text, line_list, line_cnt, d_nr, change, src, folder=None):
         os.makedirs(folder, exist_ok=True)
         log("Starting Backup decryption")
-        for file in line_list:
+        file_rows = backupfiles.set_index('backupFile')
+        for sha_name in line_list:
+            file = file_rows.at[sha_name, 'relativePath']
             fileout = file
             d_nr += 1
             dpro = int(100*(d_nr/line_cnt))
@@ -1834,11 +1845,11 @@ class MyApp(ctk.CTk):
             prog_text.configure(text=f"{int(dpro)}%")
             progress.update()
             prog_text.update()
-            sha_name = backupfiles.loc[backupfiles['relativePath'] == file, 'backupFile'].iloc[0]
             target_dir = os.path.join(folder, sha_name[:2])
             os.makedirs(target_dir, exist_ok=True)
             try:
-                b.getFileDecryptedCopy(relativePath=file, targetName=sha_name, targetFolder=target_dir)
+                file_entry = iOSbackupUF.getFileManifestDBEntry_uf(b, fileNameHash=sha_name)
+                b.getFileDecryptedCopy(manifestEntry=file_entry, targetName=sha_name, targetFolder=target_dir)
             except Exception as e:
                 log(f"Error while decrypting file:{file.encode('cp1252', errors='ignore').decode('cp1252')} - {e}")
 
