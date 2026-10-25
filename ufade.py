@@ -4,14 +4,10 @@
 import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
-if sys.stdin is None:
-    sys.stdin = open(os.devnull, "r")
 if sys.stdout is None:
     sys.stdout = open(os.devnull, "w")
 if sys.stderr is None:
     sys.stderr = open(os.devnull, "w")
-if sys.__stdin__ is None:
-    sys.__stdin__ = sys.stdin
 if sys.__stdout__ is None:
     sys.__stdout__ = sys.stdout
 if sys.__stderr__ is None:
