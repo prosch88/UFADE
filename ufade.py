@@ -2123,12 +2123,8 @@ class MyApp(ctk.CTk):
                 self.wait_variable(self.change)
                 if self.change.get() == 1:
                     #get amount of lines (files) of backup
-                    line_list = []
-                    line_cnt = 0
-                    for line in backupfiles['relativePath']:
-                        if(line not in line_list):
-                            line_cnt += 1
-                            line_list.append(line)
+                    line_list = list(backupfiles['backupFile'])                                                        #one entry per backup file (fileID), also for paths that exist in several domains
+                    line_cnt = len(line_list)
                     d_nr = 0
                     self.change.set(0)
                     if l_type == "PRFS":
@@ -5290,12 +5286,8 @@ class MyApp(ctk.CTk):
             self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0)
             self.progress.set(0)
             self.progress.pack()
-            line_list = []
-            line_cnt = 0
-            for line in backupfiles['relativePath']:
-                if(line not in line_list):
-                    line_cnt += 1
-                    line_list.append(line)
+            line_list = list(backupfiles['backupFile'])                                                        #one entry per backup file (fileID), also for paths that exist in several domains
+            line_cnt = len(line_list)
             d_nr = 0
             self.change.set(0)
             if dec_type == "unback":
