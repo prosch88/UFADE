@@ -84,6 +84,7 @@ import threading
 import platform
 import time
 import tempfile
+import gc
 import re
 import exifread
 import uuid
@@ -202,6 +203,7 @@ class MyApp(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def on_close(self):
+        remove_temp_manifest_db()                                                                                       #os._exit() below skips iOSbackup's own cleanup
         if getattr(self, 'userspace_tunnel', None) is not None:
             self.userspace_tunnel.request_close()
         if hasattr(self, 'linux_17') and self.linux_17:
@@ -1696,6 +1698,7 @@ class MyApp(ctk.CTk):
     def init_backup_decrypt(self, change, udid, bu_pass="12345", backuproot="./"):
         global b
         global backupfiles
+        remove_temp_manifest_db()                                                                                       #remove the copy of a previously loaded backup
         try:
             with open(os.path.join(backuproot, udid, "Manifest.plist"), "rb") as mani_in:
                 bu_encrypted = plistlib.load(mani_in).get("IsEncrypted", True)
@@ -1706,6 +1709,7 @@ class MyApp(ctk.CTk):
             else:
                 log("Backup is not encrypted, the backup password is not used")
                 b = iOSbackup(udid=udid, backuproot=backuproot)                                                                   #Load unencrypted Backup
+                b.manifestDB = copy_manifest_db(b.manifestDB)                                                     #work on a copy, SQLite would write -wal/-shm files (or a missing Manifest.db) into the backup folder
             backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])
             change.set(1)
         except Exception as e:
@@ -6357,6 +6361,32 @@ def log(text):
     with open(f"ufade_log_{log_udid}.log", 'a', encoding="utf-8") as logfile:
         logtime = str(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
         logfile.write(f"{logtime}: {text}\n")
+
+#Temporary copies of Manifest.db (decrypted by iOSbackup, or copied for unencrypted backups)
+def copy_manifest_db(path):
+    fd, temp_db = tempfile.mkstemp(suffix="--Manifest.db")
+    os.close(fd)
+    try:
+        shutil.copyfile(path, temp_db)
+        if os.path.isfile(path + "-wal"):
+            shutil.copyfile(path + "-wal", temp_db + "-wal")
+    except:
+        os.remove(temp_db)
+        raise
+    return temp_db
+
+def remove_temp_manifest_db():
+    gc.collect()                                                                                                    #close SQLite connections iOSbackup leaves open, Windows can't delete open files
+    temp_db = getattr(globals().get("b"), "manifestDB", None)
+    if not temp_db or os.path.dirname(os.path.abspath(temp_db)) != os.path.abspath(tempfile.gettempdir()):
+        return                                                                                                          #only ever remove files in the temp folder, never the backup's own Manifest.db
+    for temp_file in (temp_db, temp_db + "-wal", temp_db + "-shm"):
+        try:
+            os.remove(temp_file)
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            log(f"Could not remove temporary file {temp_file}: {e}")
 
 #Check for a correct sha256 format
 def is_valid_sha256(value: str) -> bool:
