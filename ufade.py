@@ -84,6 +84,7 @@ import threading
 import platform
 import time
 import tempfile
+import gc
 import re
 import exifread
 import uuid
@@ -202,6 +203,7 @@ class MyApp(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def on_close(self):
+        end_session()                                                                                                   #os._exit() below skips iOSbackup's own cleanup
         if getattr(self, 'userspace_tunnel', None) is not None:
             self.userspace_tunnel.request_close()
         if hasattr(self, 'linux_17') and self.linux_17:
@@ -1696,7 +1698,10 @@ class MyApp(ctk.CTk):
     def init_backup_decrypt(self, change, udid, bu_pass="12345", backuproot="./"):
         global b
         global backupfiles
+        remove_temp_manifest_db()                                                                                       #remove the copy of a previously loaded backup
+        old_tempdir = tempfile.tempdir
         try:
+            tempfile.tempdir = get_session_temp()                                                                       #iOSbackup writes its decrypted Manifest.db into UFADE's session folder
             with open(os.path.join(backuproot, udid, "Manifest.plist"), "rb") as mani_in:
                 bu_encrypted = plistlib.load(mani_in).get("IsEncrypted", True)
             if bu_encrypted:
@@ -1706,9 +1711,12 @@ class MyApp(ctk.CTk):
             else:
                 log("Backup is not encrypted, the backup password is not used")
                 b = iOSbackup(udid=udid, backuproot=backuproot)                                                                   #Load unencrypted Backup
+                b.manifestDB = copy_manifest_db(b.manifestDB)                                                     #work on a copy, SQLite would write -wal/-shm files (or a missing Manifest.db) into the backup folder
+            tempfile.tempdir = old_tempdir
             backupfiles = pd.DataFrame(b.getBackupFilesList(), columns=['backupFile','domain','name','relativePath'])
             change.set(1)
         except Exception as e:
+            tempfile.tempdir = old_tempdir
             log(f"Error while loading backup: {type(e).__name__}: {e}")
             change.set(2)
 
@@ -6358,6 +6366,92 @@ def log(text):
         logtime = str(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
         logfile.write(f"{logtime}: {text}\n")
 
+#UFADE's own temp folder: one locked session folder per running UFADE. The OS releases the lock when the process ends,
+#even if it crashed or was killed, so the next start can tell which folders are left over and remove them.
+ufade_temp_root = os.path.join(tempfile.gettempdir(), "ufade")
+session_temp = None
+session_lock = None
+
+def lock_file(fd):
+    if os.name == 'nt':
+        import msvcrt
+        msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+def get_session_temp():
+    global session_temp, session_lock
+    if session_temp is None:
+        os.makedirs(ufade_temp_root, exist_ok=True)
+        session_temp = tempfile.mkdtemp(prefix=f"session_{os.getpid()}_", dir=ufade_temp_root)
+        session_lock = os.open(os.path.join(session_temp, "session.lock"), os.O_RDWR | os.O_CREAT)
+        lock_file(session_lock)
+    return session_temp
+
+def cleanup_old_sessions():
+    if not os.path.isdir(ufade_temp_root):
+        return
+    for name in os.listdir(ufade_temp_root):
+        folder = os.path.join(ufade_temp_root, name)
+        if folder == session_temp or not os.path.isdir(folder):
+            continue
+        lock_path = os.path.join(folder, "session.lock")
+        if os.path.isfile(lock_path):
+            fd = os.open(lock_path, os.O_RDWR)
+            try:
+                lock_file(fd)                                                                                           #only possible if the owning UFADE is no longer running
+            except OSError:
+                os.close(fd)
+                continue
+            os.close(fd)
+        elif time.time() - os.path.getmtime(folder) < 3600:
+            continue                                                                                                    #a session folder that is still being created
+        shutil.rmtree(folder, ignore_errors=True)
+
+def end_session():
+    global session_temp, session_lock
+    remove_temp_manifest_db()
+    if session_temp is None:
+        return
+    for name in os.listdir(session_temp):
+        if name != "session.lock":
+            try:
+                os.remove(os.path.join(session_temp, name))
+            except OSError:
+                pass
+    if os.listdir(session_temp) == ["session.lock"]:
+        os.close(session_lock)
+        shutil.rmtree(session_temp, ignore_errors=True)
+        session_temp = session_lock = None
+    #otherwise files are still in use: the lock file stays, the OS releases the lock when UFADE exits and the next start removes the folder
+
+#Temporary copies of Manifest.db (decrypted by iOSbackup, or copied for unencrypted backups)
+def copy_manifest_db(path):
+    fd, temp_db = tempfile.mkstemp(suffix="--Manifest.db", dir=get_session_temp())
+    os.close(fd)
+    try:
+        shutil.copyfile(path, temp_db)
+        if os.path.isfile(path + "-wal"):
+            shutil.copyfile(path + "-wal", temp_db + "-wal")
+    except:
+        os.remove(temp_db)
+        raise
+    return temp_db
+
+def remove_temp_manifest_db():
+    gc.collect()                                                                                                    #close SQLite connections iOSbackup leaves open, Windows can't delete open files
+    temp_db = getattr(globals().get("b"), "manifestDB", None)
+    if not temp_db or session_temp is None or os.path.dirname(os.path.abspath(temp_db)) != os.path.abspath(session_temp):
+        return                                                                                                          #only ever remove files in UFADE's session folder, never the backup's own Manifest.db
+    for temp_file in (temp_db, temp_db + "-wal", temp_db + "-shm"):
+        try:
+            os.remove(temp_file)
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            log(f"Could not remove temporary file {temp_file}: {e}")
+
 #Check for a correct sha256 format
 def is_valid_sha256(value: str) -> bool:
     if len(value) != 64:
@@ -6552,6 +6646,7 @@ u_version = "1.0.5"
 
 # Start the app
 if __name__ == "__main__":
+    cleanup_old_sessions()                                                                                              #remove temp files of UFADE sessions that crashed or were killed
     app = MyApp()
     app.mainloop()
 
