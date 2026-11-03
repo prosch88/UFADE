@@ -225,7 +225,7 @@ class MyApp(ctk.CTk):
             widget.destroy()
         global lockdown
         try:
-            lockdown = create_using_usbmux()
+            lockdown = create_using_usbmux(serial=device_serial)
         except:
             self.after(20)
             self.show_nodevice()
@@ -2247,7 +2247,7 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.change)
             self.after(200)
             if self.change.get() == 2:
-                lockdown = create_using_usbmux()
+                lockdown = create_using_usbmux(serial=device_serial)
             if self.change.get() == 3:
                 return()
             self.prog_text.configure(text="0%")
@@ -2278,7 +2278,7 @@ class MyApp(ctk.CTk):
             self.wait_variable(self.change)
             self.after(100)
             if self.change.get() == 2:
-                lockdown = create_using_usbmux()
+                lockdown = create_using_usbmux(serial=device_serial)
             if self.change.get() == 3:
                 return()
             media_count = 0
@@ -2316,7 +2316,7 @@ class MyApp(ctk.CTk):
                 self.progress.set(0)
                 self.progress.pack()
                 self.after(100)
-                lockdown = create_using_usbmux()
+                lockdown = create_using_usbmux(serial=device_serial)
                 self.change.set(0)
                 if l_type == "PRFS":
                     tarpath = "/private/var/mobile/Library/Logs/CrashReporter"
@@ -2423,7 +2423,7 @@ class MyApp(ctk.CTk):
 
         #Gather device information as device_values.plist for UFD-ZIP
         else:
-            lockdown = create_using_usbmux()
+            lockdown = create_using_usbmux(serial=device_serial)
             de_va_di = self.devinfo_plist()
             with open("device_values.plist", "wb") as file:
                 plistlib.dump(de_va_di, file)
@@ -2689,7 +2689,7 @@ class MyApp(ctk.CTk):
         try:
             text.configure(text="Starting FFS Backup")
             text.update()
-            mux = usbmux.select_device()
+            mux = usbmux.select_device(udid=device_serial)
             out = mux.connect(scr_prt)
             client = SSHClient()
             client.set_missing_host_key_policy(AutoAddPolicy())
@@ -2948,7 +2948,7 @@ class MyApp(ctk.CTk):
         self.wait_variable(self.change)
         self.text.configure(text="Performing AFC Extraction of Mediafiles", height=60)
         global lockdown
-        lockdown = create_using_usbmux()
+        lockdown = create_using_usbmux(serial=device_serial)
         self.casebox.pack_forget()
         self.namebox.pack_forget()
         self.evidbox.pack_forget()
@@ -2984,7 +2984,7 @@ class MyApp(ctk.CTk):
         self.progress.set(0)
         self.prog_text.configure(text="0%")
         self.text.configure(text="Pulling Crash Logs from the device.")
-        lockdown = create_using_usbmux()
+        lockdown = create_using_usbmux(serial=device_serial)
         self.crashl = threading.Thread(target=lambda: crash_report(crash_dir=cfolder, change=self.change, progress=self.progress, prog_text=self.prog_text))
         self.crashl.start()
         self.wait_variable(self.change)
@@ -3010,7 +3010,7 @@ class MyApp(ctk.CTk):
         text.configure(text="Generating report files. This may take some time.")
         progress.pack_forget()
         global lockdown
-        lockdown = create_using_usbmux()
+        lockdown = create_using_usbmux(serial=device_serial)
         self.progress = ctk.CTkProgressBar(self.dynamic_frame, width=585, height=30, corner_radius=0, mode="indeterminate", indeterminate_speed=0.5)
         self.progress.pack()
         self.progress.start()
@@ -4260,7 +4260,7 @@ class MyApp(ctk.CTk):
                 else:
                     if not os.path.isdir(os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", dversion)):
                         raise Exception("Version not found!")
-                lockdown = create_using_usbmux()
+                lockdown = create_using_usbmux(serial=device_serial)
                 if d_class == "Watch":
                     DeveloperDiskImageMounter(lockdown).mount(image=os.path.join(os.path.dirname(__file__),"ufade_developer", "Developer", "Watch", dversion, "DeveloperDiskImage.dmg"), signature=os.path.join(os.path.dirname(__file__), "ufade_developer", "Developer", "Watch", dversion, "DeveloperDiskImage.dmg.signature"))
                 else:
@@ -4284,7 +4284,7 @@ class MyApp(ctk.CTk):
                 self.after(1000)
                 info = info + "\nClosest version is " + ver
                 text.configure(text=info)
-                lockdown = create_using_usbmux()
+                lockdown = create_using_usbmux(serial=device_serial)
                 self.after(1000)
                 try:
                     self.after(50)
@@ -4486,7 +4486,7 @@ class MyApp(ctk.CTk):
                             lockdown = get_tunneld_devices()[0]
                             new_dev == True
                     if new_dev == False:
-                        lockdown = create_using_usbmux()
+                        lockdown = create_using_usbmux(serial=device_serial)
                 if not self.use_userspace_tunnel:
                     dvt = DvtSecureSocketProxyService(lockdown)
                     dvt.__enter__()
@@ -4539,7 +4539,7 @@ class MyApp(ctk.CTk):
                             return
 
                 else:
-                    lockdown = create_using_usbmux()
+                    lockdown = create_using_usbmux(serial=device_serial)
                 #dvt = DvtSecureSocketProxyService(lockdown)
                 #dvt.__enter__()
                 self.switch_menu("DevMenu")
@@ -5664,17 +5664,20 @@ def save_info():
     log("Wrote device info to text")
 
 def check_device():
+    global device_serial
     try:
         lockdown = create_using_usbmux(autopair=False)
+        device_serial = lockdown.identifier                                                                          #later connections go to this device only, not to whichever device is listed first
     except:
         lockdown = None
+        device_serial = None
     return(lockdown)
 
 def pair_device(paired):
     global lockdown
     lockdown_unpaired = lockdown
     try:
-        lockdown = create_using_usbmux()
+        lockdown = create_using_usbmux(serial=device_serial)
         global ispaired
         ispaired = True
         paired.set(True)
@@ -5688,7 +5691,7 @@ def pair_supervised_device(paired):
     global lockdown
     lockdown_unpaired = lockdown
     try:
-        lockdown = create_using_usbmux()
+        lockdown = create_using_usbmux(serial=device_serial)
         global ispaired
         ispaired = True
         paired.set(True)
