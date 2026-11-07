@@ -2000,7 +2000,10 @@ class MyApp(ctk.CTk):
                 progress.update()
                 file_path = os.path.join(".tar_tmp/app_doc/", app, str((apps.get(app)['EnvironmentVariables'])['CFFIXED_USER_HOME'])[1:], "Documents/")
                 os.makedirs(file_path, exist_ok=True)
-                pull(self=HouseArrestService(lockdown, bundle_id=app, documents_only=True), relative_src="/Documents/.", dst=file_path)
+                try:
+                    pull(self=HouseArrestService(lockdown, bundle_id=app, documents_only=True), relative_src="/Documents/.", dst=file_path)
+                except Exception as e:
+                    log(f"Error extracting shared files of {app}: {type(e).__name__}: {e}")
                 if l_type != "UFED":
                     if l_type == "PRFS":
                         app_dest = os.path.join(str((apps.get(app)['EnvironmentVariables'])['CFFIXED_USER_HOME'])[1:], "Documents/")
@@ -2022,9 +2025,8 @@ class MyApp(ctk.CTk):
                             filename = os.path.relpath(source_file, file_path)
                             try:
                                 zip.write(source_file, os.path.join("iPhoneDump/Applications/", app, filename))
-                            except:
-                                log(f"Error zipping file {filename}")
-                                pass
+                            except Exception as e:
+                                log(f"Error zipping file {filename}: {type(e).__name__}: {e}")
 
                 try: os.remove(file_path)
                 except: shutil.rmtree(file_path, ignore_errors=True)
@@ -5565,8 +5567,8 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, z
 
                 else:
                     pass
-            except:
-                pass
+            except Exception as e:
+                log(f"Error extracting crash log {entry}: {type(e).__name__}: {e}")
             cpro = c_nr/crash_count
             progress.set(cpro)
             prog_text.configure(text=f"{int(cpro*100)}%")
@@ -5577,8 +5579,8 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, z
             shutil.rmtree(crash_dir, ignore_errors=True)
         log("Crash log extraction complete.")
         change.set(1)
-    except:
-        log("Crash log extraction failed.")
+    except Exception as e:
+        log(f"Crash log extraction failed: {type(e).__name__}: {e}")
         change.set(1)
 
 
