@@ -6169,24 +6169,28 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
 
         else:
             # directory
-            dst_path = pathlib.Path(dst) / os.path.basename(relative_src)
+            folder_name = os.path.basename(relative_src)
+            if platform.uname().system == 'Windows':
+                clean_name = re.sub(r"[?%*:|\"<>\x7F\x00-\x1F]", "-", folder_name)
+                if clean_name != folder_name:
+                    log(f"Renamed folder {src} to {clean_name}")
+                    folder_name = clean_name
+            dst_path = pathlib.Path(dst) / folder_name
             dst_path.mkdir(parents=True, exist_ok=True)
 
             for filename in self.listdir(src):
                 src_filename = posixpath.join(src, filename)
-                dst_filename = dst_path / filename
 
                 src_filename = self.resolve_path(src_filename)
 
                 try:
                     if self.isdir(src_filename):
-                        dst_filename.mkdir(exist_ok=True)
                         pull(self, src_filename, str(dst_path), callback=callback,)
                         continue
 
                     pull(self, src_filename, str(dst_path), callback=callback)
-                except:
-                    log(f"Error pulling folder: {src_filename}")
+                except Exception as e:
+                    log(f"Error pulling folder: {src_filename}: {type(e).__name__}: {e}")
                     pass
 
 #Parse artifacts from Sysdiagnose
