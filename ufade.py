@@ -5438,8 +5438,9 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
         try:
             if l_type == "PRFS":
                 #if (f"/private/var/mobile/Media{entry}") not in unback_set:
-                pull_file(self=afc,relative_src=entry, dst=dest)
-                file_path = os.path.join(dest, pathlib.Path(entry).name)
+                file_path = pull_file(self=afc,relative_src=entry, dst=dest)
+                if file_path is None:                                                                                  #pull_file() already logged why
+                    continue
                 arcname = os.path.join("/private/var/mobile/Media", entry.strip("/"))
                 zip.write(file_path, arcname=arcname)
                 os.remove(file_path)
@@ -5488,8 +5489,8 @@ def media_export(l_type, dest="Media", archive=None, text=None, prog_text=None, 
                         except: shutil.rmtree(file_path, ignore_errors=True)
                     else:
                         pass
-        except:
-            pass
+        except Exception as e:
+            log(f"Error extracting media entry {entry}: {type(e).__name__}: {e}")
 
     if d_class == "Watch" or d_class == "AppleTV" or d_class == "AudioAccessory":
         with open(f"afc_files_{udid}.json", "w") as file:
@@ -6332,7 +6333,13 @@ def pull_file(self, relative_src, dst, callback=None, src_dir=''):
         return
 
     if os.path.isdir(dst):
-        dst = os.path.join(dst, pathlib.Path(relative_src).name)
+        file_name = pathlib.Path(relative_src).name
+        if platform.uname().system == 'Windows':
+            clean_name = re.sub(r"[?%*:|\"<>\x7F\x00-\x1F]", "-", file_name)
+            if clean_name != file_name:
+                log(f"Renamed {src} to {clean_name}")
+                file_name = clean_name
+        dst = os.path.join(dst, file_name)
 
     src_size = self.stat(src)['st_size']
     MAXIMUM_READ_SIZE = 1024*1024  # 1 MB
@@ -6359,6 +6366,8 @@ def pull_file(self, relative_src, dst, callback=None, src_dir=''):
 
         if callback:
             callback(src, dst)
+
+        return dst
 
     except Exception as e:
         log(f"Error copying {src} → {dst}: {e!r}")
