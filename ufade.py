@@ -2038,8 +2038,8 @@ class MyApp(ctk.CTk):
             with open(zipname, 'rb') as z:
                 z_hash = hashlib.file_digest(z, 'sha256').hexdigest()
         except Exception as e:
-            log(f"Error hashing file: {e}")
-            z_hash = " Error - Python >= 3.11 required"
+            log(f"Error hashing {zipname}: {type(e).__name__}: {e}")
+            z_hash = " Error - hash could not be calculated, see log"
         change.set(1)
 
 # Check, if the device is locked
