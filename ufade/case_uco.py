@@ -13,9 +13,13 @@ host_os = " ".join(host_platform)
 case_context = {
     "kb": "urn:ufade:case:kb:",
     "case-investigation": "https://ontology.caseontology.org/case/investigation/",
+    "drafting": "http://example.org/ontology/drafting/",
+    "uco-action": "https://ontology.unifiedcyberontology.org/uco/action/",
+    "uco-configuration": "https://ontology.unifiedcyberontology.org/uco/configuration/",
     "uco-core": "https://ontology.unifiedcyberontology.org/uco/core/",
     "uco-identity": "https://ontology.unifiedcyberontology.org/uco/identity/",
     "uco-observable": "https://ontology.unifiedcyberontology.org/uco/observable/",
+    "uco-tool": "https://ontology.unifiedcyberontology.org/uco/tool/",
     "uco-types": "https://ontology.unifiedcyberontology.org/uco/types/",
     "xsd": "http://www.w3.org/2001/XMLSchema#"
 }
