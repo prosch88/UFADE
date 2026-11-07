@@ -2009,8 +2009,8 @@ class MyApp(ctk.CTk):
                                 source_file = os.path.join(root, file)
                                 filename = os.path.relpath(source_file, file_path)
                                 app_arc = posixpath.join(app_dest, filename)
-                                if app_arc not in unback_set and os.path.isfile(file_path):
-                                    zip.write(file_path, app_arc)
+                                if app_arc not in unback_set and os.path.isfile(source_file):
+                                    zip.write(source_file, app_arc)
                                 else:
                                     pass
                     else:
