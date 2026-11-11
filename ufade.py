@@ -908,14 +908,35 @@ class MyApp(ctk.CTk):
             dir = os.getcwd()
         ctk.CTkLabel(self.dynamic_frame, text=f"UFADE by Christian Peter", text_color="#3f3f3f", height=60, padx=40, font=self.stfont).pack(anchor="center")
         ctk.CTkLabel(self.dynamic_frame, text="Choose Output Directory:", height=30, width=585, font=("standard",24), justify="left").pack(pady=20)
+        self.dev_used = None
+        if data == False and d_class not in ("Watch", "AppleTV", "AudioAccessory"):
+            self.dev_used = device_data_used()
+        self.space_text = ctk.CTkLabel(self.dynamic_frame, text="", width=585, height=60, font=self.stfont, anchor="w", justify="left")
+        if self.dev_used is not None:
+            self.space_text.place(relx=0.5, rely=0.5, anchor="n")                                                    #placed, so the packed widgets keep their positions
         self.browsebutton = ctk.CTkButton(self.dynamic_frame, text="Browse", font=self.stfont, command=lambda: self.browse_cwd(self.outputbox), width=60, fg_color="#2d2d35")
         self.browsebutton.pack(side="bottom", pady=(0,b_button_offset_y), padx=(0,b_button_offset_x))
         self.outputbox = ctk.CTkEntry(self.dynamic_frame, width=360, height=20, corner_radius=0, placeholder_text=[dir])
         self.outputbox.bind(sequence="<Return>", command=lambda x: self.choose_cwd(self.outputbox))
+        self.outputbox.bind(sequence="<KeyRelease>", command=lambda x: self.show_space_estimate(self.outputbox.get()))
         self.outputbox.insert(0, string=dir)
         self.outputbox.pack(side="left", pady=(110,0), padx=(130,0))
         self.okbutton = ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.choose_cwd(self.outputbox, data))
         self.okbutton.pack(side="left", pady=(110,0), padx=(10,120))
+        self.show_space_estimate(dir)
+
+# Show how much space a backup may need next to the free space at the chosen path
+    def show_space_estimate(self, path):
+        if self.dev_used is None:
+            return
+        drive_free = free_space(path)
+        if drive_free is None:
+            free_text = "unknown"
+        else:
+            free_text = f"{drive_free/1000000000:.1f} GB"
+        self.space_text.configure(text=f"Data to back up: about {self.dev_used/1000000000:.1f} GB. A backup may need up to\n"
+                                       f"{self.dev_used/1000000000:.1f} GB (iTunes) or {2*self.dev_used/1000000000:.1f} GB (Logical+, UFED, PRFS).\n"
+                                       f"Free at the selected path: {free_text}")
 
 # Function to choose the working directoy
     def choose_cwd(self, outputbox, data=False):
@@ -968,6 +989,7 @@ class MyApp(ctk.CTk):
         outputbox.configure(state="normal")
         outputbox.delete(0, "end")
         outputbox.insert(0, string=dir)
+        self.show_space_estimate(dir)
 
 # Filebrowser for p12 file
     def browse_p12(self, p12box):
@@ -5628,6 +5650,24 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, z
         change.set(1)
 
 
+
+#data on the device, in bytes (the backup is usually smaller: apps themselves and caches are not backed up)
+def device_data_used():
+    try:
+        disk_usage = lockdown.get_value("com.apple.disk_usage")
+        return disk_usage["TotalDataCapacity"] - disk_usage["TotalDataAvailable"]
+    except Exception:
+        return None
+
+#free space on the drive of a path, in bytes; a path that does not exist yet is checked at its nearest existing folder
+def free_space(path):
+    check = os.path.abspath(path if path else ".")
+    while not os.path.exists(check) and os.path.dirname(check) != check:
+        check = os.path.dirname(check)
+    try:
+        return shutil.disk_usage(check).free
+    except OSError:
+        return None
 
 #size of all files in a folder, in bytes
 def folder_size(path):
