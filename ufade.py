@@ -2078,6 +2078,48 @@ class MyApp(ctk.CTk):
         return()
 
 
+# Warn if the output drive may not hold the archive next to the iTunes Backup
+    def check_free_space(self):
+        bu_size = folder_size(udid)
+        free = shutil.disk_usage(".").free
+        if free >= bu_size:
+            return True
+        log(f"Low free space: iTunes Backup {bu_size} bytes, free on the output drive {free} bytes")
+        self.choose = ctk.BooleanVar(self, False)
+        self.text.configure(text=f"The iTunes Backup is {bu_size/1000000000:.1f} GB. Creating the archive needs at least\nas much again, but the output drive has only {free/1000000000:.1f} GB free.\n\nContinue anyway?")
+        self.yesb = ctk.CTkButton(self.dynamic_frame, text="YES", font=self.stfont, command=lambda: self.choose.set(True))
+        self.yesb.pack(side="left", pady=(0,350), padx=140)
+        self.nob = ctk.CTkButton(self.dynamic_frame, text="NO", font=self.stfont, command=lambda: self.choose.set(False))
+        self.nob.pack(side="left", pady=(0,350))
+        self.wait_variable(self.choose)
+        self.yesb.pack_forget()
+        self.nob.pack_forget()
+        if self.choose.get() == True:
+            log("Continuing despite low free space")
+            return True
+        #stop: remove the backup password and keep the iTunes Backup
+        self.text.configure(text="Trying to deactivate Backup Encryption again.\nUnlock device with PIN/PW if prompted")
+        self.change.set(0)
+        self._beep_after_id = self.after(13000, self.notification)
+        remove_enc = threading.Thread(target=lambda: self.deactivate_encryption(change=self.change))
+        remove_enc.start()
+        self.wait_variable(self.change)
+        if self._beep_after_id is not None:
+            self.after_cancel(self._beep_after_id)
+            self._beep_after_id = None
+        if self.change.get() == 1:
+            pw_text = "Backup password got removed."
+        else:
+            pw_text = "Backup password could not be removed."
+        kept = f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
+        try: os.rename(udid, kept)
+        except OSError: kept = udid
+        shutil.rmtree(".tar_tmp", ignore_errors=True)
+        log(f"Logical+ Backup stopped for lack of free space. The iTunes Backup was kept as {kept}")
+        self.text.configure(text=f"Backup stopped. {pw_text}\nThe iTunes Backup was kept as:\n{kept}")
+        self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
+        return False
+
 # Actually perform the advanced logical backup
     def perf_logical_plus(self, t, incl_ul, keep_bu, incl_crash, incl_media, incl_apps, keep_ul):
         global lockdown
@@ -2112,6 +2154,8 @@ class MyApp(ctk.CTk):
         else:
             self.perf_iTunes_bu(bu_name)
             if self.pw_found.get() == 2:
+                return()
+            if not self.check_free_space():
                 return()
 
         if l_type != "UFED":
@@ -5584,6 +5628,15 @@ def crash_report(crash_dir, change, progress, prog_text, czip=False, tar=None, z
         change.set(1)
 
 
+
+#size of all files in a folder, in bytes
+def folder_size(path):
+    size = 0
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            try: size += os.path.getsize(os.path.join(root, file))
+            except OSError: pass
+    return size
 
 def save_info():
     file = open("device_" + udid + ".txt", "w", encoding='utf-8')
