@@ -77,6 +77,7 @@ import pathlib
 import numpy as np
 import pandas as pd
 import shutil
+import errno
 import tarfile
 import zipfile
 import shlex
@@ -1851,6 +1852,10 @@ class MyApp(ctk.CTk):
                 try: os.remove(file_path)                                                                                       #remove the file after adding
                 except: pass
             except Exception as e:
+                if is_disk_full(e):
+                    log(f"The output drive is full. Stopped decrypting at: {file.encode('cp1252', errors='ignore').decode('cp1252')}")
+                    change.set(3)
+                    return
                 if "cannot mmap an empty file" not in str(e):
                     log(f"Error while decrypting file:{file.encode('cp1252', errors='ignore').decode('cp1252')} - {e}")
                 else:
@@ -1915,9 +1920,13 @@ class MyApp(ctk.CTk):
             unback_alt(bu, os.path.join(".tar_tmp", "itunes_bu"))
             tar.add(".tar_tmp/itunes_bu", arcname="iTunes_Backup/", recursive=True)
             change.set(1)
-        except:
-            log("Error decrypting backup")
-            change.set(2)
+        except Exception as e:
+            if is_disk_full(e):
+                log("The output drive is full. Stopped decrypting the backup.")
+                change.set(3)
+            else:
+                log("Error decrypting backup")
+                change.set(2)
 
 # Only decrypt Whatsaap (TESS/PuMA)
     def decrypt_whatsapp(self, change, wachange):
@@ -2004,9 +2013,19 @@ class MyApp(ctk.CTk):
                     filename = os.path.relpath(source_file, base)
                     arcname = os.path.join("iPhoneDump/Backup Service", udid, "Snapshot", filename)
                     tasks.append(executor.submit(self.zip_file, zip, source_file, arcname, lock))
+            disk_full = False
             for task in tasks:
+                try:
                     task.result()
-        change.set(1)
+                except Exception as e:
+                    if not is_disk_full(e):
+                        raise
+                    disk_full = True
+        if disk_full:
+            log("The output drive is full. Stopped zipping the backup.")
+            change.set(3)
+        else:
+            change.set(1)
 
 # Extract shared app-documents
     def shared_app_files(self, prog_text, progress, change, media_count, tar=None, zip=None, l_type=None):
@@ -2119,8 +2138,38 @@ class MyApp(ctk.CTk):
         if self.choose.get() == True:
             log("Continuing despite low free space")
             return True
-        #stop: remove the backup password and keep the iTunes Backup
-        self.text.configure(text="Trying to deactivate Backup Encryption again.\nUnlock device with PIN/PW if prompted")
+        shutil.rmtree(".tar_tmp", ignore_errors=True)
+        log("Logical+ Backup stopped for lack of free space.")
+        self.stop_keep_backup("Backup stopped.")
+        return False
+
+# The output drive is full: remove the incomplete archive, keep the iTunes Backup and remove the backup password
+    def stop_disk_full(self, tar=None, zip=None):
+        try: self.progress.stop()
+        except Exception: pass
+        self.progress.pack_forget()
+        self.prog_text.pack_forget()
+        archive = tar if tar is not None else zip
+        if archive is not None:
+            archive_name = getattr(archive, "filename", None) or getattr(archive, "name", None)
+            try: archive.close()
+            except Exception: pass
+            try:
+                os.remove(archive_name)
+                removed = f"Removed the incomplete archive {os.path.basename(archive_name)}"
+            except Exception as e:
+                removed = f"Could not remove the incomplete archive {archive_name}: {e}"
+        else:
+            removed = None
+        shutil.rmtree(".tar_tmp", ignore_errors=True)                                                                   #frees space, so the log can be written again
+        log("Logical+ Backup stopped: the output drive is full.")
+        if removed:
+            log(removed)
+        self.stop_keep_backup("The output drive is full. Backup stopped.")
+
+# Stop a Logical+ Backup after the iTunes Backup: remove the backup password, keep the iTunes Backup, back to the menu
+    def stop_keep_backup(self, reason):
+        self.text.configure(text=f"{reason}\nTrying to deactivate Backup Encryption again.\nUnlock device with PIN/PW if prompted")
         self.change.set(0)
         self._beep_after_id = self.after(13000, self.notification)
         remove_enc = threading.Thread(target=lambda: self.deactivate_encryption(change=self.change))
@@ -2136,11 +2185,9 @@ class MyApp(ctk.CTk):
         kept = f'{udid}_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}'
         try: os.rename(udid, kept)
         except OSError: kept = udid
-        shutil.rmtree(".tar_tmp", ignore_errors=True)
-        log(f"Logical+ Backup stopped for lack of free space. The iTunes Backup was kept as {kept}")
-        self.text.configure(text=f"Backup stopped. {pw_text}\nThe iTunes Backup was kept as:\n{kept}")
+        log(f"The iTunes Backup was kept as {kept}")
+        self.text.configure(text=f"{reason} {pw_text}\nThe iTunes Backup was kept as:\n{kept}")
         self.after(500, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=lambda: self.switch_menu("AcqMenu")).pack(pady=40))
-        return False
 
 # Actually perform the advanced logical backup
     def perf_logical_plus(self, t, incl_ul, keep_bu, incl_crash, incl_media, incl_apps, keep_ul):
@@ -2235,6 +2282,9 @@ class MyApp(ctk.CTk):
                     self.decrypt.start()
 
                 self.wait_variable(self.change)
+                if self.change.get() == 3:
+                    self.stop_disk_full(tar=tar, zip=zip)
+                    return
                 #remove the backup folder
                 try: shutil.rmtree(".tar_tmp/itunes_bu")
                 except: pass
@@ -2268,6 +2318,9 @@ class MyApp(ctk.CTk):
             self.zip_start = threading.Thread(target=lambda: self.zip_itunes(zip, self.change))
             self.zip_start.start()
             self.wait_variable(self.change)
+            if self.change.get() == 3:
+                self.stop_disk_full(zip=zip)
+                return
             #delete the backup after zipping
             if keep_bu == "off":
                 try: shutil.rmtree(udid)
@@ -6473,9 +6526,16 @@ def pull_file(self, relative_src, dst, callback=None, src_dir=''):
 def log(text):
     try: log_udid = udid
     except: log_udid = "data_operations"
-    with open(f"ufade_log_{log_udid}.log", 'a', encoding="utf-8") as logfile:
-        logtime = str(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
-        logfile.write(f"{logtime}: {text}\n")
+    try:
+        with open(f"ufade_log_{log_udid}.log", 'a', encoding="utf-8") as logfile:
+            logtime = str(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+            logfile.write(f"{logtime}: {text}\n")
+    except OSError:
+        pass                                                                                                            #e.g. the output drive is full: a lost log line must not stop the extraction
+
+#True if an error means the drive is full (on Windows, WinError 112 is mapped to ENOSPC as well)
+def is_disk_full(e):
+    return isinstance(e, OSError) and e.errno == errno.ENOSPC
 
 #UFADE's own temp folder: one locked session folder per running UFADE. The OS releases the lock when the process ends,
 #even if it crashed or was killed, so the next start can tell which folders are left over and remove them.
