@@ -5005,8 +5005,7 @@ class MyApp(ctk.CTk):
         imglabel.configure(image=screensh)
         hash_sha256 = hashlib.sha256(png).hexdigest()
         name = hardware + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
-        filename = name + ".png"
-        hashname = name + ".txt"
+        filename, hashname = unique_shot_names("screenshots", name)
         filepath = os.path.join("screenshots", filename)
         hashpath = os.path.join("screenshots", hashname)
         with open(filepath, "wb") as file:
@@ -5101,6 +5100,7 @@ class MyApp(ctk.CTk):
                 hsize = int((float(shot.size[1])*float(wperc)))
             screensh = ctk.CTkImage(dark_image=shot, size=(wsize, hsize))
             imglabel.configure(image=screensh)
+            filename, hashname = unique_shot_names(os.path.join("screenshots", app_name, chat_name), name)
             filepath = os.path.join("screenshots", app_name, chat_name, filename)
             hashpath = os.path.join("screenshots", app_name, chat_name, hashname)
             with open(os.path.join(filepath), "wb") as file:
@@ -5154,6 +5154,7 @@ class MyApp(ctk.CTk):
                                 hsize = int((float(shot.size[1])*float(wperc)))
                             screensh = ctk.CTkImage(dark_image=shot, size=(wsize, hsize))
                             imglabel.configure(image=screensh)
+                            filename, hashname = unique_shot_names(os.path.join("screenshots", app_name, chat_name), name)
                             filepath = os.path.join("screenshots", app_name, chat_name, filename)
                             hashpath = os.path.join("screenshots", app_name, chat_name, hashname)
                             with open(os.path.join(filepath), "wb") as file:
@@ -5730,6 +5731,15 @@ def folder_size(path):
             try: size += os.path.getsize(os.path.join(root, file))
             except OSError: pass
     return size
+
+#screenshot names only go to the second: add a counter if the name is already taken, so no screenshot is overwritten
+def unique_shot_names(folder, name):
+    candidate = name
+    n = 1
+    while os.path.exists(os.path.join(folder, candidate + ".png")):
+        candidate = f"{name}_{n}"
+        n += 1
+    return candidate + ".png", candidate + ".txt"
 
 def save_info():
     file = open("device_" + udid + ".txt", "w", encoding='utf-8')
