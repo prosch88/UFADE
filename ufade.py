@@ -54,6 +54,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from paramiko import SSHClient, AutoAddPolicy, Transport
 from datetime import datetime, timedelta, timezone, date
 from concurrent.futures import ThreadPoolExecutor
+from fractions import Fraction
 from subprocess import Popen, PIPE, check_call, run
 from pymobiledevice3 import exceptions
 from importlib.metadata import version
@@ -1446,7 +1447,7 @@ class MyApp(ctk.CTk):
     def deactivate_encryption(self, change, text=None):
         global bu_pass
         try:
-            if bu_pass != "12345":
+            if bu_pass != "12345" and bu_pass_udid == udid:                                                             #only restore a password that was found on this device
                 UFADEMobilebackup2Service(lockdown).change_password(old="12345", new=bu_pass)
             else:
                 UFADEMobilebackup2Service(lockdown).change_password(old="12345")
@@ -1497,7 +1498,7 @@ class MyApp(ctk.CTk):
 # Function to check the possibly known backup-password
     def password_known(self, passwordbox, pw_found, okbutton, abort, text):
         pw=passwordbox.get()
-        global bu_pass
+        global bu_pass, bu_pass_udid
         service_pw = UFADEMobilebackup2Service(lockdown) if no_escrow else Mobilebackup2Service(lockdown)
         okbutton.configure(state="disabled")
         text.configure(text="Checking password...")
@@ -1505,6 +1506,7 @@ class MyApp(ctk.CTk):
             with passcode_lock:
                 service_pw.change_password(old=pw, new="12345")
             bu_pass = pw
+            bu_pass_udid = udid
             passwordbox.pack_forget()
             okbutton.pack_forget()
             abort.pack_forget()
@@ -1514,6 +1516,7 @@ class MyApp(ctk.CTk):
         except Exception as e:
             if "Cannot parse a NULL" in str(e):
                 bu_pass = pw
+                bu_pass_udid = udid
                 passwordbox.pack_forget()
                 okbutton.pack_forget()
                 abort.pack_forget()
@@ -1538,7 +1541,7 @@ class MyApp(ctk.CTk):
 
 # Actually bruteforcing the backup password
     def brute_bu_pw(self, pw_list, progress, prog_text, text, pw_count, pw_found):
-        global bu_pass
+        global bu_pass, bu_pass_udid
         pw_num = 0
         pw_pro = 0
         for pw in pw_list:
@@ -1550,6 +1553,7 @@ class MyApp(ctk.CTk):
                 UFADEMobilebackup2Service(lockdown).change_password(old=pw, new="12345")
                 text.configure(text="Password found: " + pw)
                 bu_pass = pw
+                bu_pass_udid = udid
                 log(f"Found correct backup password: {pw} via bruteforce")
                 pw_found.set(1)
                 break
@@ -4913,6 +4917,9 @@ class MyApp(ctk.CTk):
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
             waitl.set(2)
             return
+        finally:
+            try: os.remove(script)                                                                                      #the script holds the environment variables
+            except OSError: pass
 
     def macos_dev17(self, change):
         script = os.path.realpath(__file__)
@@ -6177,6 +6184,23 @@ def keybag_from_p12(p12file, password: str):
         return "error"
 
 
+#Numeric value(s) of an EXIF tag, taken from the parsed values. The tag text comes from a file on the device and is never run as code.
+def exif_number(tag):
+    def number(value):
+        if isinstance(value, bool) or not isinstance(value, (int, float, Fraction)):
+            raise ValueError(f"EXIF value is not a number: {value!r}")
+        if isinstance(value, Fraction):
+            if value.denominator == 0:
+                raise ZeroDivisionError("EXIF ratio with a zero denominator")
+            if value.denominator == 1:
+                return value.numerator
+            return value.numerator / value.denominator
+        return value
+    values = [number(value) for value in tag.values]
+    if len(values) == 1:
+        return values[0]
+    return values
+
 # modified pull function from pymobiledevice3 (sets atime to mtime as it's not readable)
 def pull(self, relative_src, dst, callback=None, src_dir=''):
         global filedict
@@ -6253,11 +6277,11 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                                 except: pass
                                 try: exifdict['ExifEnumModel'] = str(etags["Image Model"])
                                 except: pass
-                                try: exifdict['ExifEnumExposureTime'] = eval(str(etags["EXIF ExposureTime"]))
+                                try: exifdict['ExifEnumExposureTime'] = exif_number(etags["EXIF ExposureTime"])
                                 except: pass
-                                try: exifdict['ExifEnumFocalLength'] = eval(str(etags["EXIF FocalLength"]))
+                                try: exifdict['ExifEnumFocalLength'] = exif_number(etags["EXIF FocalLength"])
                                 except: pass
-                                try: exifdict['ExifEnumFNumber'] = eval(str(etags["EXIF FNumber"]))
+                                try: exifdict['ExifEnumFNumber'] = exif_number(etags["EXIF FNumber"])
                                 except: pass
                                 try: exifdict['EXIFCameraMaker'] = str(etags["Image Make"])
                                 except: pass
@@ -6273,31 +6297,35 @@ def pull(self, relative_src, dst, callback=None, src_dir=''):
                                 if exifdict != {}:
                                     filedict[str(src)]["Exif"] = exifdict
                                 if 'GPS GPSLatitude' in etags.keys():
-                                    gpsdict = {}
-                                    lat = eval(str(etags['GPS GPSLatitude']))
-                                    try: latref = etags['GPS GPSLatitudeRef']
-                                    except: latref = "0"
-                                    lon = eval(str(etags['GPS GPSLongitude']))
-                                    try: lonref = etags['GPS GPSLongitudeRef']
-                                    except: lonref = "0"
-                                    ele = eval(str(etags['GPS GPSAltitude']))
-                                    try: eleref = etags['GPS GPSAltitudeRef']
-                                    except: eleref = 0
-                                    if eleref == 1:
-                                        ele = -ele
-                                    ele = int(ele)
-                                    deci_lat = lat[0] + lat[1] / 60 + lat[2] / 3600
-                                    if latref == "S" or latref =='W' :
-                                        deci_lat = -deci_lat
-                                    gpsdict['Latitude'] = round(deci_lat, 5)
-                                    deci_lon = lon[0] + lon[1] / 60 + lon[2] / 3600
-                                    if lonref == "S" or lonref =='W' :
-                                        deci_lon = -deci_lon
-                                    gpsdict['Longitude'] = round(deci_lon, 5)
-                                    gpsdict['Elevation'] = ele
-                                    try: exifdict['MetaDataLatitudeAndLongitude'] = f"{gpsdict['Longitude']} / {gpsdict['Longitude']}"
-                                    except: pass
-                                    filedict[str(src)]["GPS"] = gpsdict
+                                    try:
+                                        gpsdict = {}
+                                        lat = exif_number(etags['GPS GPSLatitude'])
+                                        try: latref = str(etags['GPS GPSLatitudeRef']).strip().upper()          #the tag is an object, compare its text
+                                        except: latref = "0"
+                                        lon = exif_number(etags['GPS GPSLongitude'])
+                                        try: lonref = str(etags['GPS GPSLongitudeRef']).strip().upper()
+                                        except: lonref = "0"
+                                        try: ele = exif_number(etags['GPS GPSAltitude'])
+                                        except: ele = 0                                                         #no (readable) altitude in the image
+                                        try: eleref = etags['GPS GPSAltitudeRef'].values[0]
+                                        except: eleref = 0
+                                        if eleref == 1:
+                                            ele = -ele
+                                        ele = int(ele)
+                                        deci_lat = lat[0] + lat[1] / 60 + lat[2] / 3600
+                                        if latref == "S":
+                                            deci_lat = -deci_lat
+                                        gpsdict['Latitude'] = round(deci_lat, 5)
+                                        deci_lon = lon[0] + lon[1] / 60 + lon[2] / 3600
+                                        if lonref == "W":
+                                            deci_lon = -deci_lon
+                                        gpsdict['Longitude'] = round(deci_lon, 5)
+                                        gpsdict['Elevation'] = ele
+                                        exifdict['MetaDataLatitudeAndLongitude'] = f"{gpsdict['Latitude']} / {gpsdict['Longitude']}"
+                                        filedict[str(src)]["Exif"] = exifdict
+                                        filedict[str(src)]["GPS"] = gpsdict
+                                    except Exception as e:
+                                        log(f"Could not read the GPS position of {src}: {type(e).__name__}: {e}")       #the file is still extracted
                 else:
                     pass
                 try: mtime = self.stat(src)['st_mtime'].timestamp()
@@ -6667,13 +6695,14 @@ def create_linux_shell_script():
     script_content = "#!/bin/bash\n"
 
     for key, value in env_vars.items():
-        script_content += f'export {key}="{value}"\n'
+        if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):                                                                #skip names bash can't export
+            script_content += f"export {key}={shlex.quote(value)}\n"                                                    #quoted: the script runs as root, a value must never be run as a command
 
     script_content += f"python3 -m pymobiledevice3 remote tunneld -d\n"
-    script_file = tempfile.NamedTemporaryFile(delete=False, suffix=".sh")
+    script_file = tempfile.NamedTemporaryFile(delete=False, suffix=".sh")                                               #created with mode 0600
     script_file.write(script_content.encode('utf-8'))
     script_file.close()
-    os.chmod(script_file.name, 0o755)
+    os.chmod(script_file.name, 0o700)                                                                                   #holds the whole environment, keep it private
     return script_file.name
 
 def thread_exception_handler(args):
@@ -6809,6 +6838,7 @@ mode = "normal"
 bu_fin = False
 device = dev_data()
 bu_pass = "12345"
+bu_pass_udid = None                                                                                                     #the device the original backup password in bu_pass belongs to
 developer = False
 filedict = {}
 unback_set = set()
