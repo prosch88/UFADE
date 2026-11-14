@@ -1447,7 +1447,7 @@ class MyApp(ctk.CTk):
     def deactivate_encryption(self, change, text=None):
         global bu_pass
         try:
-            if bu_pass != "12345":
+            if bu_pass != "12345" and bu_pass_udid == udid:                                                             #only restore a password that was found on this device
                 UFADEMobilebackup2Service(lockdown).change_password(old="12345", new=bu_pass)
             else:
                 UFADEMobilebackup2Service(lockdown).change_password(old="12345")
@@ -1498,7 +1498,7 @@ class MyApp(ctk.CTk):
 # Function to check the possibly known backup-password
     def password_known(self, passwordbox, pw_found, okbutton, abort, text):
         pw=passwordbox.get()
-        global bu_pass
+        global bu_pass, bu_pass_udid
         service_pw = UFADEMobilebackup2Service(lockdown) if no_escrow else Mobilebackup2Service(lockdown)
         okbutton.configure(state="disabled")
         text.configure(text="Checking password...")
@@ -1506,6 +1506,7 @@ class MyApp(ctk.CTk):
             with passcode_lock:
                 service_pw.change_password(old=pw, new="12345")
             bu_pass = pw
+            bu_pass_udid = udid
             passwordbox.pack_forget()
             okbutton.pack_forget()
             abort.pack_forget()
@@ -1515,6 +1516,7 @@ class MyApp(ctk.CTk):
         except Exception as e:
             if "Cannot parse a NULL" in str(e):
                 bu_pass = pw
+                bu_pass_udid = udid
                 passwordbox.pack_forget()
                 okbutton.pack_forget()
                 abort.pack_forget()
@@ -1539,7 +1541,7 @@ class MyApp(ctk.CTk):
 
 # Actually bruteforcing the backup password
     def brute_bu_pw(self, pw_list, progress, prog_text, text, pw_count, pw_found):
-        global bu_pass
+        global bu_pass, bu_pass_udid
         pw_num = 0
         pw_pro = 0
         for pw in pw_list:
@@ -1551,6 +1553,7 @@ class MyApp(ctk.CTk):
                 UFADEMobilebackup2Service(lockdown).change_password(old=pw, new="12345")
                 text.configure(text="Password found: " + pw)
                 bu_pass = pw
+                bu_pass_udid = udid
                 log(f"Found correct backup password: {pw} via bruteforce")
                 pw_found.set(1)
                 break
@@ -6831,6 +6834,7 @@ mode = "normal"
 bu_fin = False
 device = dev_data()
 bu_pass = "12345"
+bu_pass_udid = None                                                                                                     #the device the original backup password in bu_pass belongs to
 developer = False
 filedict = {}
 unback_set = set()
