@@ -4917,6 +4917,9 @@ class MyApp(ctk.CTk):
             self.after(100, lambda: ctk.CTkButton(self.dynamic_frame, text="OK", font=self.stfont, command=self.show_main_menu).pack(pady=40))
             waitl.set(2)
             return
+        finally:
+            try: os.remove(script)                                                                                      #the script holds the environment variables
+            except OSError: pass
 
     def macos_dev17(self, change):
         script = os.path.realpath(__file__)
@@ -6692,13 +6695,14 @@ def create_linux_shell_script():
     script_content = "#!/bin/bash\n"
 
     for key, value in env_vars.items():
-        script_content += f'export {key}="{value}"\n'
+        if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):                                                                #skip names bash can't export
+            script_content += f"export {key}={shlex.quote(value)}\n"                                                    #quoted: the script runs as root, a value must never be run as a command
 
     script_content += f"python3 -m pymobiledevice3 remote tunneld -d\n"
-    script_file = tempfile.NamedTemporaryFile(delete=False, suffix=".sh")
+    script_file = tempfile.NamedTemporaryFile(delete=False, suffix=".sh")                                               #created with mode 0600
     script_file.write(script_content.encode('utf-8'))
     script_file.close()
-    os.chmod(script_file.name, 0o755)
+    os.chmod(script_file.name, 0o700)                                                                                   #holds the whole environment, keep it private
     return script_file.name
 
 def thread_exception_handler(args):
