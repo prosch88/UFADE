@@ -5134,7 +5134,7 @@ class MyApp(ctk.CTk):
                     prev = png
                     AccessibilityAudit(lockdown).move_focus(ch_direction)
                     AccessibilityAudit(lockdown).set_show_visuals(False)
-                    time.sleep(0.3)
+                    time.sleep(CHAT_SETTLE_SECONDS)
                     if d_class == "Watch":
                         try:
                             png = ScreenshotService(lockdown).take_screenshot()
@@ -5738,6 +5738,10 @@ def folder_size(path):
             try: size += os.path.getsize(os.path.join(root, file))
             except OSError: pass
     return size
+
+#chat capture: wait this long after each scroll before the screenshot, so bubbles that spring into place
+#(Messages on iOS 26) have settled. With 0.3 s, bubbles were caught up to 8 px from where they come to rest.
+CHAT_SETTLE_SECONDS = 1.0
 
 #screenshot names only go to the second: add a counter if the name is already taken, so no screenshot is overwritten
 def unique_shot_names(folder, name):
