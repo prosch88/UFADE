@@ -913,7 +913,7 @@ class MyApp(ctk.CTk):
         self.dev_used = None
         if data == False and d_class not in ("Watch", "AppleTV", "AudioAccessory"):
             self.dev_used = device_data_used()
-        self.space_text = ctk.CTkLabel(self.dynamic_frame, text="", width=585, height=60, font=self.stfont, anchor="w", justify="left")
+        self.space_text = ctk.CTkLabel(self.dynamic_frame, text="", text_color="#535353", width=585, height=60, font=self.stfont, anchor="center", justify="left")
         if self.dev_used is not None:
             self.space_text.place(relx=0.5, rely=0.5, anchor="n")                                                    #placed, so the packed widgets keep their positions
         self.browsebutton = ctk.CTkButton(self.dynamic_frame, text="Browse", font=self.stfont, command=lambda: self.browse_cwd(self.outputbox), width=60, fg_color="#2d2d35")
