@@ -4988,6 +4988,7 @@ class MyApp(ctk.CTk):
         self.doshot.start()
 
     def shot(self, dvt, imglabel, namefield):
+        case_begin = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         hsize = 426
         if d_class == "Watch":
             try:
@@ -5021,6 +5022,7 @@ class MyApp(ctk.CTk):
             hash_file.write(hash_sha256)
         log(f"Created screenshot {filename} with hash {hash_sha256}")
         namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
+        screenshot_case_json(filepath, hash_sha256, case_begin)
         self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, w=wsize, h=hsize)
 
     def chat_shotloop(self, dvt):
@@ -5086,6 +5088,7 @@ class MyApp(ctk.CTk):
             try: os.mkdir(os.path.join("screenshots", app_name, chat_name))
             except: pass
             seen_hashes = []
+            case_begin = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             if d_class == "Watch":
                 try:
                     png = ScreenshotService(lockdown).take_screenshot()
@@ -5119,6 +5122,7 @@ class MyApp(ctk.CTk):
             namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
             first_hash = imagehash.phash(shot)
             seen_hashes.append(first_hash)
+            screenshot_case_json(filepath, hash_sha256, case_begin, app_name, chat_name, direction)
             self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, app_name=app_name, chat_name=chat_name, w=wsize, h=hsize)
             self.shotloop(dvt, app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, png=png, text=text, seen_hashes=seen_hashes, first_hash=first_hash)
         else:
@@ -5132,6 +5136,7 @@ class MyApp(ctk.CTk):
                     return
                 else:
                     prev = png
+                    case_begin = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
                     AccessibilityAudit(lockdown).move_focus(ch_direction)
                     AccessibilityAudit(lockdown).set_show_visuals(False)
                     time.sleep(CHAT_SETTLE_SECONDS)
@@ -5171,6 +5176,7 @@ class MyApp(ctk.CTk):
                                 hash_file.write(hash_sha256)
                             log(f"Created screenshot {filename} with hash {hash_sha256}")
                             namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
+                            screenshot_case_json(filepath, hash_sha256, case_begin, app_name, chat_name, direction)
                             self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, app_name=app_name, chat_name=chat_name, w=wsize, h=hsize)
                             sc_count += 1
                             ab_count = 0
@@ -5751,6 +5757,33 @@ def unique_shot_names(folder, name):
         candidate = f"{name}_{n}"
         n += 1
     return candidate + ".png", candidate + ".txt"
+
+def screenshot_case_json(filepath, sha256, case_begin, app_name=None, chat_name=None, direction=None):
+    backup = {
+        "description": "UFADE Screenshot",
+        "tool_version": u_version,
+        "ExtractionType": "Logical",
+        "ExtractionMethod": "Chat Capture" if direction is not None else "Screenshot",
+        "Files": [{
+            "Type": "screenshot",
+            "FileName": os.path.basename(filepath),
+            "extension": ".png",
+            "Filesize": os.path.getsize(filepath),
+            "isDirectory": False,
+            "SHA256": sha256,
+        }],
+        "startTime": case_begin,
+        "endTime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    if direction is not None:
+        backup["Configuration"] = {
+            "AppName": app_name,
+            "ConversationPartner": chat_name,
+            "CaptureDirection": direction,
+        }
+    case_path = os.path.splitext(filepath)[0] + ".case.json"
+    with open(case_path, "w", encoding="utf-8") as f:
+        json.dump(case_uco.backup_case_json(case_device, backup), f, indent=4)
 
 def save_info():
     file = open("device_" + udid + ".txt", "w", encoding='utf-8')

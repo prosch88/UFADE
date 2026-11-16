@@ -151,6 +151,14 @@ def backup_case_json(case_device, case_backup):
             }
         }
 
+    for name, value in case_backup.get("Configuration", {}).items():
+        tool_entry["uco-configuration:usesConfiguration"]["uco-configuration:configurationEntry"].append({
+            "@id": "kb:configuration-entry-" + str(uuid.uuid4()),
+            "@type": "uco-configuration:ConfigurationEntry",
+            "uco-configuration:itemName": name,
+            "uco-configuration:itemValue": value
+        })
+
     backup_case.append(acquisition)
     backup_case.append(creator)
     backup_case.append(tool_entry)
