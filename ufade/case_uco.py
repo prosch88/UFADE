@@ -107,6 +107,15 @@ def backup_case_json(case_device, case_backup):
             ]
         }
         file_results.append(file_result)
+        caption = fileobject.get("AccessibilityCaption")
+        if caption:
+            file_results.append({
+                "@id": "kb:annotation-" + str(uuid.uuid4()),
+                "@type": "uco-core:Annotation",
+                "uco-core:name": "Accessibility caption of the focused element",
+                "uco-core:object": {"@id": file_result["@id"]},
+                "uco-core:statement": caption,
+            })
     acquisition["uco-action:result"] = results
     created_by = "Christian Peter (Developer) [www.cp-df.com]"
     creator_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, created_by)
@@ -162,8 +171,7 @@ def backup_case_json(case_device, case_backup):
     backup_case.append(acquisition)
     backup_case.append(creator)
     backup_case.append(tool_entry)
-    for file in file_results:
-        backup_case.append(file)
+    backup_case.extend(file_results)
 
     #organization is always Apple for UFADE 
     organization = {

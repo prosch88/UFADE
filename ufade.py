@@ -32,7 +32,7 @@ from pymobiledevice3.services.dvt.instruments.device_info import DeviceInfo
 from pymobiledevice3.services.dvt.instruments.screenshot import Screenshot
 from pymobiledevice3.services.screenshot import ScreenshotService
 from pymobiledevice3.services.dvt.dvt_secure_socket_proxy import DvtSecureSocketProxyService
-from pymobiledevice3.services.accessibilityaudit import AccessibilityAudit, Direction
+from pymobiledevice3.services.accessibilityaudit import AccessibilityAudit, Direction, deserialize_object
 from pymobiledevice3.services.amfi import AmfiService
 from pymobiledevice3.tcp_forwarder import UsbmuxTcpForwarder
 from pymobiledevice3.services.pcapd import PcapdService
@@ -5071,7 +5071,6 @@ class MyApp(ctk.CTk):
         self.stop_event.set()
 
     def shotloop(self, dvt, app_name, chat_name, ab_count, sc_count, abs_count, direction, imglabel, namefield, text, png=None, first=False, seen_hashes=None, first_hash=None):
-        AccessibilityAudit(lockdown).set_show_visuals(False)
         name = chat_name + "_" + str(datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
         filename = name + ".png"
         hashname = name + ".txt"
@@ -5083,6 +5082,8 @@ class MyApp(ctk.CTk):
         if text != None:
             text.configure(text="Chat capture is running.")
         if first != False:
+            with AccessibilityAudit(lockdown) as audit:
+                audit.set_show_visuals(False)
             try: os.mkdir(os.path.join("screenshots", app_name))
             except: pass
             try: os.mkdir(os.path.join("screenshots", app_name, chat_name))
@@ -5137,8 +5138,7 @@ class MyApp(ctk.CTk):
                 else:
                     prev = png
                     case_begin = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-                    AccessibilityAudit(lockdown).move_focus(ch_direction)
-                    AccessibilityAudit(lockdown).set_show_visuals(False)
+                    caption = move_chat_focus(ch_direction)
                     time.sleep(CHAT_SETTLE_SECONDS)
                     if d_class == "Watch":
                         try:
@@ -5176,7 +5176,7 @@ class MyApp(ctk.CTk):
                                 hash_file.write(hash_sha256)
                             log(f"Created screenshot {filename} with hash {hash_sha256}")
                             namefield.configure(text=f"Screenshot saved as:\n{filename}\nHash saved as:\n{hashname}")
-                            screenshot_case_json(filepath, hash_sha256, case_begin, app_name, chat_name, direction)
+                            screenshot_case_json(filepath, hash_sha256, case_begin, app_name, chat_name, direction, caption=caption)
                             self.pdf_report(pdf_type="screenshot", shot=filename, sha256=hash_sha256, shot_png=filepath, app_name=app_name, chat_name=chat_name, w=wsize, h=hsize)
                             sc_count += 1
                             ab_count = 0
@@ -5200,7 +5200,6 @@ class MyApp(ctk.CTk):
             self.upbutton.configure(state="enabled")
             self.downbutton.configure(state="enabled")
             self.abortbutton.configure(state="enabled")
-            AccessibilityAudit(lockdown).set_show_visuals(False)
             raise SystemExit
             return("interrupt")
 
@@ -5748,6 +5747,29 @@ def folder_size(path):
 #chat capture: wait this long after each scroll before the screenshot, so bubbles that spring into place
 #(Messages on iOS 26) have settled. With 0.3 s, bubbles were caught up to 8 px from where they come to rest.
 CHAT_SETTLE_SECONDS = 1.0
+CHAT_FOCUS_TIMEOUT_SECONDS = 1.0
+
+def move_chat_focus(direction):
+    with AccessibilityAudit(lockdown) as audit:
+        audit.set_show_visuals(False)
+        audit.set_app_monitoring_enabled(True)
+        audit.set_monitored_event_type()
+        audit.move_focus(direction)
+        deadline = time.monotonic() + CHAT_FOCUS_TIMEOUT_SECONDS
+        try:
+            while (remaining := deadline - time.monotonic()) > 0:
+                audit.service.socket.settimeout(remaining)
+                selector, arguments = audit.recv_plist()
+                if selector == "hostInspectorCurrentElementChanged:" and arguments:
+                    focus = deserialize_object(arguments[0]["value"])
+                    return focus.caption
+        except TimeoutError:
+            pass
+        except (OSError, exceptions.PyMobileDevice3Exception, AttributeError, KeyError, TypeError) as exc:
+            log(f"Could not read chat focus caption ({type(exc).__name__})")
+            return None
+        log("No accessibility focus event received for chat capture")
+        return None
 
 #screenshot names only go to the second: add a counter if the name is already taken, so no screenshot is overwritten
 def unique_shot_names(folder, name):
@@ -5758,7 +5780,7 @@ def unique_shot_names(folder, name):
         n += 1
     return candidate + ".png", candidate + ".txt"
 
-def screenshot_case_json(filepath, sha256, case_begin, app_name=None, chat_name=None, direction=None):
+def screenshot_case_json(filepath, sha256, case_begin, app_name=None, chat_name=None, direction=None, *, caption=None):
     backup = {
         "description": "UFADE Screenshot",
         "tool_version": u_version,
@@ -5775,6 +5797,8 @@ def screenshot_case_json(filepath, sha256, case_begin, app_name=None, chat_name=
         "startTime": case_begin,
         "endTime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+    if isinstance(caption, str) and caption.strip():
+        backup["Files"][0]["AccessibilityCaption"] = caption
     if direction is not None:
         backup["Configuration"] = {
             "AppName": app_name,
