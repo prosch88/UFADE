@@ -13,7 +13,7 @@ It utilizes the awesome projects: [pymobiledevice3](https://github.com/doronz88/
 
 The interface is based on [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter). You can also load the Windows version from the release page. 
 
-Requires Python == 3.11.
+Requires Python >= 3.11.
 
 More features may follow.
 
